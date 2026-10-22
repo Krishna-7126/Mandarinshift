@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=65", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "localshift"
+version = "0.1.0"
+description = "Free, offline-first desktop file converter"
+requires-python = ">=3.10"
+# Pillow 10+ required for reliable EXIF transpose and WebP support.
+# Upper-bound <13 avoids pulling untested major versions automatically.
+dependencies = ["Pillow>=10.0,<14"]
+
+[project.optional-dependencies]
+desktop = ["PySide6>=6.7"]
+test    = ["pytest>=8.0"]
+dev     = ["pytest>=8.0"]
+
+[project.scripts]
+localshift = "localshift.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths    = ["tests"]
+# -ra: show short summary for all non-passing tests.
+# -q:  quieter output.
+addopts      = "-ra -q"
+log_cli      = false

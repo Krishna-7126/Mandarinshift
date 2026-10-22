@@ -76,17 +76,37 @@ MAX_INPUT_BYTES: int = 250 * 1024 * 1024  # 250 MiB
 
 
 # ---------------------------------------------------------------------------
-# Process-level output reservation lock
+# Process-level output reservation lock & registry
 # ---------------------------------------------------------------------------
 
-# This lock serialises the (path selection → temp file creation) section for
-# all threads in the same process.  It ensures that two concurrent conversions
-# targeting the same output directory cannot both pick the same destination
-# filename in the window between unique_output_path() and mkstemp().
-#
-# The lock is held only for the brief synchronous path-selection step, not
-# during the (potentially slow) Pillow decode/encode operation.
+# This lock serialises path reservation and registry updates for all threads
+# in the same process. It ensures that concurrent conversions targeting the
+# same output directory cannot pick the same destination filename.
 _path_reservation_lock = threading.Lock()
+_reserved_paths: set[str] = set()
+
+
+def _normalize_reservation_path(path: Path) -> str:
+    """Normalize a path to a canonical string for reservation tracking.
+
+    On Windows (case-insensitive filesystem), paths are lowercased.
+    """
+    try:
+        resolved = path.resolve()
+        key = str(resolved)
+    except OSError:
+        key = str(path)
+    return key.lower() if os.name == "nt" else key
+
+
+def _reserve_path_locked(path: Path) -> None:
+    """Reserve *path*. Caller must hold ``_path_reservation_lock``."""
+    _reserved_paths.add(_normalize_reservation_path(path))
+
+
+def _unreserve_path_locked(path: Path) -> None:
+    """Unreserve *path*. Caller must hold ``_path_reservation_lock``."""
+    _reserved_paths.discard(_normalize_reservation_path(path))
 
 
 # ---------------------------------------------------------------------------
@@ -118,21 +138,39 @@ class ConversionResult:
     output_bytes: int
 
 
+class OutputReservation:
+    """Context manager representing an active in-process output path reservation."""
+
+    def __init__(self, path: Path):
+        self.path = path
+        self._released = False
+
+    def release(self) -> None:
+        """Release the path reservation."""
+        if not self._released:
+            with _path_reservation_lock:
+                _unreserve_path_locked(self.path)
+            self._released = True
+
+    def __enter__(self) -> Path:
+        return self.path
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.release()
+
+
 # ---------------------------------------------------------------------------
 # Output-path helpers
 # ---------------------------------------------------------------------------
 
 def unique_output_path(folder: Path, stem: str, extension: str) -> Path:
-    """Return a path inside *folder* that does not yet exist.
+    """Return a path inside *folder* that does not yet exist and is not reserved.
 
     If ``<stem>.<extension>`` is free it is returned directly.  Otherwise a
     numeric suffix ``(2)``, ``(3)``, … is appended until a free name is found.
 
-    .. warning::
-        The check is **not atomic** on its own.  Callers that need atomicity
-        must hold ``_path_reservation_lock`` across the call to this function
-        and the subsequent ``tempfile.mkstemp()`` call.  See
-        :func:`convert_image` for the correct usage pattern.
+    This function respects both files on disk and in-process reservations in
+    ``_reserved_paths``.
 
     Parameters
     ----------
@@ -143,14 +181,27 @@ def unique_output_path(folder: Path, stem: str, extension: str) -> Path:
     Returns
     -------
     Path
-        A ``Path`` inside *folder* that did not exist at the time of the call.
+        A ``Path`` inside *folder* that neither exists nor is reserved.
     """
     candidate = folder / f"{stem}.{extension}"
     n = 2
-    while candidate.exists():
+    while candidate.exists() or _normalize_reservation_path(candidate) in _reserved_paths:
         candidate = folder / f"{stem} ({n}).{extension}"
         n += 1
     return candidate
+
+
+def reserve_output_path(folder: Path, stem: str, extension: str) -> OutputReservation:
+    """Atomically choose and reserve a unique destination path within *folder*.
+
+    Returns an :class:`OutputReservation` context manager that holds the path
+    reservation until exited or explicitly released.
+    """
+    with _path_reservation_lock:
+        path = unique_output_path(folder, stem, extension)
+        _reserve_path_locked(path)
+        return OutputReservation(path)
+
 
 
 # ---------------------------------------------------------------------------
@@ -320,14 +371,15 @@ def convert_image(
     folder.mkdir(parents=True, exist_ok=True)
 
     # --- Atomic path reservation + temp-file creation ---
-    # The _path_reservation_lock serialises the (path-pick → mkstemp) step
-    # for all threads in this process, eliminating the intra-process TOCTOU
-    # race between unique_output_path() and the subsequent write.
+    # reserve_output_path() atomically selects an unused, unreserved destination
+    # and registers it in _reserved_paths under _path_reservation_lock.
+    # The reservation remains held until explicitly released in the finally block,
+    # ensuring concurrent conversions never pick the same destination.
+    reservation = reserve_output_path(folder, source.stem, target_key)
+    output = reservation.path
     tmp_path: Optional[Path] = None
-    output: Optional[Path] = None
-    with _path_reservation_lock:
-        output = unique_output_path(folder, source.stem, target_key)
 
+    try:
         # Source/destination identity check (after path is chosen).
         _validate_no_source_dest_collision(source, output)
 
@@ -343,10 +395,8 @@ def convert_image(
         )
         os.close(fd)
         tmp_path = Path(tmp_str)
-    # Lock released — Pillow encode runs unlocked.
 
-    # --- Conversion with atomic write ---
-    try:
+        # --- Conversion with atomic write ---
         with Image.open(source) as opened:
             # Animated / multi-frame input: use only the first frame.
             try:
@@ -370,20 +420,19 @@ def convert_image(
 
     except (UnidentifiedImageError, OSError, ValueError) as exc:
         log.error("Conversion failed for %s: %s", source.name, exc)
-        if tmp_path is not None and tmp_path.exists():
-            try:
-                tmp_path.unlink()
-            except OSError:
-                pass
         raise ConversionError(f"Could not convert image: {exc}") from exc
-    except Exception:
-        # Unexpected error — still clean up the temp file.
+    finally:
+        # Release in-process reservation. If successful, output now exists on
+        # disk so future unique_output_path calls will see candidate.exists().
+        # If failed, the reservation is freed so the path can be re-used.
+        reservation.release()
+
+        # Clean up any unconsumed temporary file.
         if tmp_path is not None and tmp_path.exists():
             try:
                 tmp_path.unlink()
             except OSError:
                 pass
-        raise
 
     output_bytes = output.stat().st_size
     log.info(

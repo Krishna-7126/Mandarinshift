@@ -282,12 +282,14 @@ not implemented. See project roadmap for planned format families.
 
 ---
 
-## Security notes
-
-- Files are never uploaded anywhere.
-- Originals are never modified.
-- Output is written atomically via temp-file + rename.
-- Format is detected by file content (magic bytes), not just extension.
-- Symlinks to regular files are accepted; dangling symlinks are rejected.
-- Queue is bounded; unbounded memory growth is prevented by `max_pending`.
-- Temporary files are cleaned up on any failure.
+## Security and reliability notes
+ 
+ - Files are never uploaded anywhere.
+ - Originals are never modified.
+ - Output is written atomically via temp-file + rename.
+ - Format is detected by file content (magic bytes), not just extension.
+ - Symlinks to regular files are accepted; dangling symlinks are rejected.
+ - Queue is bounded: pending memory growth is bounded by `max_pending` (default 200).
+ - Completed job registry is bounded: terminal job records are bounded by `max_completed` (default 1000) with FIFO eviction.
+ - Output path reservation: process-level reservation lock and registry prevent concurrent workers or direct conversions from colliding on the same destination filename.
+ - Temporary files and path reservations are reliably cleaned up on success, failure, or cancellation.

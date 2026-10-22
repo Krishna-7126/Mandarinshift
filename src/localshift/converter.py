@@ -6,7 +6,7 @@ Responsibilities:
 - Conversion planning (route validation).
 - Conversion execution using Pillow.
 - Atomic output writing (temp-file + rename).
-- Output collision avoidance.
+- Output collision avoidance with a process-level reservation lock.
 - Structured diagnostic logging.
 - Resource cleanup on failure.
 
@@ -18,6 +18,25 @@ Public API
 - ``ConversionResult``         — structured result value.
 - ``convert_image()``          — convert a single raster image.
 - ``unique_output_path()``     — compute a non-colliding destination path.
+- ``reserve_output_path()``    — atomically reserve a destination path.
+- ``OutputReservation``        — context manager returned by reserve_output_path().
+
+Output Reservation
+------------------
+The output collision race (check-then-act between unique_output_path and
+os.replace) is addressed by a two-level approach:
+
+1. **Process-level**: A module-global ``threading.Lock`` serialises the
+   path-selection and temporary-file creation steps for all workers in the
+   same process, preventing two workers from choosing the same destination.
+
+2. **Filesystem-level**: ``tempfile.mkstemp`` is used in exclusive-create
+   mode.  Its successful return proves exclusive ownership of the temporary
+   file within the same directory as the target, on the same filesystem
+   volume, making the final ``os.replace()`` safe.
+
+**Cross-process protection**: Not provided.  Two unrelated processes can
+still race.  For a single-process desktop application this is sufficient.
 
 Security notes
 --------------
@@ -29,12 +48,15 @@ Security notes
   removed on any failure caught by the try/except.
 - Path traversal in ``output_dir`` is not actively restricted here; callers
   (CLI, GUI) are responsible for validating user-supplied paths.
+- Source and output identity is checked: converting a file to itself raises
+  ConversionError.
 """
 from __future__ import annotations
 
 import logging
 import os
 import tempfile
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -51,6 +73,20 @@ log = logging.getLogger(__name__)
 
 #: Default maximum input file size.  Matches README documentation.
 MAX_INPUT_BYTES: int = 250 * 1024 * 1024  # 250 MiB
+
+
+# ---------------------------------------------------------------------------
+# Process-level output reservation lock
+# ---------------------------------------------------------------------------
+
+# This lock serialises the (path selection → temp file creation) section for
+# all threads in the same process.  It ensures that two concurrent conversions
+# targeting the same output directory cannot both pick the same destination
+# filename in the window between unique_output_path() and mkstemp().
+#
+# The lock is held only for the brief synchronous path-selection step, not
+# during the (potentially slow) Pillow decode/encode operation.
+_path_reservation_lock = threading.Lock()
 
 
 # ---------------------------------------------------------------------------
@@ -92,9 +128,11 @@ def unique_output_path(folder: Path, stem: str, extension: str) -> Path:
     If ``<stem>.<extension>`` is free it is returned directly.  Otherwise a
     numeric suffix ``(2)``, ``(3)``, … is appended until a free name is found.
 
-    The check is not atomic — a race is possible between the check and the
-    caller's write.  This is acceptable for an interactive desktop application;
-    the atomic write in :func:`convert_image` guards against data loss.
+    .. warning::
+        The check is **not atomic** on its own.  Callers that need atomicity
+        must hold ``_path_reservation_lock`` across the call to this function
+        and the subsequent ``tempfile.mkstemp()`` call.  See
+        :func:`convert_image` for the correct usage pattern.
 
     Parameters
     ----------
@@ -137,6 +175,32 @@ def _validate_source(source: Path, max_bytes: int) -> None:
         raise ConversionError(
             f"Input file is {size / (1024 * 1024):.1f} MiB, "
             f"which exceeds the {limit_mib:.0f} MiB limit."
+        )
+
+
+def _validate_no_source_dest_collision(source: Path, output: Path) -> None:
+    """Raise :class:`ConversionError` if *source* and *output* refer to the same file.
+
+    On Windows the filesystem is case-insensitive, so we compare resolved
+    paths after normalising case.  If either path does not exist yet (output
+    is a new file), the comparison is done on the string representation, which
+    is sufficient for the common case.
+    """
+    try:
+        src_real = source.resolve()
+        out_real = output.resolve()
+        same = src_real == out_real
+        if not same and os.name == "nt":
+            # Windows path comparison must be case-insensitive.
+            same = src_real.as_posix().lower() == out_real.as_posix().lower()
+    except OSError:
+        # resolve() can fail on unusual paths; fall back to string compare.
+        same = str(source).lower() == str(output).lower()
+
+    if same:
+        raise ConversionError(
+            f"Output path is the same as the source file: {source}. "
+            "LocalShift will not overwrite a source file."
         )
 
 
@@ -223,7 +287,14 @@ def convert_image(
     ------
     ConversionError
         For all anticipated failures: missing file, unsupported route, decode
-        errors, I/O failures.
+        errors, I/O failures, source/output identity collision.
+
+    Concurrency
+    -----------
+    This function is safe to call from multiple threads concurrently.  A
+    module-level lock ensures that path selection and temporary file creation
+    are serialised, preventing two concurrent calls from choosing the same
+    destination filename.  The slow Pillow encode step runs outside the lock.
     """
     source = Path(source)
     try:
@@ -247,15 +318,24 @@ def convert_image(
         )
 
     folder.mkdir(parents=True, exist_ok=True)
-    output = unique_output_path(folder, source.stem, target_key)
 
-    log.debug("Planned output path: %s", output)
-
-    # --- Conversion with atomic write ---
+    # --- Atomic path reservation + temp-file creation ---
+    # The _path_reservation_lock serialises the (path-pick → mkstemp) step
+    # for all threads in this process, eliminating the intra-process TOCTOU
+    # race between unique_output_path() and the subsequent write.
     tmp_path: Optional[Path] = None
-    try:
+    output: Optional[Path] = None
+    with _path_reservation_lock:
+        output = unique_output_path(folder, source.stem, target_key)
+
+        # Source/destination identity check (after path is chosen).
+        _validate_no_source_dest_collision(source, output)
+
+        log.debug("Reserved output path: %s", output)
+
         # Write to a temporary file in the same directory so that os.replace()
-        # (which is atomic on POSIX and near-atomic on Windows same-volume) works.
+        # (which is near-atomic on Windows same-volume) works.  mkstemp()
+        # creates the file exclusively — this is our filesystem-level claim.
         fd, tmp_str = tempfile.mkstemp(
             suffix=f".{target_key}.tmp",
             dir=folder,
@@ -263,7 +343,10 @@ def convert_image(
         )
         os.close(fd)
         tmp_path = Path(tmp_str)
+    # Lock released — Pillow encode runs unlocked.
 
+    # --- Conversion with atomic write ---
+    try:
         with Image.open(source) as opened:
             # Animated / multi-frame input: use only the first frame.
             try:
@@ -280,7 +363,7 @@ def convert_image(
         image.save(tmp_path, format=PIL_FORMATS[target_key])
         log.debug("Saved temp file: %s (%d bytes)", tmp_path, tmp_path.stat().st_size)
 
-        # Atomic rename: replaces `output` if it appeared since unique_output_path.
+        # Atomic rename: replaces `output` if it appeared since the reservation.
         # On Windows, os.replace is atomic only within the same filesystem.
         os.replace(tmp_path, output)
         tmp_path = None  # Consumed — do not clean up.

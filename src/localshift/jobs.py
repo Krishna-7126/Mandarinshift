@@ -10,6 +10,7 @@ Responsibilities
 - Report coarse progress events via callbacks.
 - Support honest cancellation (PENDING jobs only; RUNNING jobs complete).
 - Enforce queue capacity to bound memory usage.
+- Enforce job registry retention limit to bound memory during long sessions.
 - Remain completely independent of PySide6 and any GUI layer.
 
 Public API
@@ -28,6 +29,13 @@ jobs.  All mutable state (status, result) lives in a single ``threading.Lock``-
 protected dictionary keyed by job ID.  Workers never access the state dict
 without holding the lock for write operations.
 
+Output Collision Prevention
+---------------------------
+The converter module uses a process-level ``threading.Lock`` to serialise the
+(path-selection → temp-file creation) step.  This prevents two concurrent
+workers from choosing the same destination filename.  See ``converter.py`` for
+details.
+
 Cancellation Semantics
 ----------------------
 - A **PENDING** job can be cancelled before a worker picks it up.  The job will
@@ -40,24 +48,38 @@ Cancellation Semantics
 
 Queue Capacity
 --------------
-``max_pending`` (default: 200) caps the number of PENDING jobs in the internal
-queue.  Submission raises ``QueueFullError`` when the cap is reached.
+``max_pending`` (default: 200) caps the number of PENDING jobs.
+Running jobs do **not** count toward this cap.
+Submission raises ``QueueFullError`` when the cap is reached.
+
+Registry Retention
+------------------
+``max_completed`` (default: 1000) caps the number of COMPLETED (terminal)
+job records retained in the registry.  When the limit is reached, the oldest
+terminal records are evicted in FIFO order.  Active (PENDING/RUNNING) jobs are
+never evicted.
+
+Call ``purge_completed()`` to evict all terminal records immediately.
+After eviction, ``get_status()`` / ``get_result()`` raise ``JobNotFoundError``
+for evicted job IDs — the same error as for unknown IDs.
 
 Progress Callbacks
 ------------------
-Callbacks receive a ``ProgressEvent`` namedtuple.  Exceptions raised inside a
-callback are caught and logged; they do not affect job state.
+Callbacks receive a ``ProgressEvent`` and optional ``JobResult``.  Exceptions
+raised inside a callback are caught and logged; they do not affect job state.
 
 Thread Safety
 -------------
 ``submit()``, ``submit_batch()``, ``cancel()``, ``get_status()``,
-``get_result()``, and ``all_jobs()`` are all safe to call from any thread.
+``get_result()``, ``all_jobs()``, and ``purge_completed()`` are all safe to
+call from any thread.
 """
 from __future__ import annotations
 
 import logging
 import threading
 import uuid
+from collections import OrderedDict
 from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -79,6 +101,9 @@ DEFAULT_MAX_PENDING: int = 200
 #: Default number of worker threads.
 DEFAULT_WORKERS: int = 2
 
+#: Default maximum number of terminal (completed) job records retained.
+DEFAULT_MAX_COMPLETED: int = 1000
+
 
 # ---------------------------------------------------------------------------
 # Errors
@@ -89,7 +114,12 @@ class QueueFullError(RuntimeError):
 
 
 class JobNotFoundError(KeyError):
-    """Raised when a job ID is not found in the queue's registry."""
+    """Raised when a job ID is not found in the queue's registry.
+
+    This is raised for both unknown job IDs and evicted (purged) job IDs.
+    Callers should not assume a job was never submitted just because this
+    is raised — it may have been evicted by the retention policy.
+    """
 
 
 # ---------------------------------------------------------------------------
@@ -255,7 +285,12 @@ class JobQueue:
     max_pending:
         Maximum number of PENDING jobs accepted into the queue.  When this
         limit is reached, new submissions raise ``QueueFullError``.
-        Default: 200.
+        Running jobs do **not** count toward this limit.  Default: 200.
+    max_completed:
+        Maximum number of terminal (SUCCEEDED, FAILED, CANCELLED) job records
+        retained in the registry.  When this limit is reached, the oldest
+        terminal records are evicted FIFO to make room.  Active jobs are never
+        evicted.  Default: 1000.
     progress_callback:
         Optional callable invoked on each job lifecycle event.  Must not
         raise or perform blocking I/O; exceptions inside it are caught and
@@ -265,6 +300,13 @@ class JobQueue:
     -------------
     All public methods are safe to call concurrently.  The internal
     ``_lock`` serialises all state mutations.
+
+    Output Collision Safety
+    -----------------------
+    Concurrent conversions to the same output directory are safe within a
+    single process.  A module-level lock in ``converter.py`` serialises the
+    path-selection and temp-file-creation steps, preventing two workers from
+    choosing the same destination filename.
 
     Shutdown
     --------
@@ -302,17 +344,23 @@ class JobQueue:
         *,
         max_workers: int = DEFAULT_WORKERS,
         max_pending: int = DEFAULT_MAX_PENDING,
+        max_completed: int = DEFAULT_MAX_COMPLETED,
         progress_callback: Optional[ProgressCallback] = None,
     ) -> None:
         if max_workers < 1:
             raise ValueError("max_workers must be >= 1")
         if max_pending < 1:
             raise ValueError("max_pending must be >= 1")
+        if max_completed < 0:
+            raise ValueError("max_completed must be >= 0")
 
         self._max_pending = max_pending
+        self._max_completed = max_completed
         self._callback = progress_callback
         self._lock = threading.Lock()
-        self._states: dict[str, _JobState] = {}  # job_id → _JobState
+        # OrderedDict preserves insertion order AND supports efficient
+        # FIFO eviction via popitem(last=False).
+        self._states: OrderedDict[str, _JobState] = OrderedDict()
         self._shutdown_flag = False
         self._executor = ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="ls-worker")
 
@@ -364,6 +412,8 @@ class JobQueue:
 
         Raises
         ------
+        ValueError
+            If *target_format* is not a recognised format string.
         QueueFullError
             If ``max_pending`` PENDING jobs are already in the queue.
         RuntimeError
@@ -415,7 +465,8 @@ class JobQueue:
             # State may already be CANCELLED if cancel() was called between
             # the two lock acquisitions above — this is acceptable; the future
             # will be a no-op when _run_job checks the flag.
-            state.future = future
+            if job_id in self._states:
+                self._states[job_id].future = future
 
         return job
 
@@ -508,6 +559,8 @@ class JobQueue:
             ``False`` if cancellation was not possible (already running,
             already terminal, or not found).
         """
+        result_to_fire: Optional[JobResult] = None
+
         with self._lock:
             state = self._states.get(job_id)
             if state is None:
@@ -536,9 +589,11 @@ class JobQueue:
                 started_at=now,
                 finished_at=now,
             )
+            result_to_fire = state.result
+            self._evict_completed_locked()
 
         log.info("Job %s cancelled (was PENDING)", job_id[:8])
-        self._fire(job_id, ProgressEvent.CANCELLED, state.result)
+        self._fire(job_id, ProgressEvent.CANCELLED, result_to_fire)
         return True
 
     # ------------------------------------------------------------------
@@ -551,7 +606,8 @@ class JobQueue:
         Raises
         ------
         JobNotFoundError
-            If *job_id* is not registered.
+            If *job_id* is not registered or has been evicted by the
+            retention policy.
         """
         with self._lock:
             state = self._states.get(job_id)
@@ -565,7 +621,8 @@ class JobQueue:
         Raises
         ------
         JobNotFoundError
-            If *job_id* is not registered.
+            If *job_id* is not registered or has been evicted by the
+            retention policy.
         """
         with self._lock:
             state = self._states.get(job_id)
@@ -576,8 +633,8 @@ class JobQueue:
     def all_jobs(self) -> list[tuple[str, JobStatus]]:
         """Return a snapshot list of ``(job_id, status)`` for all registered jobs.
 
-        The list is ordered by submission time (insertion order is preserved
-        in Python dicts since 3.7).
+        The list is ordered by submission time (insertion order is preserved).
+        Evicted jobs are not included.
         """
         with self._lock:
             return [(jid, s.status) for jid, s in self._states.items()]
@@ -586,6 +643,32 @@ class JobQueue:
         """Return the current number of PENDING jobs."""
         with self._lock:
             return sum(1 for s in self._states.values() if s.status is JobStatus.PENDING)
+
+    def purge_completed(self) -> int:
+        """Evict all terminal (SUCCEEDED, FAILED, CANCELLED) job records.
+
+        Active (PENDING, RUNNING) jobs are never affected.
+
+        Returns
+        -------
+        int
+            Number of records evicted.
+
+        Thread Safety
+        -------------
+        Safe to call from any thread at any time, including while jobs are
+        running.  Callers should not assume that a subsequent ``get_result()``
+        will succeed for job IDs that were terminal at the time of the call.
+        """
+        with self._lock:
+            to_remove = [
+                jid for jid, s in self._states.items()
+                if s.status in _TERMINAL
+            ]
+            for jid in to_remove:
+                del self._states[jid]
+        log.debug("purge_completed: evicted %d terminal records", len(to_remove))
+        return len(to_remove)
 
     # ------------------------------------------------------------------
     # Shutdown
@@ -605,6 +688,8 @@ class JobQueue:
         wait:
             If ``True`` (default), block until all running workers finish.
         """
+        newly_cancelled: list[tuple[str, JobResult]] = []
+
         with self._lock:
             self._shutdown_flag = True
             # Cancel all pending jobs.
@@ -613,7 +698,7 @@ class JobQueue:
                     state.cancelled = True
                     self._transition(state, JobStatus.CANCELLED)
                     now = datetime.now(tz=timezone.utc)
-                    state.result = JobResult(
+                    result = JobResult(
                         job_id=jid,
                         status=JobStatus.CANCELLED,
                         output_path=None,
@@ -624,15 +709,13 @@ class JobQueue:
                         started_at=now,
                         finished_at=now,
                     )
+                    state.result = result
+                    # Track only jobs we just cancelled in this call.
+                    newly_cancelled.append((jid, result))
 
-        # Fire CANCELLED events outside the lock.
-        with self._lock:
-            cancelled_results = [
-                (jid, s.result)
-                for jid, s in self._states.items()
-                if s.status is JobStatus.CANCELLED and s.result is not None
-            ]
-        for jid, result in cancelled_results:
+        # Fire CANCELLED events only for jobs cancelled in *this* shutdown
+        # call — not for jobs that were already cancelled before shutdown.
+        for jid, result in newly_cancelled:
             self._fire(jid, ProgressEvent.CANCELLED, result)
 
         self._executor.shutdown(wait=wait)
@@ -647,6 +730,12 @@ class JobQueue:
 
         Checks the cooperative cancellation flag before starting I/O.
         If the job was cancelled before the worker started, does nothing.
+
+        Guarantees
+        ----------
+        The job will **always** reach a terminal state when this method
+        returns, even if an unexpected BaseException is raised, preventing
+        a job from being stranded in RUNNING.
         """
         with self._lock:
             state = self._states.get(job_id)
@@ -668,7 +757,7 @@ class JobQueue:
         input_bytes = 0
         output_bytes = 0
         error_msg: Optional[str] = None
-        terminal_status: JobStatus
+        terminal_status: JobStatus = JobStatus.FAILED  # safe default
 
         try:
             # Collect input size before conversion (may raise if file missing).
@@ -696,29 +785,36 @@ class JobQueue:
             terminal_status = JobStatus.FAILED
             log.error("Job %s failed: %s", job_id[:8], error_msg)
 
-        except Exception as exc:  # pragma: no cover
-            error_msg = f"Unexpected error: {exc}"
+        except Exception as exc:
+            error_msg = f"Unexpected error: {type(exc).__name__}: {exc}"
             terminal_status = JobStatus.FAILED
             log.exception("Job %s failed with unexpected exception", job_id[:8])
 
-        finished_at = datetime.now(tz=timezone.utc)
-        result = JobResult(
-            job_id=job_id,
-            status=terminal_status,
-            output_path=output_path,
-            source_format=source_fmt,
-            target_format=job.target_format,
-            input_bytes=input_bytes,
-            output_bytes=output_bytes,
-            started_at=started_at,
-            finished_at=finished_at,
-            error=error_msg,
-        )
+        finally:
+            # Guarantee terminal state even on BaseException (e.g. MemoryError).
+            # terminal_status defaults to FAILED so any unhandled path is safe.
+            finished_at = datetime.now(tz=timezone.utc)
+            result = JobResult(
+                job_id=job_id,
+                status=terminal_status,
+                output_path=output_path,
+                source_format=source_fmt,
+                target_format=job.target_format,
+                input_bytes=input_bytes,
+                output_bytes=output_bytes,
+                started_at=started_at,
+                finished_at=finished_at,
+                error=error_msg,
+            )
 
-        with self._lock:
-            state = self._states[job_id]
-            self._transition(state, terminal_status)
-            state.result = result
+            with self._lock:
+                if job_id in self._states:
+                    state = self._states[job_id]
+                    # Guard: only transition if still RUNNING (not already terminal).
+                    if state.status is JobStatus.RUNNING:
+                        self._transition(state, terminal_status)
+                    state.result = result
+                    self._evict_completed_locked()
 
         event = (
             ProgressEvent.SUCCEEDED
@@ -740,6 +836,33 @@ class JobQueue:
                 f"for job {state.job.job_id[:8]}"
             )
         state.status = new_status
+
+    def _evict_completed_locked(self) -> None:
+        """Evict oldest terminal records if registry exceeds ``max_completed``.
+
+        Must be called while holding ``_lock``.  Active (PENDING, RUNNING)
+        jobs are never evicted.
+        """
+        if self._max_completed == 0:
+            # Evict ALL terminal records immediately.
+            to_evict = [
+                jid for jid, s in self._states.items()
+                if s.status in _TERMINAL
+            ]
+            for jid in to_evict:
+                del self._states[jid]
+            return
+
+        terminal_ids = [
+            jid for jid, s in self._states.items()
+            if s.status in _TERMINAL
+        ]
+        excess = len(terminal_ids) - self._max_completed
+        if excess > 0:
+            # Evict the oldest (first-inserted) terminal records.
+            for jid in terminal_ids[:excess]:
+                del self._states[jid]
+                log.debug("Registry: evicted completed job %s (retention limit)", jid[:8])
 
     def _fire(
         self,

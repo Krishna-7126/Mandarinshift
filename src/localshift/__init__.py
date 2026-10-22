@@ -17,13 +17,13 @@ safe without a display server or GUI toolkit installed.
 """
 from __future__ import annotations
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __all__ = [
     # Single-image conversion (original API — unchanged).
     "convert_image",
     "ConversionError",
     "ConversionResult",
-    # Job management (new in 0.2.0).
+    # Job management (new in 0.2.0; extended in 0.3.0).
     "ConversionJob",
     "JobResult",
     "JobStatus",
@@ -32,6 +32,9 @@ __all__ = [
     "QueueFullError",
     "JobNotFoundError",
     "BatchSubmission",
+    "DEFAULT_MAX_COMPLETED",
+    "DEFAULT_MAX_PENDING",
+    "DEFAULT_WORKERS",
     "__version__",
 ]
 
@@ -42,6 +45,9 @@ from .converter import ConversionError, ConversionResult, convert_image
 from .jobs import (
     BatchSubmission,
     ConversionJob,
+    DEFAULT_MAX_COMPLETED,
+    DEFAULT_MAX_PENDING,
+    DEFAULT_WORKERS,
     JobNotFoundError,
     JobQueue,
     JobResult,

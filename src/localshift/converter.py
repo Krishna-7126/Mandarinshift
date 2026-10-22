@@ -1,55 +1,36 @@
 """
-localshift.converter — Core raster image conversion engine.
+localshift.converter — Core conversion engine, coordination, and security boundary.
 
 Responsibilities:
-- Input validation (path safety, size limits, format detection).
-- Conversion planning (route validation).
-- Conversion execution using Pillow.
-- Atomic output writing (temp-file + rename).
-- Output collision avoidance with a process-level reservation lock.
-- Structured diagnostic logging.
-- Resource cleanup on failure.
+- Input validation (path safety, symlink traversal guards, size limits).
+- Format detection and route validation via capability registry.
+- Adapter dispatching.
+- Process-level destination path reservation and collision prevention.
+- Atomic output writing (temp-file creation + atomic rename).
+- Result correctness verification before declaring success.
+- Resource and temporary file cleanup on success or failure.
 
 This module has NO dependency on PySide6 or the GUI layer.
 
 Public API
 ----------
-- ``ConversionError``          — user-displayable conversion failure.
-- ``ConversionResult``         — structured result value.
-- ``convert_image()``          — convert a single raster image.
+- ``ConversionError``          — base user-displayable conversion failure.
+- ``UnsupportedFormatError``   — unknown format specifier.
+- ``UnsupportedConversionError`` — route not supported by any adapter.
+- ``InvalidInputError``        — missing, unreadable, or invalid input file.
+- ``InputTooLargeError``       — input exceeds size limit.
+- ``DestinationConflictError`` — source and destination point to same file.
+- ``AdapterUnavailableError``  — required adapter not available.
+- ``ConversionFailedError``    — adapter execution failure.
+- ``ConversionCancelledError`` — conversion cancelled.
+- ``ConversionRequest``        — structured request specification.
+- ``ConversionContext``        — adapter execution context and security boundary.
+- ``ConversionResult``         — structured conversion result value.
+- ``convert_request()``        — primary request-based conversion entry point.
+- ``convert_image()``          — legacy compatibility wrapper returning output Path.
 - ``unique_output_path()``     — compute a non-colliding destination path.
 - ``reserve_output_path()``    — atomically reserve a destination path.
 - ``OutputReservation``        — context manager returned by reserve_output_path().
-
-Output Reservation
-------------------
-The output collision race (check-then-act between unique_output_path and
-os.replace) is addressed by a two-level approach:
-
-1. **Process-level**: A module-global ``threading.Lock`` serialises the
-   path-selection and temporary-file creation steps for all workers in the
-   same process, preventing two workers from choosing the same destination.
-
-2. **Filesystem-level**: ``tempfile.mkstemp`` is used in exclusive-create
-   mode.  Its successful return proves exclusive ownership of the temporary
-   file within the same directory as the target, on the same filesystem
-   volume, making the final ``os.replace()`` safe.
-
-**Cross-process protection**: Not provided.  Two unrelated processes can
-still race.  For a single-process desktop application this is sufficient.
-
-Security notes
---------------
-- Source files are never modified.
-- Symlinks are detected and accepted only if they resolve to a regular file
-  whose real path is inside the same volume (basic traversal guard).
-- Output is written atomically: a temporary file in the same directory is
-  renamed over the final destination only on success.  Partial files are
-  removed on any failure caught by the try/except.
-- Path traversal in ``output_dir`` is not actively restricted here; callers
-  (CLI, GUI) are responsible for validating user-supplied paths.
-- Source and output identity is checked: converting a file to itself raises
-  ConversionError.
 """
 from __future__ import annotations
 
@@ -57,13 +38,25 @@ import logging
 import os
 import tempfile
 import threading
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
-from PIL import Image, ImageOps, UnidentifiedImageError
+from PIL import Image
 
-from .formats import PIL_FORMATS, input_format, normalize_format, route_supported, sniff_format
+from .exceptions import (
+    AdapterUnavailableError,
+    ConversionCancelledError,
+    ConversionError,
+    ConversionFailedError,
+    DestinationConflictError,
+    InputTooLargeError,
+    InvalidInputError,
+    UnsupportedConversionError,
+    UnsupportedFormatError,
+)
+from .formats import PIL_FORMATS, input_format, normalize_format, sniff_format
+from .models import ConversionContext, ConversionRequest, ConversionResult
+from .registry import AdapterRegistry, default_registry
 
 log = logging.getLogger(__name__)
 
@@ -71,7 +64,7 @@ log = logging.getLogger(__name__)
 # Limits
 # ---------------------------------------------------------------------------
 
-#: Default maximum input file size.  Matches README documentation.
+#: Default maximum input file size. Matches README documentation.
 MAX_INPUT_BYTES: int = 250 * 1024 * 1024  # 250 MiB
 
 
@@ -110,33 +103,8 @@ def _unreserve_path_locked(path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Public types
+# Public Output Reservation Context Manager
 # ---------------------------------------------------------------------------
-
-class ConversionError(RuntimeError):
-    """A user-displayable conversion failure.
-
-    Raised for all anticipated errors during conversion (bad input, unsupported
-    route, I/O failures, Pillow decode errors).  Unexpected internal bugs
-    propagate as regular exceptions and are NOT caught here.
-    """
-
-
-@dataclass(frozen=True)
-class ConversionResult:
-    """Structured result returned by a successful :func:`convert_image` call."""
-
-    #: Resolved path to the output file that was written.
-    output_path: Path
-    #: Canonical source format key (e.g. ``"png"``).
-    source_format: str
-    #: Canonical target format key (e.g. ``"jpeg"``).
-    target_format: str
-    #: Input file size in bytes.
-    input_bytes: int
-    #: Output file size in bytes.
-    output_bytes: int
-
 
 class OutputReservation:
     """Context manager representing an active in-process output path reservation."""
@@ -166,22 +134,11 @@ class OutputReservation:
 def unique_output_path(folder: Path, stem: str, extension: str) -> Path:
     """Return a path inside *folder* that does not yet exist and is not reserved.
 
-    If ``<stem>.<extension>`` is free it is returned directly.  Otherwise a
+    If ``<stem>.<extension>`` is free it is returned directly. Otherwise a
     numeric suffix ``(2)``, ``(3)``, … is appended until a free name is found.
 
     This function respects both files on disk and in-process reservations in
     ``_reserved_paths``.
-
-    Parameters
-    ----------
-    folder:     Destination directory (must already exist or be created by caller).
-    stem:       Base file name without extension.
-    extension:  Target extension without leading dot.
-
-    Returns
-    -------
-    Path
-        A ``Path`` inside *folder* that neither exists nor is reserved.
     """
     candidate = folder / f"{stem}.{extension}"
     n = 2
@@ -203,7 +160,6 @@ def reserve_output_path(folder: Path, stem: str, extension: str) -> OutputReserv
         return OutputReservation(path)
 
 
-
 # ---------------------------------------------------------------------------
 # Validation helpers
 # ---------------------------------------------------------------------------
@@ -211,64 +167,49 @@ def reserve_output_path(folder: Path, stem: str, extension: str) -> OutputReserv
 def _validate_source(source: Path, max_bytes: int) -> None:
     """Raise :class:`ConversionError` if *source* fails any safety check."""
     if not source.exists():
-        raise ConversionError(f"Input file not found: {source}")
+        raise InvalidInputError(f"Input file not found: {source}")
     if source.is_symlink():
         # Accept symlinks only if they resolve to a regular file.
         real = source.resolve()
         if not real.is_file():
-            raise ConversionError(f"Symlink does not point to a regular file: {source}")
+            raise InvalidInputError(f"Symlink does not point to a regular file: {source}")
         log.debug("Source is a symlink; resolved to %s", real)
     if not source.is_file():
-        raise ConversionError(f"Input path is not a regular file: {source}")
+        raise InvalidInputError(f"Input path is not a regular file: {source}")
     size = source.stat().st_size
     if size > max_bytes:
         limit_mib = max_bytes / (1024 * 1024)
-        raise ConversionError(
+        raise InputTooLargeError(
             f"Input file is {size / (1024 * 1024):.1f} MiB, "
             f"which exceeds the {limit_mib:.0f} MiB limit."
         )
 
 
 def _validate_no_source_dest_collision(source: Path, output: Path) -> None:
-    """Raise :class:`ConversionError` if *source* and *output* refer to the same file.
-
-    On Windows the filesystem is case-insensitive, so we compare resolved
-    paths after normalising case.  If either path does not exist yet (output
-    is a new file), the comparison is done on the string representation, which
-    is sufficient for the common case.
-    """
+    """Raise :class:`DestinationConflictError` if *source* and *output* refer to the same file."""
     try:
         src_real = source.resolve()
         out_real = output.resolve()
         same = src_real == out_real
         if not same and os.name == "nt":
-            # Windows path comparison must be case-insensitive.
             same = src_real.as_posix().lower() == out_real.as_posix().lower()
     except OSError:
-        # resolve() can fail on unusual paths; fall back to string compare.
         same = str(source).lower() == str(output).lower()
 
     if same:
-        raise ConversionError(
+        raise DestinationConflictError(
             f"Output path is the same as the source file: {source}. "
             "LocalShift will not overwrite a source file."
         )
 
 
 def _resolve_source_format(source: Path, declared_format: Optional[str]) -> str:
-    """Return the canonical source format, preferring magic-byte detection.
-
-    If *declared_format* is supplied (e.g. explicitly provided by caller) it is
-    returned after normalisation.  Otherwise the file is sniffed first; if
-    sniffing fails the extension is used as a fallback.
-
-    Raises :class:`ConversionError` if no supported format can be determined.
-    """
+    """Return the canonical source format, preferring magic-byte detection."""
     if declared_format is not None:
         try:
             return normalize_format(declared_format)
         except ValueError as exc:
-            raise ConversionError(str(exc)) from exc
+            raise UnsupportedFormatError(str(exc)) from exc
 
     # Prefer magic-byte detection.
     sniffed = sniff_format(source)
@@ -288,14 +229,193 @@ def _resolve_source_format(source: Path, declared_format: Optional[str]) -> str:
         log.debug("Using extension-based format detection for %s: %r", source.name, ext_based)
         return ext_based
 
-    raise ConversionError(
+    raise UnsupportedFormatError(
         f"Cannot determine input format for {source.name!r}. "
         "The file extension is unrecognised and the file content could not be identified."
     )
 
 
 # ---------------------------------------------------------------------------
-# Main conversion function
+# Core conversion engine: convert_request
+# ---------------------------------------------------------------------------
+
+def convert_request(
+    request: ConversionRequest,
+    *,
+    registry: Optional[AdapterRegistry] = None,
+    max_input_bytes: int = MAX_INPUT_BYTES,
+    cancel_check: Optional[Callable[[], bool]] = None,
+) -> ConversionResult:
+    """Execute a structured conversion request using the adapter architecture.
+
+    This function owns the security boundary:
+    1. Validates input source existence, type, and size.
+    2. Identifies and normalizes source and target formats.
+    3. Finds the registered adapter capable of executing the route.
+    4. Reserves a collision-free output path in the destination directory.
+    5. Creates a secure temporary file for the adapter to write to.
+    6. Invokes the adapter within a controlled :class:`ConversionContext`.
+    7. Validates result correctness before atomically placing the output file.
+    8. Guarantees cleanup of reservations and temporary files.
+
+    Parameters
+    ----------
+    request:
+        The conversion request specification.
+    registry:
+        The capability registry to dispatch through (defaults to :data:`default_registry`).
+    max_input_bytes:
+        Per-conversion file size limit.
+    cancel_check:
+        Optional callable returning True if cancellation has been requested.
+
+    Returns
+    -------
+    ConversionResult
+        Structured metadata for the successfully written output.
+
+    Raises
+    ------
+    ConversionError (or specific subclasses: UnsupportedFormatError,
+    UnsupportedConversionError, InvalidInputError, InputTooLargeError,
+    DestinationConflictError, AdapterUnavailableError, ConversionFailedError,
+    ConversionCancelledError).
+    """
+    reg = registry or default_registry
+    source = request.source
+
+    # Check cancellation before starting
+    if cancel_check and cancel_check():
+        raise ConversionCancelledError("Conversion was cancelled before processing started.")
+
+    # 1. Input validation
+    _validate_source(source, max_input_bytes)
+
+    # 2. Format resolution
+    try:
+        target_key = normalize_format(request.target_format)
+    except (ValueError, UnsupportedFormatError) as exc:
+        raise UnsupportedFormatError(str(exc)) from exc
+
+    src_key = _resolve_source_format(source, request.source_format)
+
+    # 3. Route check & Adapter lookup
+    if not reg.can_convert(src_key, target_key):
+        raise UnsupportedConversionError(
+            f"Unsupported conversion: {src_key!r} → {target_key!r}. "
+            "These formats may be identical or not supported by any registered adapter."
+        )
+
+    adapter = reg.get_adapter(src_key, target_key)
+    if adapter is None:
+        raise AdapterUnavailableError(
+            f"No adapter available for conversion route: {src_key!r} → {target_key!r}."
+        )
+
+    log.info(
+        "convert_request: %s (%s) → %s via adapter %r (job_id=%s)",
+        source.name, src_key, target_key, adapter.adapter_id, request.job_id,
+    )
+
+    # 4. Destination resolution & reservation
+    folder = request.output_dir if request.output_dir is not None else source.parent
+    folder.mkdir(parents=True, exist_ok=True)
+
+    reservation = reserve_output_path(folder, source.stem, target_key)
+    output = reservation.path
+    tmp_path: Optional[Path] = None
+
+    try:
+        _validate_no_source_dest_collision(source, output)
+
+        # 5. Create secure temporary file on same volume for atomic replacement
+        fd, tmp_str = tempfile.mkstemp(
+            suffix=f".{target_key}.tmp",
+            dir=folder,
+            prefix=f".localshift_{source.stem}_",
+        )
+        os.close(fd)
+        tmp_path = Path(tmp_str)
+
+        # 6. Create execution context
+        context = ConversionContext(
+            temp_output_path=tmp_path,
+            target_format=target_key,
+            max_input_bytes=max_input_bytes,
+            _is_cancelled=cancel_check or (lambda: False),
+        )
+
+        # 7. Execute conversion via adapter
+        adapter_req = ConversionRequest(
+            source=source,
+            target_format=target_key,
+            output_dir=folder,
+            options=request.options,
+            job_id=request.job_id,
+            source_format=src_key,
+        )
+        adapter_result = adapter.convert(adapter_req, context)
+
+        # 8. Result correctness verification
+        if not tmp_path.exists() or not tmp_path.is_file():
+            raise ConversionFailedError(
+                f"Adapter {adapter.adapter_id!r} completed without producing a valid output file."
+            )
+
+        try:
+            in_size = source.stat().st_size
+        except OSError:
+            in_size = 0
+
+        if in_size > 0 and tmp_path.stat().st_size == 0:
+            raise ConversionFailedError(
+                f"Adapter {adapter.adapter_id!r} completed without producing a valid output file (empty output)."
+            )
+
+        # 9. Atomic replace
+        os.replace(tmp_path, output)
+        tmp_path = None  # Successfully consumed
+
+    except ConversionError:
+        raise
+    except Exception as exc:
+        raise ConversionFailedError(f"Conversion failed: {exc}") from exc
+    finally:
+        # Release in-process reservation.
+        reservation.release()
+
+        # Clean up any leftover temporary file on failure.
+        if tmp_path is not None and tmp_path.exists():
+            try:
+                tmp_path.unlink()
+            except OSError:
+                pass
+
+    try:
+        input_bytes = source.stat().st_size
+    except OSError:
+        input_bytes = 0
+
+    output_bytes = output.stat().st_size if output.exists() else 0
+
+    log.info(
+        "Conversion complete: %s → %s (%d bytes)",
+        source.name, output.name, output_bytes,
+    )
+
+    return ConversionResult(
+        output_path=output,
+        source_format=src_key,
+        target_format=target_key,
+        input_bytes=input_bytes,
+        output_bytes=output_bytes,
+        adapter_id=adapter.adapter_id,
+        warnings=adapter_result.warnings if adapter_result else (),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Backward-compatibility API: convert_image
 # ---------------------------------------------------------------------------
 
 def convert_image(
@@ -309,7 +429,8 @@ def convert_image(
 ) -> Path:
     """Convert a single raster image and return the path to the output file.
 
-    This is the primary backend entry point for single-file conversion.
+    Maintains 100% backward compatibility with the LocalShift v0.1/v0.2/v0.3
+    public API. Internally delegates through the adapter architecture.
 
     Parameters
     ----------
@@ -318,132 +439,32 @@ def convert_image(
     target:
         Target format — accepts canonical keys (``"jpeg"``) or aliases (``"jpg"``).
     output_dir:
-        Directory where the output file will be written.  Defaults to the same
-        directory as *source*.  Created automatically if it does not exist.
+        Directory where the output file will be written. Defaults to source parent.
     jpeg_background:
         RGB tuple used to fill transparent regions when converting to JPEG.
-        Default is white ``(255, 255, 255)``.
     max_input_bytes:
-        Maximum allowed input file size.  Defaults to :data:`MAX_INPUT_BYTES`.
+        Maximum allowed input file size.
     source_format:
-        Override source format detection.  If ``None`` (default), magic bytes
-        are used first, with extension as fallback.
+        Override source format detection. If None, magic bytes are used.
 
     Returns
     -------
     Path
         Path to the successfully written output file.
-
-    Raises
-    ------
-    ConversionError
-        For all anticipated failures: missing file, unsupported route, decode
-        errors, I/O failures, source/output identity collision.
-
-    Concurrency
-    -----------
-    This function is safe to call from multiple threads concurrently.  A
-    module-level lock ensures that path selection and temporary file creation
-    are serialised, preventing two concurrent calls from choosing the same
-    destination filename.  The slow Pillow encode step runs outside the lock.
     """
-    source = Path(source)
-    try:
-        target_key = normalize_format(target)
-    except ValueError as exc:
-        raise ConversionError(str(exc)) from exc
-
-    folder = Path(output_dir) if output_dir is not None else source.parent
-
-    log.info("convert_image: %s → %s (output_dir=%s)", source.name, target_key, folder)
-
-    # --- Validation ---
-    _validate_source(source, max_input_bytes)
-
-    src_key = _resolve_source_format(source, source_format)
-
-    if not route_supported(src_key, target_key):
-        raise ConversionError(
-            f"Unsupported conversion: {src_key!r} → {target_key!r}. "
-            "These formats may be identical or not supported."
-        )
-
-    folder.mkdir(parents=True, exist_ok=True)
-
-    # --- Atomic path reservation + temp-file creation ---
-    # reserve_output_path() atomically selects an unused, unreserved destination
-    # and registers it in _reserved_paths under _path_reservation_lock.
-    # The reservation remains held until explicitly released in the finally block,
-    # ensuring concurrent conversions never pick the same destination.
-    reservation = reserve_output_path(folder, source.stem, target_key)
-    output = reservation.path
-    tmp_path: Optional[Path] = None
-
-    try:
-        # Source/destination identity check (after path is chosen).
-        _validate_no_source_dest_collision(source, output)
-
-        log.debug("Reserved output path: %s", output)
-
-        # Write to a temporary file in the same directory so that os.replace()
-        # (which is near-atomic on Windows same-volume) works.  mkstemp()
-        # creates the file exclusively — this is our filesystem-level claim.
-        fd, tmp_str = tempfile.mkstemp(
-            suffix=f".{target_key}.tmp",
-            dir=folder,
-            prefix=f".localshift_{source.stem}_",
-        )
-        os.close(fd)
-        tmp_path = Path(tmp_str)
-
-        # --- Conversion with atomic write ---
-        with Image.open(source) as opened:
-            # Animated / multi-frame input: use only the first frame.
-            try:
-                opened.seek(0)
-            except EOFError:
-                pass  # Single-frame format — seek(0) is a no-op conceptually.
-
-            # Apply EXIF orientation metadata before any conversion.
-            image = ImageOps.exif_transpose(opened).copy()
-
-        # Mode coercion per target format.
-        image = _coerce_mode(image, target_key, jpeg_background)
-
-        image.save(tmp_path, format=PIL_FORMATS[target_key])
-        log.debug("Saved temp file: %s (%d bytes)", tmp_path, tmp_path.stat().st_size)
-
-        # Atomic rename: replaces `output` if it appeared since the reservation.
-        # On Windows, os.replace is atomic only within the same filesystem.
-        os.replace(tmp_path, output)
-        tmp_path = None  # Consumed — do not clean up.
-
-    except (UnidentifiedImageError, OSError, ValueError) as exc:
-        log.error("Conversion failed for %s: %s", source.name, exc)
-        raise ConversionError(f"Could not convert image: {exc}") from exc
-    finally:
-        # Release in-process reservation. If successful, output now exists on
-        # disk so future unique_output_path calls will see candidate.exists().
-        # If failed, the reservation is freed so the path can be re-used.
-        reservation.release()
-
-        # Clean up any unconsumed temporary file.
-        if tmp_path is not None and tmp_path.exists():
-            try:
-                tmp_path.unlink()
-            except OSError:
-                pass
-
-    output_bytes = output.stat().st_size
-    log.info(
-        "Conversion complete: %s → %s (%d bytes)",
-        source.name, output.name, output_bytes,
+    req = ConversionRequest(
+        source=Path(source),
+        target_format=target,
+        output_dir=Path(output_dir) if output_dir is not None else None,
+        options={"jpeg_background": jpeg_background},
+        source_format=source_format,
     )
-    return output
+    result = convert_request(req, max_input_bytes=max_input_bytes)
+    return result.output_path
 
 
 # ---------------------------------------------------------------------------
-# Mode coercion
+# Backward-compatibility helper for mode coercion
 # ---------------------------------------------------------------------------
 
 def _coerce_mode(
@@ -451,27 +472,6 @@ def _coerce_mode(
     target_key: str,
     jpeg_background: tuple[int, int, int],
 ) -> Image.Image:
-    """Return *image* converted to the appropriate colour mode for *target_key*.
-
-    JPEG cannot carry transparency; transparent images are composited onto
-    *jpeg_background* before conversion.  Other formats are left in their
-    native mode unless Pillow would otherwise reject the save.
-    """
-    if target_key == "jpeg":
-        has_alpha = image.mode in ("RGBA", "LA", "PA") or "transparency" in image.info
-        if has_alpha:
-            rgba = image.convert("RGBA")
-            base = Image.new("RGB", rgba.size, jpeg_background)
-            base.paste(rgba, mask=rgba.getchannel("A"))
-            return base
-        return image.convert("RGB")
-
-    if target_key in ("bmp", "tiff", "webp", "png"):
-        # These formats support RGB/RGBA/L/1.  Convert exotic modes.
-        acceptable = {"RGB", "RGBA", "L", "LA", "1", "CMYK", "P"}
-        if image.mode not in acceptable:
-            target_mode = "RGBA" if "A" in image.getbands() else "RGB"
-            log.debug("Mode coercion: %r → %r for target %r", image.mode, target_mode, target_key)
-            return image.convert(target_mode)
-
-    return image
+    """Compatibility wrapper delegating to PillowImageAdapter helper."""
+    from .adapters.image import _coerce_image_mode
+    return _coerce_image_mode(image, target_key, jpeg_background)

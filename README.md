@@ -248,14 +248,118 @@ After `shutdown()`, new submissions raise `RuntimeError`.
 
 ---
 
+---
+
+## Adapter Architecture & Capability Registry (v0.4+)
+
+LocalShift uses a modular adapter architecture to support extensible file conversions. Conversion engines are encapsulated as self-contained adapters conforming to the `ConversionAdapter` protocol, managed by a centralized, thread-safe `AdapterRegistry`.
+
+### 1. The Adapter Protocol
+
+```python
+from localshift import ConversionAdapter, ConversionRequest, ConversionContext, ConversionResult
+
+class MyCustomAdapter:
+    adapter_id = "my_custom_adapter"
+    name = "My Custom Format Adapter"
+
+    @property
+    def supported_source_formats(self) -> frozenset[str]:
+        return frozenset({"csv"})
+
+    @property
+    def supported_target_formats(self) -> frozenset[str]:
+        return frozenset({"json"})
+
+    @property
+    def supported_routes(self) -> frozenset[tuple[str, str]]:
+        return frozenset([("csv", "json")])
+
+    def can_convert(self, source_format: str, target_format: str) -> bool:
+        return (source_format, target_format) in self.supported_routes
+
+    def convert(self, request: ConversionRequest, context: ConversionContext) -> ConversionResult:
+        context.check_cancelled()
+        # Read request.source, convert, and write directly to context.temp_output_path
+        ...
+        return ConversionResult(
+            output_path=context.temp_output_path,
+            source_format="csv",
+            target_format="json",
+            input_bytes=request.source.stat().st_size,
+            output_bytes=context.temp_output_path.stat().st_size,
+            adapter_id=self.adapter_id,
+        )
+```
+
+### 2. Registration & Capability Discovery
+
+```python
+from localshift import default_registry, AdapterRegistry
+
+# Query registered capabilities
+routes = default_registry.supported_routes()
+sources = default_registry.supported_source_formats()
+targets = default_registry.supported_target_formats("png")  # frozenset({'jpeg', 'webp', 'bmp', 'tiff'})
+
+# Register a new adapter
+reg = AdapterRegistry()
+reg.register(MyCustomAdapter())  # raises AdapterRegistrationError on duplicate ID or conflicting route
+reg.register(MyCustomAdapter(), allow_override=True)  # overrides previous route
+```
+
+### 3. Conversion Request Lifecycle & Security Boundary
+
+The core engine (`localshift.converter.convert_request`) owns all security boundaries:
+1. **Source validation**: Verifies existence, guards against dangling symlinks, and enforces `max_input_bytes`.
+2. **Format resolution**: Normalizes aliases (`jpg` → `jpeg`) and detects format via magic bytes.
+3. **Route validation**: Checks the registry for an adapter supporting `(source, target)`.
+4. **Output reservation**: Atomically reserves a collision-free destination name.
+5. **Sandbox context**: Creates a secure temporary file (`.tmp`) and gives the adapter only `context.temp_output_path` to write to.
+6. **Result verification**: Verifies that the temporary output exists and is non-empty before committing.
+7. **Atomic commit**: Replaces the temporary file onto the reserved destination path via `os.replace`.
+8. **Guaranteed cleanup**: Releases reservations and unlinks leftover temp files in `finally:`.
+
+### 4. Error Taxonomy
+
+All conversion exceptions inherit from `ConversionError` (subclass of `RuntimeError`), preserving 100% backward compatibility:
+
+```
+ConversionError (Base user-displayable error)
+├── UnsupportedFormatError (Unknown format specifier; also inherits from ValueError)
+├── UnsupportedConversionError (Route not supported by any registered adapter)
+├── InvalidInputError (Input missing, not a regular file, or unreadable)
+│   └── InputTooLargeError (Input exceeds size limit)
+├── DestinationConflictError (Source and destination point to same file)
+├── AdapterUnavailableError (Adapter registered but runtime missing)
+├── ConversionCancelledError (Operation cancelled before or during processing)
+└── ConversionFailedError (Underlying conversion execution failure)
+```
+
+### 5. Supported Routes & Built-in Raster Adapter
+
+LocalShift includes `PillowImageAdapter` (`adapter_id: "pillow_raster"`), providing all 20 pairwise conversion routes between:
+`PNG`, `JPEG` (and `jpg`), `WebP`, `BMP`, and `TIFF` (and `tif`).
+
+Identity conversions (e.g. `png` → `png`) and unrecognised format pairs raise `UnsupportedConversionError`.
+
+---
+
 ## Backend independence
 
-The backend (`converter`, `formats`, `cli`, `jobs`) has **no dependency** on PySide6 or any
+The backend (`converter`, `formats`, `cli`, `jobs`, `registry`, `adapters`) has **no dependency** on PySide6 or any
 GUI toolkit. It can be imported and used in scripts, CLI tools, or a future
 alternative frontend without initialising a display:
 
 ```python
-from localshift import convert_image, ConversionError, JobQueue
+from localshift import (
+    convert_image,
+    convert_request,
+    ConversionRequest,
+    ConversionError,
+    JobQueue,
+    default_registry,
+)
 from localshift.formats import SUPPORTED, route_supported, output_formats_for
 ```
 

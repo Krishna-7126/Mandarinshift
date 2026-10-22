@@ -87,15 +87,18 @@ def normalize_format(value: str) -> str:
     """Return the canonical format key for *value*.
 
     Accepts canonical keys, extension aliases, and dotted extensions.
-    Raises ``ValueError`` if *value* is not a recognised format string.
+    Raises ``UnsupportedFormatError`` (a ``ValueError`` subclass) if *value*
+    is not a recognised format string.
     """
+    from .exceptions import UnsupportedFormatError
+
     norm = value.lower().strip().lstrip(".")
     result = _EXT_ALIAS.get(norm)
     if result is None:
         # Try direct key lookup (e.g. "jpeg" is already canonical).
         result = norm if norm in _REGISTRY else None
     if result is None:
-        raise ValueError(f"Unknown format specifier: {value!r}")
+        raise UnsupportedFormatError(f"Unknown format specifier: {value!r}")
     return result
 
 
@@ -148,9 +151,12 @@ def output_formats_for(path: Path) -> list[str]:
     list if the source format is unrecognised or unsupported.
     """
     source = input_format(path)
-    if source not in SUPPORTED:
+    if source is None:
         return []
-    return sorted(SUPPORTED - {source})
+    from .registry import default_registry
+
+    targets = default_registry.supported_target_formats(source)
+    return sorted(targets)
 
 
 def route_supported(source: str, target: str) -> bool:
@@ -162,14 +168,16 @@ def route_supported(source: str, target: str) -> bool:
     try:
         src = normalize_format(source)
         tgt = normalize_format(target)
-    except ValueError:
+    except (ValueError, Exception):
         return False
-    return src in SUPPORTED and tgt in SUPPORTED and src != tgt
+    from .registry import default_registry
+
+    return default_registry.can_convert(src, tgt)
 
 
 def get_format_info(key: str) -> Optional[FormatInfo]:
     """Return the :class:`FormatInfo` for *key*, or ``None`` if unknown."""
     try:
         return _REGISTRY.get(normalize_format(key))
-    except ValueError:
+    except (ValueError, Exception):
         return None

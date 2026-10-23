@@ -345,6 +345,107 @@ Identity conversions (e.g. `png` → `png`) and unrecognised format pairs raise 
 
 ---
 
+## Planning, Capability Discovery & Preflight Validation (v0.5+)
+
+LocalShift provides an inspection and planning API to explain conversion viability, option schemas, and preflight readiness without executing conversions or modifying the filesystem.
+
+### 1. Capability Discovery
+
+Query supported formats and routes deterministically without accessing internal mutable state:
+
+```python
+from localshift import (
+    get_supported_source_formats,
+    get_supported_target_formats,
+    get_supported_routes,
+    is_route_supported,
+    get_applicable_options,
+    get_adapter_info,
+)
+
+# List sorted canonical formats
+sources = get_supported_source_formats()              # ['bmp', 'jpeg', 'png', 'tiff', 'webp']
+targets = get_supported_target_formats("png")         # ['bmp', 'jpeg', 'tiff', 'webp']
+
+# Query route support (normalizes aliases automatically)
+supported = is_route_supported("png", "jpg")         # True
+supported_noop = is_route_supported("png", "png")    # False
+
+# Inspect route options and adapter metadata
+options = get_applicable_options("png", "jpeg")      # (OptionSpec(name='jpeg_background', ...),)
+adapter = get_adapter_info("pillow_raster")
+```
+
+### 2. Conversion Planning (`plan_conversion` and `plan_route`)
+
+Generate a structured `ConversionPlan` detailing route support, adapter selection, option schemas, and point-in-time readiness:
+
+```python
+from pathlib import Path
+from localshift import plan_conversion, plan_route
+
+# Plan with physical file (performs point-in-time preflight checks)
+plan = plan_conversion(Path("photo.png"), "jpeg", output_dir="./out")
+print(plan.source_format)             # 'png'
+print(plan.target_format)             # 'jpeg'
+print(plan.route_supported)           # True
+print(plan.adapter_id)                # 'pillow_raster'
+print(plan.available_target_formats)  # ('bmp', 'jpeg', 'tiff', 'webp')
+print(plan.applicable_options)        # (OptionSpec(name='jpeg_background', ...),)
+print(plan.is_ready)                  # True (ready for execution attempt)
+
+# Plan route without physical file (format-level capability check)
+route_plan = plan_route("png", "webp")
+print(route_plan.route_supported)     # True
+print(route_plan.is_ready)            # True
+```
+
+**Guarantees:**
+- Planning NEVER executes conversions or submits jobs.
+- Planning NEVER creates temporary or destination files.
+- Planning NEVER acquires permanent destination reservations.
+- Source files are never modified or decoded unnecessarily.
+
+### 3. Preflight Validation (`validate_preflight`)
+
+Perform point-in-time preflight checks on a `ConversionRequest`:
+
+```python
+from localshift import ConversionRequest, validate_preflight, FindingSeverity
+
+req = ConversionRequest(source=Path("missing.png"), target_format="jpeg")
+findings = validate_preflight(req)
+
+for finding in findings:
+    print(finding.code)              # e.g. "SOURCE_NOT_FOUND"
+    print(finding.message)           # Human-readable explanation
+    print(finding.severity)          # FindingSeverity.ERROR or FindingSeverity.WARNING
+    print(finding.blocks_execution)  # True
+```
+
+#### Stable Finding Codes:
+- `SOURCE_NOT_FOUND`: Input file does not exist.
+- `SOURCE_NOT_A_FILE`: Input path is a directory or special device.
+- `SOURCE_SYMLINK_BROKEN`: Symlink is dangling or cannot be resolved.
+- `SOURCE_EMPTY`: Input file is 0 bytes.
+- `SOURCE_TOO_LARGE`: Input file exceeds size limit (`MAX_INPUT_BYTES`).
+- `SOURCE_FORMAT_UNKNOWN`: File content and extension could not be identified.
+- `SOURCE_FORMAT_UNSUPPORTED`: Declared source format is not recognized.
+- `TARGET_FORMAT_INVALID`: Target format specifier is unrecognised.
+- `ROUTE_UNSUPPORTED`: No registered adapter supports the route.
+- `SAME_FORMAT_NO_OP`: Source and target formats are identical.
+- `DESTINATION_CONFLICT`: Output destination resolves to source file.
+- `DESTINATION_DIR_INVALID`: Output destination exists and is not a directory.
+- `UNKNOWN_OPTION`: Option supplied is not accepted by the route adapter.
+- `INVALID_OPTION_VALUE`: Option value is malformed or out of range.
+- `ADAPTER_UNAVAILABLE`: Registered adapter is missing or unavailable.
+
+#### Planning vs. Execution Guarantees:
+- Preflight findings represent a **point-in-time** assessment, not a guarantee of future conversion success (e.g. source files or disk permissions can change between check and execution).
+- `convert_request()` re-validates all critical conditions at execution time and acquires an atomic output reservation. Client-supplied plan objects are never trusted as proof of validity.
+
+---
+
 ## Backend independence
 
 The backend (`converter`, `formats`, `cli`, `jobs`, `registry`, `adapters`) has **no dependency** on PySide6 or any

@@ -312,6 +312,15 @@ def convert_request(
             f"No adapter available for conversion route: {src_key!r} → {target_key!r}."
         )
 
+    # Validate options if provided
+    if request.options and hasattr(adapter, "get_supported_options"):
+        from .planner import validate_conversion_options
+        applicable = adapter.get_supported_options(src_key, target_key)
+        opt_findings = validate_conversion_options(request.options, applicable)
+        blocking = [f for f in opt_findings if f.blocks_execution]
+        if blocking:
+            raise InvalidInputError(blocking[0].message)
+
     log.info(
         "convert_request: %s (%s) → %s via adapter %r (job_id=%s)",
         source.name, src_key, target_key, adapter.adapter_id, request.job_id,
@@ -452,11 +461,15 @@ def convert_image(
     Path
         Path to the successfully written output file.
     """
+    options: dict[str, Any] = {}
+    if normalize_format(target) == "jpeg":
+        options["jpeg_background"] = jpeg_background
+
     req = ConversionRequest(
         source=Path(source),
         target_format=target,
         output_dir=Path(output_dir) if output_dir is not None else None,
-        options={"jpeg_background": jpeg_background},
+        options=options,
         source_format=source_format,
     )
     result = convert_request(req, max_input_bytes=max_input_bytes)

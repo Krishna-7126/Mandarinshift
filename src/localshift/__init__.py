@@ -28,7 +28,7 @@ Backend modules have NO dependency on PySide6.
 """
 from __future__ import annotations
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 __all__ = [
     # Single-image conversion (original API — unchanged).
     "convert_image",
@@ -64,6 +64,23 @@ __all__ = [
     "DEFAULT_MAX_COMPLETED",
     "DEFAULT_MAX_PENDING",
     "DEFAULT_WORKERS",
+    # Planning & Preflight (LS-BE-005)
+    "ConversionPlan",
+    "ValidationFinding",
+    "FindingSeverity",
+    "OptionSpec",
+    "FindingCode",
+    "plan_conversion",
+    "plan_route",
+    "validate_preflight",
+    "validate_conversion_options",
+    # Capability Discovery (LS-BE-005)
+    "get_supported_source_formats",
+    "get_supported_target_formats",
+    "get_supported_routes",
+    "is_route_supported",
+    "get_applicable_options",
+    "get_adapter_info",
     "__version__",
 ]
 
@@ -100,5 +117,27 @@ from .jobs import (
     JobStatus,
     ProgressEvent,
     QueueFullError,
+)
+from .models import (
+    ConversionContext,
+    ConversionPlan,
+    ConversionRequest,
+    ConversionResult,
+    FindingSeverity,
+    OptionSpec,
+    ValidationFinding,
+)
+from .planner import (
+    FindingCode,
+    get_adapter_info,
+    get_applicable_options,
+    get_supported_routes,
+    get_supported_source_formats,
+    get_supported_target_formats,
+    is_route_supported,
+    plan_conversion,
+    plan_route,
+    validate_conversion_options,
+    validate_preflight,
 )
 from .registry import AdapterRegistry, ConversionAdapter, default_registry

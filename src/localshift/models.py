@@ -4,6 +4,7 @@ localshift.models — Core data structures for conversion requests, context, and
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Optional
 
@@ -96,3 +97,101 @@ class ConversionResult:
     adapter_id: str = "pillow_raster"
     #: Diagnostic warnings emitted during conversion, if any.
     warnings: tuple[str, ...] = ()
+
+
+# ---------------------------------------------------------------------------
+# LS-BE-005 Planning, Preflight Validation & Capability Discovery Models
+# ---------------------------------------------------------------------------
+
+class FindingSeverity(Enum):
+    """Severity classification for validation findings."""
+    ERROR = "error"
+    WARNING = "warning"
+
+
+@dataclass(frozen=True)
+class ValidationFinding:
+    """A structured finding emitted during preflight validation.
+
+    Parameters
+    ----------
+    code:
+        Stable finding code (e.g. ``"SOURCE_NOT_FOUND"``).
+    message:
+        Human-readable diagnostic description.
+    severity:
+        ``FindingSeverity.ERROR`` (blocks conversion) or ``FindingSeverity.WARNING``.
+    field:
+        Optional request field related to the finding (e.g. ``"source"``,
+        ``"target_format"``, ``"options.jpeg_background"``).
+    """
+
+    code: str
+    message: str
+    severity: FindingSeverity = FindingSeverity.ERROR
+    field: Optional[str] = None
+
+    @property
+    def blocks_execution(self) -> bool:
+        """Return True if this finding blocks conversion execution."""
+        return self.severity == FindingSeverity.ERROR
+
+
+@dataclass(frozen=True)
+class OptionSpec:
+    """Specification of an adapter-supported conversion option.
+
+    Parameters
+    ----------
+    name:
+        Option key name as supplied in ``ConversionRequest.options``.
+    type_name:
+        Human-readable type description (e.g. ``"tuple[int, int, int]"``).
+    default:
+        Default value applied if the option is omitted.
+    description:
+        Explanation of the option and its effect on conversion output.
+    choices:
+        Optional finite tuple of allowed values, if constrained.
+    """
+
+    name: str
+    type_name: str
+    default: Any
+    description: str
+    choices: Optional[tuple[Any, ...]] = None
+
+
+@dataclass(frozen=True)
+class ConversionPlan:
+    """Structured plan explaining route support, options, and preflight readiness.
+
+    Parameters
+    ----------
+    source_format:
+        Normalized canonical source format, or None if unidentifiable.
+    target_format:
+        Normalized canonical target format, or None if unrecognised.
+    route_supported:
+        True if the (source, target) route is supported by a registered adapter.
+    adapter_id:
+        Identifier of the adapter selected for this route, or None if unsupported.
+    available_target_formats:
+        Canonical target formats available from the resolved source format.
+    applicable_options:
+        Option specifications accepted by the selected adapter for this route.
+    findings:
+        All validation findings (errors and warnings) gathered during preflight.
+    is_ready:
+        True if the route is supported and there are no blocking ERROR findings.
+    """
+
+    source_format: Optional[str]
+    target_format: Optional[str]
+    route_supported: bool
+    adapter_id: Optional[str]
+    available_target_formats: tuple[str, ...]
+    applicable_options: tuple[OptionSpec, ...]
+    findings: tuple[ValidationFinding, ...]
+    is_ready: bool
+

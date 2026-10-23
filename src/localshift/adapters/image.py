@@ -80,6 +80,25 @@ class PillowImageAdapter:
     def can_convert(self, source_format: str, target_format: str) -> bool:
         return (source_format, target_format) in self._routes
 
+    def get_supported_options(
+        self,
+        source_format: str,
+        target_format: str,
+    ) -> tuple[Any, ...]:
+        """Return supported options for raster conversions."""
+        from ..models import OptionSpec
+
+        if target_format == "jpeg":
+            return (
+                OptionSpec(
+                    name="jpeg_background",
+                    type_name="tuple[int, int, int]",
+                    default=(255, 255, 255),
+                    description="RGB color tuple (0-255 each) used to replace transparent backgrounds.",
+                ),
+            )
+        return ()
+
     def convert(
         self,
         request: ConversionRequest,

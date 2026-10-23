@@ -178,6 +178,14 @@ class AdapterRegistry:
                 return frozenset(tgt for _, tgt in self._routes.keys())
             return frozenset(tgt for src, tgt in self._routes.keys() if src == source_format)
 
+    def get_supported_options(self, source_format: str, target_format: str) -> tuple[Any, ...]:
+        """Return supported OptionSpec instances for the given route, or empty tuple."""
+        with self._lock:
+            adapter = self._routes.get((source_format, target_format))
+            if adapter is None or not hasattr(adapter, "get_supported_options"):
+                return ()
+            return tuple(adapter.get_supported_options(source_format, target_format))
+
     def get_adapter_by_id(self, adapter_id: str) -> Optional[ConversionAdapter]:
         """Return the adapter with *adapter_id*, or None if not registered."""
         with self._lock:

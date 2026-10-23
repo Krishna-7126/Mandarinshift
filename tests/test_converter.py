@@ -115,9 +115,10 @@ class TestFormats:
         assert input_format(Path("file.png")) == "png"
         assert input_format(Path("file.jpg")) == "jpeg"
         assert input_format(Path("file.tif")) == "tiff"
+        assert input_format(Path("file.pdf")) == "pdf"
 
     def test_input_format_unrecognized_returns_none(self):
-        assert input_format(Path("file.pdf")) is None
+        assert input_format(Path("file.xyz")) is None
         assert input_format(Path("file.docx")) is None
 
     def test_route_supported_canonical(self):
@@ -146,8 +147,12 @@ class TestFormats:
         assert "png" not in formats
 
     def test_output_formats_for_unsupported(self, tmp_path):
-        p = tmp_path / "file.pdf"
+        p = tmp_path / "file.xyz"
         assert output_formats_for(p) == []
+
+    def test_output_formats_for_pdf(self, tmp_path):
+        p = tmp_path / "file.pdf"
+        assert output_formats_for(p) == ["txt"]
 
     def test_sniff_format_real_png(self, tmp_path):
         p = tmp_path / "test.png"
@@ -449,7 +454,7 @@ class TestRegression:
 
     def test_unsupported_input_baseline(self):
         """Original test_unsupported_input."""
-        assert output_formats_for(Path("file.pdf")) == []
+        assert output_formats_for(Path("file.docx")) == []
         assert not route_supported("pdf", "png")
 
     def test_route_aliases_baseline(self):

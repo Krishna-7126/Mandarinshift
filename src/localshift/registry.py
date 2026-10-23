@@ -210,5 +210,7 @@ default_registry: AdapterRegistry = AdapterRegistry()
 
 # Pre-register built-in adapters at initialization
 from .adapters.image import PillowImageAdapter
+from .documents.adapter import PdfDocumentAdapter
 
 default_registry.register(PillowImageAdapter())
+default_registry.register(PdfDocumentAdapter())

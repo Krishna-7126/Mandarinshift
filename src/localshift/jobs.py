@@ -424,8 +424,11 @@ class JobQueue:
 
         # Validate target format before allocating a job ID or queue slot.
         from .formats import normalize_format
+        from .registry import default_registry
         try:
             target_format = normalize_format(target_format)
+            if target_format not in default_registry.supported_target_formats():
+                raise ValueError(f"Target format {target_format!r} is not a supported output format")
         except ValueError as exc:
             raise ValueError(f"Invalid target format {target_format!r}: {exc}") from exc
 

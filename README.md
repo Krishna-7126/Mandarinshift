@@ -51,18 +51,23 @@ localshift --verbose convert .\photo.png --to bmp  # debug logging
 
 ## Supported conversions
 
-Any **different** pair among: `PNG`, `JPEG` (`jpg`), `WebP`, `BMP`, `TIFF` (`tif`).
+- **Raster images**: Any different pair among `PNG`, `JPEG` (`jpg`), `WebP`, `BMP`, `TIFF` (`tif`).
+- **Documents (LS-BE-006B)**: `PDF` → `TXT` via `PdfDocumentAdapter` (native text extraction).
+  *(Note: OCR and PDF-to-DOCX are deferred to future milestones and not yet available).*
 
 | Behaviour | Detail |
 |-----------|--------|
-| Source formats | `PNG`, `JPEG`/`JPG`, `WebP`, `BMP`, `TIFF`/`TIF` |
+| Source formats | `PNG`, `JPEG`/`JPG`, `WebP`, `BMP`, `TIFF`/`TIF`, `PDF` |
+| Target formats | `PNG`, `JPEG`/`JPG`, `WebP`, `BMP`, `TIFF`/`TIF`, `TXT` |
 | Extension aliases | `jpg` = `jpeg`, `tif` = `tiff` (accepted everywhere) |
 | JPEG transparency | Transparent areas composited to white by default |
+| PDF inspection | Page dimensions, rotation, encryption status, and text density classification |
+| PDF extraction | Deterministic, page-by-page UTF-8 text extraction with configurable page separators |
 | Animated input | First frame only used in MVP |
-| Input size limit | 250 MiB maximum |
+| Input size limit | 250 MiB maximum (page cap: 2,000 pages for PDF) |
 | Output collision | Never overwrites; adds ` (2)`, ` (3)` suffix |
 | Original files | Never modified |
-| Format detection | Magic bytes preferred over file extension |
+| Format detection | Magic bytes preferred over file extension (`%PDF-` sniffing for PDF) |
 
 ---
 

@@ -41,11 +41,13 @@ class FormatInfo:
 _REGISTRY: dict[str, FormatInfo] = {
     info.key: info
     for info in [
-        FormatInfo("png",  "PNG image",  "PNG",  ("png",)),
-        FormatInfo("jpeg", "JPEG image", "JPEG", ("jpeg", "jpg")),
-        FormatInfo("webp", "WebP image", "WEBP", ("webp",)),
-        FormatInfo("bmp",  "BMP image",  "BMP",  ("bmp",)),
-        FormatInfo("tiff", "TIFF image", "TIFF", ("tiff", "tif")),
+        FormatInfo("png",  "PNG image",    "PNG",  ("png",)),
+        FormatInfo("jpeg", "JPEG image",   "JPEG", ("jpeg", "jpg")),
+        FormatInfo("webp", "WebP image",   "WEBP", ("webp",)),
+        FormatInfo("bmp",  "BMP image",    "BMP",  ("bmp",)),
+        FormatInfo("tiff", "TIFF image",   "TIFF", ("tiff", "tif")),
+        FormatInfo("pdf",  "PDF document", "",     ("pdf",)),
+        FormatInfo("txt",  "Plain text",   "",     ("txt",)),
     ]
 }
 
@@ -64,8 +66,10 @@ _EXT_ALIAS: dict[str, str] = {
 #: Mapping of canonical key → display label.
 FORMAT_LABELS: dict[str, str] = {k: v.label for k, v in _REGISTRY.items()}
 
-#: Mapping of canonical key → Pillow format string.
-PIL_FORMATS: dict[str, str] = {k: v.pil_format for k, v in _REGISTRY.items()}
+#: Mapping of canonical key → Pillow format string (image formats only).
+PIL_FORMATS: dict[str, str] = {
+    k: v.pil_format for k, v in _REGISTRY.items() if v.pil_format
+}
 
 #: Frozenset of all canonical format keys.
 SUPPORTED: frozenset[str] = frozenset(_REGISTRY)
@@ -115,13 +119,23 @@ def input_format(path: Path) -> Optional[str]:
 def sniff_format(path: Path) -> Optional[str]:
     """Return the canonical format key determined by reading *path*'s magic bytes.
 
-    Uses Pillow's format identification, which inspects the first few bytes of
-    the file.  Returns ``None`` if Pillow cannot identify the format or if the
-    identified format is not in the LocalShift registry.
+    Uses magic byte inspection for documents (e.g. %PDF-) and Pillow's format
+    identification for images. Returns ``None`` if the format cannot be identified
+    or is not in the LocalShift registry.
 
     This is more reliable than extension-only detection and guards against
     misnamed files.
     """
+    # 1. Quick magic byte check for PDF files (%PDF-)
+    try:
+        with open(path, "rb") as f:
+            header = f.read(5)
+            if header.startswith(b"%PDF-"):
+                return "pdf"
+    except (OSError, PermissionError):
+        pass
+
+    # 2. Pillow image format identification
     from PIL import Image, UnidentifiedImageError  # local import keeps module lighter
 
     try:
@@ -133,7 +147,7 @@ def sniff_format(path: Path) -> Optional[str]:
 
     # Reverse-map PIL format string → canonical key.
     for key, info in _REGISTRY.items():
-        if info.pil_format == pil_fmt:
+        if info.pil_format and info.pil_format == pil_fmt:
             return key
 
     log.debug("sniff_format: PIL format %r for %s not in registry", pil_fmt, path)

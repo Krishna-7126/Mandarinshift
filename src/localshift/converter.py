@@ -376,7 +376,9 @@ def convert_request(
         except OSError:
             in_size = 0
 
-        if in_size > 0 and tmp_path.stat().st_size == 0:
+        # Non-text conversions must produce non-empty files. Text outputs may legitimately
+        # be empty (0 bytes) when documents have no extractable native text.
+        if in_size > 0 and tmp_path.stat().st_size == 0 and target_key != "txt":
             raise ConversionFailedError(
                 f"Adapter {adapter.adapter_id!r} completed without producing a valid output file (empty output)."
             )

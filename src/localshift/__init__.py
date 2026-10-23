@@ -52,6 +52,12 @@ __all__ = [
     "AdapterRegistry",
     "default_registry",
     "PillowImageAdapter",
+    "PdfDocumentAdapter",
+    # Documents (LS-BE-006B)
+    "PdfInspector",
+    "PdfInspectionReport",
+    "PageContentClassification",
+    "NativePdfTextExtractor",
     # Job management
     "ConversionJob",
     "JobResult",
@@ -86,6 +92,13 @@ __all__ = [
 
 # Re-export primary backend interface.
 from .adapters.image import PillowImageAdapter
+from .documents.adapter import PdfDocumentAdapter
+from .documents.pdf_inspector import (
+    PageContentClassification,
+    PdfInspectionReport,
+    PdfInspector,
+)
+from .documents.text_extractor import NativePdfTextExtractor
 from .converter import (
     AdapterUnavailableError,
     ConversionCancelledError,

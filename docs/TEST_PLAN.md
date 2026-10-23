@@ -1,7 +1,7 @@
 # LocalShift — Test Plan & Quality Assurance Strategy
 
-**Version:** 0.6.0 (Updated: Milestone LS-BE-006D)  
-**Test Suite Size:** 333 tests collected (330 passed, 3 skipped on non-admin Windows)  
+**Version:** 0.7.0 (Updated: Milestone LS-BE-007A)  
+**Test Suite Size:** 357 tests collected (354 passed, 3 skipped on non-admin Windows)  
 
 ---
 
@@ -11,8 +11,8 @@ LocalShift uses a layered testing strategy focused strictly on backend correctne
 - **Unit Tests:** Fast, isolated testing of format normalization, magic-byte sniffing, options validation, and capability lookups.
 - **Integration Tests:** End-to-end execution of `convert_request()` with real adapters, destination path collision resolution, atomic replacement, and cleanup verification.
 - **Reliability & Concurrency Tests:** In-process path reservation locks, thread-safe job queue lifecycle, worker pool thread exhaustion, and cancel propagation.
-- **Document & OCR Tests:** Offline OCR engine invocation, bounding box parsing, line grouping, memory-bounded rendering, DPI clamping, and per-page routing (`auto`, `native_only`, `force_ocr`).
-- **Benchmark Corpus Quality Tests:** Deterministic evaluation of text extraction accuracy (Character Error Rate, Word Error Rate, Unicode preservation, reading order, and heap memory tracing).
+- **Document & OCR Tests:** Offline OCR engine invocation, bounding box parsing, line grouping, memory-bounded rendering, DPI bounds, per-page routing (`auto`, `native_only`, `force_ocr`), text de-duplication, memory ownership, and language model audits.
+- **Benchmark Corpus Quality Tests:** Deterministic evaluation of text extraction accuracy (Character Error Rate, Word Error Rate, Unicode preservation, reading order, and heap memory tracing) in both native and auto OCR modes.
 
 ---
 
@@ -28,7 +28,8 @@ LocalShift uses a layered testing strategy focused strictly on backend correctne
 | [`tests/test_document_foundation.py`](file:///Z:/LocalShift/tests/test_document_foundation.py) | Document container sniffing | 5 | PDF `%PDF-` sniffing, DOCX OpenXML structure validation |
 | [`tests/test_pdf_extraction.py`](file:///Z:/LocalShift/tests/test_pdf_extraction.py) | PDF inspection & text extraction | 33 | Page counts, dimensions, rotations, text previews, adapter |
 | [`tests/test_pdf_reliability.py`](file:///Z:/LocalShift/tests/test_pdf_reliability.py) | Benchmark quality & metrics | 18 | CER / WER calculations, benchmark corpus verification, latency |
-| [`tests/test_pdf_ocr.py`](file:///Z:/LocalShift/tests/test_pdf_ocr.py) | Offline OCR engine, renderer & routing | 19 | RapidOCR detection, reading order, scanned PDF extraction, DPI bounds |
+| [`tests/test_pdf_ocr.py`](file:///Z:/LocalShift/tests/test_pdf_ocr.py) | Offline OCR engine, renderer & routing | 24 | RapidOCR detection, reading order, scanned PDF extraction, DPI bounds, de-duplication, memory safety, language audit |
+| [`tests/test_pdf_docx.py`](file:///Z:/LocalShift/tests/test_pdf_docx.py) | PDF to DOCX document reconstruction | 18 | Born-digital, scanned, mixed, tables, headings, orientation, Unicode, cancellation, collision |
 
 ---
 

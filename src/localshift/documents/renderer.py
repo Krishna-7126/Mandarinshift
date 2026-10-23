@@ -70,8 +70,8 @@ class PdfPageRenderer:
         bmp = None
         try:
             bmp = page.render(scale=scale)
-            # to_numpy() returns a copy or view of the bitmap buffer in RGB format
-            img_arr = bmp.to_numpy()
+            # Explicit copy ensures NumPy owns its memory before bmp is closed
+            img_arr = bmp.to_numpy().copy()
             return img_arr
         except Exception as exc:
             log.exception("Failed to render PDF page at scale %.2f: %s", scale, exc)

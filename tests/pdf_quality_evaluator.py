@@ -26,6 +26,7 @@ if str(_root) not in sys.path:
 if str(_root / "src") not in sys.path:
     sys.path.insert(0, str(_root / "src"))
 
+from localshift import ConversionRequest, convert_request
 from localshift.documents.pdf_inspector import PdfInspector
 from localshift.documents.text_extractor import NativePdfTextExtractor
 from tests.benchmark_generator import GROUND_TRUTH_TEXT
@@ -252,11 +253,11 @@ def evaluate_fixture(pdf_path: Path, *, ocr_mode: str = "native_only") -> Qualit
     )
 
 
-def evaluate_all_fixtures(fixtures_dir: Path) -> list[QualityMetric]:
+def evaluate_all_fixtures(fixtures_dir: Path, *, ocr_mode: str = "native_only") -> list[QualityMetric]:
     """Evaluate all benchmark PDF fixtures in fixtures_dir sorted by name."""
     metrics: list[QualityMetric] = []
     for p in sorted(fixtures_dir.glob("*.pdf")):
-        metrics.append(evaluate_fixture(p))
+        metrics.append(evaluate_fixture(p, ocr_mode=ocr_mode))
     return metrics
 
 
@@ -277,8 +278,106 @@ def format_markdown_table(metrics: list[QualityMetric]) -> str:
     return "\n".join(lines)
 
 
+@dataclass(frozen=True)
+class DocxQualityMetric:
+    fixture_id: str
+    tables_count: int
+    headings_count: int
+    paragraphs_count: int
+    cer: float
+    wer: float
+    peak_memory_kib: float
+    duration_ms: float
+    notes: str
+
+
+def evaluate_all_docx_fixtures(fixtures_dir: Path) -> list[DocxQualityMetric]:
+    import docx
+    import tempfile
+
+    metrics: list[DocxQualityMetric] = []
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        for p in sorted(fixtures_dir.glob("*.pdf")):
+            fid = p.stem
+            expected = GROUND_TRUTH_TEXT.get(fid, "")
+            tracemalloc.start()
+            t0 = time.perf_counter()
+            try:
+                req = ConversionRequest(source=p, target_format="docx", output_dir=tmp_path)
+                res = convert_request(req)
+                t1 = time.perf_counter()
+                _, peak = tracemalloc.get_traced_memory()
+                tracemalloc.stop()
+
+                d = docx.Document(res.output_path)
+                para_texts = [para.text for para in d.paragraphs if para.text]
+                hdgs = [para.text for para in d.paragraphs if para.style.name.startswith("Heading")]
+                tbl_texts = []
+                for t in d.tables:
+                    for row in t.rows:
+                        tbl_texts.append(" ".join(c.text for c in row.cells))
+                all_text = "\n".join(para_texts + tbl_texts)
+                norm_hyp = normalize_whitespace(all_text)
+                norm_exp = normalize_whitespace(expected)
+                cer = levenshtein_distance(norm_exp, norm_hyp) / max(1, len(norm_exp)) if norm_exp else 0.0
+                wer = levenshtein_distance(norm_exp.split(), norm_hyp.split()) / max(1, len(norm_exp.split())) if norm_exp else 0.0
+
+                metrics.append(
+                    DocxQualityMetric(
+                        fixture_id=fid,
+                        tables_count=len(d.tables),
+                        headings_count=len(hdgs),
+                        paragraphs_count=len(para_texts),
+                        cer=round(cer, 4),
+                        wer=round(wer, 4),
+                        peak_memory_kib=round(peak / 1024, 1),
+                        duration_ms=round((t1 - t0) * 1000, 2),
+                        notes="OK" if cer < 0.1 else f"CER={cer*100:.1f}%",
+                    )
+                )
+            except Exception as exc:
+                tracemalloc.stop()
+                metrics.append(
+                    DocxQualityMetric(
+                        fixture_id=fid,
+                        tables_count=0,
+                        headings_count=0,
+                        paragraphs_count=0,
+                        cer=1.0,
+                        wer=1.0,
+                        peak_memory_kib=0.0,
+                        duration_ms=0.0,
+                        notes=f"Rejected: {exc}",
+                    )
+                )
+    return metrics
+
+
+def format_docx_markdown_table(metrics: list[DocxQualityMetric]) -> str:
+    lines = [
+        "| Fixture | Tables | Headings | Paragraphs | CER | WER | Peak Mem (KiB) | Time (ms) | Notes |",
+        "|---|---|---|---|---|---|---|---|---|",
+    ]
+    for m in metrics:
+        cer_pct = f"{m.cer * 100:.1f}%"
+        wer_pct = f"{m.wer * 100:.1f}%"
+        lines.append(
+            f"| `{m.fixture_id}` | {m.tables_count} | {m.headings_count} | {m.paragraphs_count} | {cer_pct} | {wer_pct} | {m.peak_memory_kib} | {m.duration_ms} | {m.notes} |"
+        )
+    return "\n".join(lines)
+
+
 if __name__ == "__main__":
     fixtures_dir = Path(__file__).parent / "fixtures" / "documents"
-    metrics = evaluate_all_fixtures(fixtures_dir)
-    print("\n# LocalShift PDF Quality & Reliability Benchmark Results\n")
-    print(format_markdown_table(metrics))
+    metrics_native = evaluate_all_fixtures(fixtures_dir, ocr_mode="native_only")
+    print("\n# LocalShift PDF Quality & Reliability Benchmark Results (Native Mode)\n")
+    print(format_markdown_table(metrics_native))
+
+    metrics_ocr = evaluate_all_fixtures(fixtures_dir, ocr_mode="auto")
+    print("\n# LocalShift PDF Quality & Reliability Benchmark Results (Auto OCR Mode)\n")
+    print(format_markdown_table(metrics_ocr))
+
+    docx_metrics = evaluate_all_docx_fixtures(fixtures_dir)
+    print("\n# LocalShift PDF -> DOCX Reconstruction Benchmark Results\n")
+    print(format_docx_markdown_table(docx_metrics))

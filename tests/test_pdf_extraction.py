@@ -431,8 +431,18 @@ class TestPdfToTxtConversion:
         assert "ocr_mode" in option_names
         assert "ocr_dpi" in option_names
 
-    def test_plan_route_pdf_to_unsupported_format(self):
+    def test_plan_route_pdf_to_docx_supported(self):
         plan = plan_route("pdf", "docx")
+        assert plan.route_supported is True
+        assert plan.adapter_id == "pdf_native_text"
+        assert plan.is_ready is True
+        option_names = [opt.name for opt in plan.applicable_options]
+        assert "ocr_mode" in option_names
+        assert "ocr_dpi" in option_names
+        assert "extract_images" in option_names
+
+    def test_plan_route_pdf_to_unsupported_format(self):
+        plan = plan_route("pdf", "xlsx")
         assert plan.route_supported is False
         assert plan.is_ready is False
 

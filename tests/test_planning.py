@@ -86,16 +86,16 @@ class TestCapabilityDiscovery:
         tgts = get_supported_target_formats()
         assert isinstance(tgts, list)
         assert tgts == sorted(tgts)
-        assert set(tgts) == {"bmp", "jpeg", "png", "tiff", "txt", "webp"}
+        assert set(tgts) == {"bmp", "docx", "jpeg", "png", "tiff", "txt", "webp"}
 
     def test_get_supported_target_formats_for_source(self):
         # PNG cannot convert to PNG (no-op), should support remaining 4 image formats
         tgts = get_supported_target_formats("png")
         assert tgts == ["bmp", "jpeg", "tiff", "webp"]
 
-        # PDF supports txt
+        # PDF supports docx and txt
         tgts_pdf = get_supported_target_formats("pdf")
-        assert tgts_pdf == ["txt"]
+        assert tgts_pdf == ["docx", "txt"]
 
         # Alias "jpg" should resolve to "jpeg" targets
         tgts_jpg = get_supported_target_formats("jpg")
@@ -108,9 +108,10 @@ class TestCapabilityDiscovery:
         routes = get_supported_routes()
         assert isinstance(routes, list)
         assert routes == sorted(routes)
-        assert len(routes) == 21
+        assert len(routes) == 22
         assert ("png", "jpeg") in routes
         assert ("pdf", "txt") in routes
+        assert ("pdf", "docx") in routes
         assert ("png", "png") not in routes
 
     def test_is_route_supported_canonical_and_aliases(self):
@@ -199,7 +200,7 @@ class TestConversionPlanGeneration:
         assert any(f.code == FindingCode.SAME_FORMAT_NO_OP for f in plan.findings)
 
     def test_plan_route_unsupported_target(self):
-        plan = plan_route("png", "docx")
+        plan = plan_route("png", "nonexistent")
         assert plan.target_format is None
         assert plan.route_supported is False
         assert plan.is_ready is False

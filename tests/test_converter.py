@@ -119,7 +119,7 @@ class TestFormats:
 
     def test_input_format_unrecognized_returns_none(self):
         assert input_format(Path("file.xyz")) is None
-        assert input_format(Path("file.docx")) is None
+        assert input_format(Path("file.odt")) is None
 
     def test_route_supported_canonical(self):
         assert route_supported("png", "jpeg")
@@ -152,7 +152,7 @@ class TestFormats:
 
     def test_output_formats_for_pdf(self, tmp_path):
         p = tmp_path / "file.pdf"
-        assert output_formats_for(p) == ["txt"]
+        assert output_formats_for(p) == ["docx", "txt"]
 
     def test_sniff_format_real_png(self, tmp_path):
         p = tmp_path / "test.png"

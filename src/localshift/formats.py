@@ -48,6 +48,7 @@ _REGISTRY: dict[str, FormatInfo] = {
         FormatInfo("tiff", "TIFF image",   "TIFF", ("tiff", "tif")),
         FormatInfo("pdf",  "PDF document", "",     ("pdf",)),
         FormatInfo("txt",  "Plain text",   "",     ("txt",)),
+        FormatInfo("docx", "Word document", "",    ("docx",)),
     ]
 }
 
@@ -126,12 +127,18 @@ def sniff_format(path: Path) -> Optional[str]:
     This is more reliable than extension-only detection and guards against
     misnamed files.
     """
-    # 1. Quick magic byte check for PDF files (%PDF-)
+    # 1. Quick magic byte check for document formats (PDF, DOCX)
     try:
         with open(path, "rb") as f:
             header = f.read(5)
             if header.startswith(b"%PDF-"):
                 return "pdf"
+            if header.startswith(b"PK\x03\x04"):
+                import zipfile
+                if zipfile.is_zipfile(path):
+                    with zipfile.ZipFile(path, "r") as zf:
+                        if "word/document.xml" in zf.namelist():
+                            return "docx"
     except (OSError, PermissionError):
         pass
 

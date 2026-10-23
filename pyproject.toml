@@ -10,11 +10,13 @@ requires-python = ">=3.10"
 # Pillow 10+ required for reliable EXIF transpose and WebP support.
 # pypdfium2 provides Apache-2.0 / BSD-3 native PDFium inspection and extraction.
 # rapidocr-onnxruntime + onnxruntime provide local, privacy-first CPU OCR.
+# python-docx provides MIT-licensed offline DOCX generation.
 dependencies = [
     "Pillow>=10.0,<14",
     "pypdfium2>=4.30.0",
     "rapidocr-onnxruntime>=1.2.3",
     "onnxruntime>=1.17.0",
+    "python-docx>=1.1.0",
 ]
 
 [project.optional-dependencies]

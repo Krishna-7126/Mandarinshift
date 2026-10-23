@@ -49,6 +49,23 @@ class DocumentExtractionResult:
         return "\n".join(chunks).strip()
 
 
+def _is_duplicate_text(native_str: str, ocr_str: str) -> bool:
+    """Return True if native text is largely a duplicate or subset of OCR text."""
+    norm_native = " ".join(native_str.lower().split())
+    norm_ocr = " ".join(ocr_str.lower().split())
+    if not norm_native or not norm_ocr:
+        return False
+    if norm_native in norm_ocr or norm_ocr in norm_native:
+        return True
+    native_words = norm_native.split()
+    ocr_words = set(norm_ocr.split())
+    if native_words:
+        overlap = sum(1 for w in native_words if w in ocr_words)
+        if (overlap / len(native_words)) >= 0.75:
+            return True
+    return False
+
+
 class NativePdfTextExtractor:
     """Extracts text page-by-page from PDF files using pypdfium2 and local OCR."""
 
@@ -184,11 +201,14 @@ class NativePdfTextExtractor:
                                 ocr_result = RapidOcrEngine.process_image(img_arr, page_number=page_num)
 
                                 if ocr_result.text:
-                                    if cleaned_text and cleaned_text.lower() not in ocr_result.text.lower():
-                                        # Preserve non-duplicate native text
-                                        cleaned_text = f"{cleaned_text}\n\n{ocr_result.text}".strip()
-                                    else:
+                                    if ocr_mode_norm == "force_ocr" or not cleaned_text:
                                         cleaned_text = ocr_result.text
+                                    elif _is_duplicate_text(cleaned_text, ocr_result.text):
+                                        # Prefer the longer/more complete text without duplicating lines
+                                        cleaned_text = ocr_result.text if len(ocr_result.text) >= len(cleaned_text) else cleaned_text
+                                    else:
+                                        # Combine distinct native text and OCR text
+                                        cleaned_text = f"{cleaned_text}\n\n{ocr_result.text}".strip()
 
                                     char_count = len(cleaned_text)
                                     ocr_applied = True

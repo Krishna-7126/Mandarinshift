@@ -1,6 +1,6 @@
 # LocalShift — Format Support Specification
 
-**Version:** 0.6.0 (Updated: Milestone LS-BE-006D)  
+**Version:** 0.7.0 (Updated: Milestone LS-BE-007A)  
 **Status:** Implemented & Verified  
 
 ---
@@ -20,10 +20,11 @@ LocalShift conversion capabilities are explicit and directional. A format pair i
 | `tiff` | Raster Image | `.tiff`, `.tif` | Magic bytes (`II*\x00` / `MM\x00*`) | Input & Output |
 | `pdf` | Document | `.pdf` | Magic bytes (`%PDF-`) | **Input Only** |
 | `txt` | Plain Text | `.txt` | Plain text / UTF-8 | **Output Only** |
+| `docx` | Word Document | `.docx` | Magic bytes (`PK\x03\x04` + `word/document.xml`) | **Output Only** |
 
 ---
 
-## 2. Directional Conversion Routes (21 Total)
+## 2. Directional Conversion Routes (22 Total)
 
 ### Image-to-Image Routes (20 Routes via `PillowImageAdapter`)
 Every distinct pair among `{"png", "jpeg", "webp", "bmp", "tiff"}` is supported in both directions:
@@ -34,8 +35,9 @@ Every distinct pair among `{"png", "jpeg", "webp", "bmp", "tiff"}` is supported 
 
 *Same-format conversion (e.g. `png` → `png`) is intentionally rejected as a no-op.*
 
-### Document Routes (1 Route via `PdfDocumentAdapter`)
+### Document Routes (2 Routes via `PdfDocumentAdapter`)
 - `pdf` → `txt`: Hybrid native text extraction and offline OCR to UTF-8 plain text.
+- `pdf` → `docx`: Structured document reconstruction into editable Microsoft Word (.docx) documents with headings, paragraphs, tables, embedded images, and page sequences.
 
 ---
 
@@ -76,6 +78,9 @@ Every distinct pair among `{"png", "jpeg", "webp", "bmp", "tiff"}` is supported 
 | `pdf` → `txt` | `page_separator` | `str` | `"\n\n--- Page {page} ---\n\n"` | Formatting template string inserted between consecutive extracted pages. |
 | `pdf` → `txt` | `ocr_mode` | `str` | `"auto"` | OCR routing strategy: `"auto"` (OCR scans and sparse pages), `"native_only"` (bypass OCR), `"force_ocr"` (rasterize all pages). |
 | `pdf` → `txt` | `ocr_dpi` | `int` | `200` | Resolution in DPI for raster page rendering prior to OCR (72–400, default 200). |
+| `pdf` → `docx` | `ocr_mode` | `str` | `"auto"` | OCR routing strategy: `"auto"` (OCR scans and sparse pages), `"native_only"` (bypass OCR), `"force_ocr"` (rasterize all pages). |
+| `pdf` → `docx` | `ocr_dpi` | `int` | `200` | Resolution in DPI for raster page rendering prior to OCR (72–400, default 200). |
+| `pdf` → `docx` | `extract_images` | `bool` | `True` | Extract and embed graphics and illustrations from digital pages into the Word document. |
 
 ---
 
@@ -94,5 +99,6 @@ Every distinct pair among `{"png", "jpeg", "webp", "bmp", "tiff"}` is supported 
 ## 6. Known Gaps and Deferred Capabilities
 
 1. **Multilingual OCR Weights:** Hindi / Devanagari OCR models are not bundled in the default distribution to keep binary footprint lean (~13.7 MB models).
-2. **Document Reconstruction (PDF → DOCX):** Structured layout reconstruction into editable Word documents is deferred to milestone **LS-BE-006E**.
-3. **PDF Generation (DOCX/Image → PDF):** LocalShift does not currently generate PDF files.
+2. **Advanced Typography & Vector Graphics:** Vector paths (PDF line art) are not converted to Word shapes; raster illustrations are extracted and embedded as PNG images.
+3. **PDF Generation (DOCX/Image → PDF):** LocalShift does not currently generate PDF files from Word or raster images.
+4. **Office Format Import (DOCX → *):** Ingestion and conversion of Microsoft Word documents is deferred to subsequent milestones.

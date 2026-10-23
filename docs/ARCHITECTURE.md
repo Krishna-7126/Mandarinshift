@@ -1,6 +1,6 @@
 # LocalShift — Architectural Overview
 
-**Version:** 0.6.0 (Updated: Milestone LS-BE-006D)  
+**Version:** 0.7.0 (Updated: Milestone LS-BE-007A)  
 **System:** Offline-First Desktop Conversion Backend  
 
 ---
@@ -10,7 +10,7 @@
 LocalShift is built on three strict non-negotiables:
 1. **Privacy First & 100% Offline:** Zero external network calls, zero analytics, zero document uploads. All conversion and OCR inference executes locally on the user's CPU.
 2. **Untrusted Input Defense:** PDFs and user-submitted files are treated as untrusted data. Strict bounds are enforced on file sizes (250 MiB), page counts (2000 pages), rendering resolutions (72–400 DPI), and pixel memory ceilings (16 MP per page).
-3. **Atomic & Collision-Safe I/O:** Conversions write to temporary files within safe directories and replace target files atomically. Existing files are never overwritten without explicit collision resolution (` (2)`, ` (3)`).
+3. **Atomic & Collision-Safe I/O:** Conversions write to temporary files within safe directories and replace target files atomically. Existing files are never overwritten without explicit collision resolution (` (1)`, ` (2)`).
 
 ---
 
@@ -30,17 +30,14 @@ LocalShift is built on three strict non-negotiables:
                                │
                ┌───────────────┴───────────────┐
                ▼                               ▼
-       [ PdfInspector ]             [ NativePdfTextExtractor ]
-    (Structure & Classification)          /              \
-                                         ▼                ▼
-                                 [ Digital Flow ]   [ OCR Flow ]
-                                        │                 │
-                                  (PDFium Native)    [ PdfPageRenderer ]
-                                                          │
-                                                    [ RapidOcrEngine ]
-                                                    (ONNX Runtime CPU)
-                                                          │
-                                                    [ reconstruct_reading_order ]
+       [ TXT Target: Extractor ]       [ DOCX Target: Reconstructor ]
+        /           \                     /       │         \
+       ▼             ▼                   ▼        ▼          ▼
+[ Native Flow ]  [ OCR Flow ]        [ Tables ] [ Images ] [ Headings ]
+       │             │                    │
+(PDFium Native) [ Renderer ]         (python-docx)
+                     │
+               [ RapidOCR ]
 ```
 
 ---
@@ -61,7 +58,7 @@ LocalShift is built on three strict non-negotiables:
 - Respects ISO 32000 maximum page dimensions (14,400 points).
 - Clamps rendering DPI to safe bounds (72–400 DPI, default 200 DPI).
 - Automatically downscales rendering scale if estimated pixel count exceeds `MAX_IMAGE_PIXELS` (16,000,000 pixels ~ 48 MB RAM buffer).
-- Explicit lifecycle management ensures native PDFium bitmap buffers are closed immediately after array extraction.
+- Hardened buffer memory ownership (`OWNDATA: True`) eliminates use-after-free risks when closing native PDFium bitmaps.
 
 ### C. Offline OCR Engine (`localshift.documents.ocr.RapidOcrEngine`)
 - Local, CPU-first inference using RapidOCR (v1.2.3) and ONNX Runtime CPU (v1.26.0).
@@ -85,6 +82,14 @@ LocalShift is built on three strict non-negotiables:
   - `"native_only"`: Fast digital extraction bypassing rasterization and OCR.
   - `"force_ocr"`: Forces full-page rasterization and OCR on all pages.
 
+### F. Structured DOCX Document Reconstruction (`localshift.documents.docx_builder.PdfToDocxReconstructor`)
+- Reconstructs digital, scanned, and mixed PDFs into editable Microsoft Word (.docx) documents.
+- **Headings:** Recovers multi-level headings (Levels 1–3) based on font size metrics, section numbering (`1.`, `1.1`), and uppercase title patterns.
+- **Paragraphs:** Conservative line joining groups visual lines into coherent paragraphs while respecting list bullets (`- `, `* `, `• `) and sentence boundaries.
+- **Tables:** Detects tabular structures from separator rules or aligned multi-column data, outputting native formatted Word tables (`Table Grid`).
+- **Images:** Extracts embedded raster graphics from digital pages and embeds them as scalable Word pictures.
+- **Orientation & Page Sequence:** Configures section orientation to landscape for rotated pages (90°/270°) and preserves multi-page sequence with page breaks.
+
 ---
 
 ## 4. Resource & Security Controls
@@ -92,7 +97,7 @@ LocalShift is built on three strict non-negotiables:
 | Resource | Boundary / Ceiling | Mechanism |
 |---|---|---|
 | Max File Size | 250 MiB | Checked at conversion entry point (`convert_request`) |
-| Max Pages | 2000 pages | Enforced in `NativePdfTextExtractor` before processing |
+| Max Pages | 2000 pages | Enforced in `NativePdfTextExtractor` & `PdfToDocxReconstructor` |
 | Max Dimensions | 14,400 points | Verified in `PdfPageRenderer` |
 | Max Raster Pixels | 16,000,000 pixels | Downscaled in `PdfPageRenderer` |
 | Memory Limits | CPU inference | ONNX Runtime CPU provider; no GPU allocations |

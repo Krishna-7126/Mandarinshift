@@ -288,3 +288,68 @@ class TestPdfToTxtOcrEndToEnd:
         cancelled = True
         with pytest.raises(ConversionCancelledError):
             adapter.convert(req, context)
+
+    def test_adapter_enforces_max_input_bytes(self, tmp_path: Path):
+        from localshift.exceptions import InputTooLargeError
+        pdf_path = FIXTURES_DIR / "doc_01_simple_digital.pdf"
+        context = ConversionContext(
+            temp_output_path=tmp_path / "temp.txt",
+            target_format="txt",
+            max_input_bytes=10,  # Strict 10-byte limit
+        )
+        adapter = PdfDocumentAdapter()
+        req = ConversionRequest(source=pdf_path, target_format="txt", output_dir=tmp_path)
+        with pytest.raises(InputTooLargeError, match="exceeds limit"):
+            adapter.convert(req, context)
+
+
+# ===========================================================================
+# 5. Reliability, De-duplication, and Model Audit Tests (LS-BE-006E)
+# ===========================================================================
+
+class TestPdfOcrReliabilityHardening:
+    def test_render_page_buffer_memory_ownership(self):
+        """Verify rendered NumPy array owns its data so closed bitmaps cause no use-after-free."""
+        import pypdfium2
+        pdf_path = FIXTURES_DIR / "doc_01_simple_digital.pdf"
+        doc = pypdfium2.PdfDocument(pdf_path)
+        try:
+            arr = PdfPageRenderer.render_page(doc[0], dpi=150)
+            assert arr.flags["OWNDATA"] is True
+            # Read and write elements to ensure memory buffer is fully safe
+            val = arr[0, 0, 0]
+            arr[0, 0, 0] = val
+        finally:
+            doc.close()
+
+    def test_force_ocr_does_not_duplicate_text(self):
+        """In force_ocr mode, native text must not be appended to OCR text."""
+        pdf_path = FIXTURES_DIR / "doc_01_simple_digital.pdf"
+        result = NativePdfTextExtractor.extract(pdf_path, ocr_mode="force_ocr")
+        text = result.pages[0].text
+        # "LocalShift Document Engine" must appear exactly once
+        assert text.count("LocalShift Document Engine") == 1
+
+    def test_is_duplicate_text_detection(self):
+        from localshift.documents.text_extractor import _is_duplicate_text
+        # Exact match
+        assert _is_duplicate_text("Invoice Number: INV-001", "Invoice Number: INV-001") is True
+        # Whitespace and case difference
+        assert _is_duplicate_text("Invoice Number:\nINV-001", "invoice number: inv-001") is True
+        # Substring / subset
+        assert _is_duplicate_text("INV-001", "Invoice Number: INV-001 Total $5.00") is True
+        # Distinct text
+        assert _is_duplicate_text("Page 1 Summary", "Customer Name: John Doe Address: 123 Main St") is False
+
+    def test_bundled_ocr_model_language_audit(self):
+        """Empirically verify that bundled PP-OCR model includes Latin and Chinese, but not Devanagari."""
+        engine = RapidOcrEngine.get_engine()
+        chars = engine.text_recognizer.character_dict_path
+        assert len(chars) > 6000
+        # Latin support
+        assert any("a" <= c <= "z" for c in chars)
+        # Chinese support
+        assert any("\u4e00" <= c <= "\u9fff" for c in chars)
+        # Devanagari (Hindi) is absent from default bundled model
+        assert not any("\u0900" <= c <= "\u097f" for c in chars)
+

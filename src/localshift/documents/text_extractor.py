@@ -1,5 +1,5 @@
 """
-localshift.documents.text_extractor — Native text extraction and structured page output.
+localshift.documents.text_extractor — Native text extraction, OCR routing, and structured page output.
 """
 from __future__ import annotations
 
@@ -9,7 +9,9 @@ from pathlib import Path
 from typing import Callable, Optional
 
 from ..exceptions import ConversionCancelledError, ConversionFailedError, InvalidInputError
+from .ocr import RapidOcrEngine
 from .pdf_inspector import PageContentClassification, PdfInspectionReport, PdfInspector
+from .renderer import PdfPageRenderer
 
 log = logging.getLogger(__name__)
 
@@ -22,6 +24,8 @@ class PageTextResult:
     character_count: int
     classification: PageContentClassification
     warnings: tuple[str, ...] = ()
+    ocr_applied: bool = False
+    confidence: Optional[float] = None
 
 
 @dataclass(frozen=True)
@@ -32,9 +36,12 @@ class DocumentExtractionResult:
     total_characters: int
     pages: tuple[PageTextResult, ...]
     warnings: tuple[str, ...] = ()
+    ocr_pages_count: int = 0
 
     def to_plain_text(self, *, page_separator: str = "\n\n--- Page {page} ---\n\n") -> str:
         """Render all pages to a clean plain-text string with standardized page separators."""
+        if self.total_characters == 0:
+            return ""
         chunks = []
         for p in self.pages:
             sep = page_separator.format(page=p.page_number) if page_separator else ""
@@ -43,7 +50,7 @@ class DocumentExtractionResult:
 
 
 class NativePdfTextExtractor:
-    """Extracts native text page-by-page from PDF files using pypdfium2."""
+    """Extracts text page-by-page from PDF files using pypdfium2 and local OCR."""
 
     #: Default limit on maximum pages processed to prevent resource exhaustion.
     MAX_PAGES_LIMIT: int = 2000
@@ -55,13 +62,21 @@ class NativePdfTextExtractor:
         *,
         max_pages: int = MAX_PAGES_LIMIT,
         cancel_check: Optional[Callable[[], bool]] = None,
+        ocr_mode: str = "native_only",
+        ocr_dpi: int = PdfPageRenderer.DEFAULT_DPI,
     ) -> DocumentExtractionResult:
-        """Extract native text from *path* page by page with cooperative cancellation checks."""
+        """Extract text from *path* page by page with cooperative cancellation checks and OCR routing."""
         import pypdfium2
 
         path = Path(path)
         if not path.exists():
             raise InvalidInputError(f"Input file not found: {path}")
+
+        ocr_mode_norm = ocr_mode.strip().lower()
+        if ocr_mode_norm not in ("auto", "native_only", "force_ocr"):
+            raise InvalidInputError(
+                f"Invalid ocr_mode: {ocr_mode!r}. Must be 'auto', 'native_only', or 'force_ocr'."
+            )
 
         if cancel_check and cancel_check():
             raise ConversionCancelledError("Extraction cancelled before starting.")
@@ -79,6 +94,7 @@ class NativePdfTextExtractor:
 
         page_results: list[PageTextResult] = []
         total_chars = 0
+        ocr_pages_count = 0
         doc_warnings: list[str] = []
 
         try:
@@ -94,27 +110,102 @@ class NativePdfTextExtractor:
 
                 page_num = page_idx + 1
                 page_warnings: list[str] = []
+                ocr_applied = False
+                ocr_confidence: Optional[float] = None
 
                 try:
                     page = doc[page_idx]
                     textpage = page.get_textpage()
-                    # Extract full page text range
                     raw_text = textpage.get_text_range() or ""
-                    # Standardize carriage returns to standard newlines
                     normalized_text = raw_text.replace("\r\n", "\n").replace("\r", "\n")
                     cleaned_text = normalized_text.strip()
                     char_count = len(cleaned_text)
-                    total_chars += char_count
 
+                    has_images = False
+                    has_paths = False
+                    has_other_objects = False
+                    try:
+                        for obj in page.get_objects():
+                            obj_type = getattr(obj, "type", None)
+                            type_name = type(obj).__name__
+                            if obj_type == 3 or type_name == "PdfImage":
+                                has_images = True
+                            elif obj_type == 2 or type_name == "PdfPath":
+                                has_paths = True
+                            elif obj_type != 1 and type_name != "PdfTextObj":
+                                has_other_objects = True
+                    except Exception:
+                        pass
+
+                    # Page classification heuristics
                     if char_count == 0:
-                        classification = PageContentClassification.IMAGE_LIKELY
-                        page_warnings.append("No native text extracted from page.")
+                        if has_images:
+                            classification = PageContentClassification.IMAGE_LIKELY
+                            page_warnings.append("No native text extracted from page; page contains embedded image graphics.")
+                        elif has_paths:
+                            classification = PageContentClassification.MIXED_OR_UNCERTAIN
+                            page_warnings.append("No native text extracted from page; page contains vector path elements.")
+                        elif not has_other_objects:
+                            classification = PageContentClassification.EMPTY_OR_UNKNOWN
+                            page_warnings.append("Page appears to be empty; no text or graphics objects detected.")
+                        else:
+                            classification = PageContentClassification.IMAGE_LIKELY
+                            page_warnings.append("No native text extracted from page.")
+                    elif has_images:
+                        classification = PageContentClassification.MIXED_OR_UNCERTAIN
+                        page_warnings.append(f"Page contains both native text ({char_count} chars) and embedded graphics.")
                     elif char_count < PdfInspector.SPARSE_TEXT_THRESHOLD:
                         classification = PageContentClassification.MIXED_OR_UNCERTAIN
                         page_warnings.append(f"Sparse native text ({char_count} chars).")
                     else:
                         classification = PageContentClassification.TEXT_PRESENT
 
+                    # OCR Routing Decision
+                    should_ocr = False
+                    if ocr_mode_norm == "force_ocr":
+                        should_ocr = True
+                    elif ocr_mode_norm == "auto":
+                        if classification is PageContentClassification.IMAGE_LIKELY:
+                            should_ocr = True
+                        elif (
+                            classification is PageContentClassification.MIXED_OR_UNCERTAIN
+                            and has_images
+                            and char_count < PdfInspector.SPARSE_TEXT_THRESHOLD
+                        ):
+                            should_ocr = True
+
+                    if should_ocr:
+                        if cancel_check and cancel_check():
+                            raise ConversionCancelledError(f"Extraction cancelled before OCR on page {page_num}.")
+
+                        if RapidOcrEngine.is_available():
+                            try:
+                                img_arr = PdfPageRenderer.render_page(page, dpi=ocr_dpi)
+                                ocr_result = RapidOcrEngine.process_image(img_arr, page_number=page_num)
+
+                                if ocr_result.text:
+                                    if cleaned_text and cleaned_text.lower() not in ocr_result.text.lower():
+                                        # Preserve non-duplicate native text
+                                        cleaned_text = f"{cleaned_text}\n\n{ocr_result.text}".strip()
+                                    else:
+                                        cleaned_text = ocr_result.text
+
+                                    char_count = len(cleaned_text)
+                                    ocr_applied = True
+                                    ocr_confidence = ocr_result.mean_confidence
+                                    ocr_pages_count += 1
+
+                                for w in ocr_result.warnings:
+                                    page_warnings.append(w)
+                            except ConversionCancelledError:
+                                raise
+                            except Exception as ocr_exc:
+                                log.warning("OCR failed on page %d: %s", page_num, ocr_exc)
+                                page_warnings.append(f"OCR processing failed on page {page_num}: {ocr_exc}")
+                        else:
+                            page_warnings.append("Page appears to be a scan, but OCR engine is unavailable.")
+
+                    total_chars += char_count
                     page_results.append(
                         PageTextResult(
                             page_number=page_num,
@@ -122,6 +213,8 @@ class NativePdfTextExtractor:
                             character_count=char_count,
                             classification=classification,
                             warnings=tuple(page_warnings),
+                            ocr_applied=ocr_applied,
+                            confidence=ocr_confidence,
                         )
                     )
                 except ConversionCancelledError:
@@ -141,7 +234,9 @@ class NativePdfTextExtractor:
             if doc is not None:
                 doc.close()
 
-        if total_chars == 0 and len(page_results) > 0:
+        if ocr_pages_count > 0:
+            doc_warnings.append(f"Scanned page: OCR applied to {ocr_pages_count} of {len(page_results)} page(s).")
+        elif total_chars == 0 and len(page_results) > 0:
             doc_warnings.append("No extractable native text found across any pages. File may be an image scan.")
 
         return DocumentExtractionResult(
@@ -150,4 +245,9 @@ class NativePdfTextExtractor:
             total_characters=total_chars,
             pages=tuple(page_results),
             warnings=tuple(doc_warnings),
+            ocr_pages_count=ocr_pages_count,
         )
+
+
+# Backward-compatible alias
+PdfTextExtractor = NativePdfTextExtractor

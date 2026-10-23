@@ -76,9 +76,9 @@ class TestDocumentSniffing:
 
 
 class TestBenchmarkFixtures:
-    def test_benchmark_generator_generates_all_10_fixtures(self, tmp_path: Path):
+    def test_benchmark_generator_generates_all_fixtures(self, tmp_path: Path):
         fixtures = generate_benchmark_fixtures(tmp_path)
-        assert len(fixtures) == 10
+        assert len(fixtures) == 14
         expected_keys = {
             "doc_01_simple_digital",
             "doc_02_multipage_digital",
@@ -90,6 +90,10 @@ class TestBenchmarkFixtures:
             "doc_08_rotated_page",
             "doc_09_corrupt",
             "doc_10_encrypted",
+            "doc_11_unicode_digital",
+            "doc_12_hierarchy",
+            "doc_13_empty",
+            "doc_14_interleaved_multicolumn",
         }
         assert set(fixtures.keys()) == expected_keys
         for path in fixtures.values():

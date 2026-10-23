@@ -5,7 +5,9 @@ native text extraction, and PDF-to-TXT adapter (LS-BE-006B).
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 
@@ -41,6 +43,42 @@ FIXTURES_DIR = Path(__file__).parent / "fixtures" / "documents"
 def _normalize_text(s: str) -> str:
     """Normalize whitespace for determinism in assertions without hiding word order."""
     return " ".join(s.split())
+
+
+def _install_partially_unreadable_pdfium(monkeypatch):
+    class FakeTextPage:
+        def __init__(self, unreadable: bool):
+            self.unreadable = unreadable
+
+        def get_text_range(self):
+            if self.unreadable:
+                raise RuntimeError("simulated text extraction failure")
+            return "Readable text from page one."
+
+    class FakePage:
+        def __init__(self, unreadable: bool):
+            self.unreadable = unreadable
+
+        def get_textpage(self):
+            return FakeTextPage(self.unreadable)
+
+    class FakeDocument:
+        def __init__(self):
+            self.pages = (FakePage(False), FakePage(True))
+
+        def __len__(self):
+            return len(self.pages)
+
+        def __getitem__(self, index):
+            return self.pages[index]
+
+        def close(self):
+            pass
+
+    fake_pdfium = ModuleType("pypdfium2")
+    fake_pdfium.PdfDocument = lambda path: FakeDocument()
+    fake_pdfium.PdfiumError = RuntimeError
+    monkeypatch.setitem(sys.modules, "pypdfium2", fake_pdfium)
 
 
 # ---------------------------------------------------------------------------
@@ -120,11 +158,10 @@ class TestPdfInspector:
         report = PdfInspector.inspect(pdf_path)
 
         assert report.page_count == 2
-        for page in report.pages:
-            assert page.classification in (
-                PageContentClassification.IMAGE_LIKELY,
-                PageContentClassification.MIXED_OR_UNCERTAIN,
-            )
+        assert report.pages[0].classification is PageContentClassification.TEXT_PRESENT
+        assert report.pages[1].classification is PageContentClassification.IMAGE_LIKELY
+        assert report.has_native_text is True
+        assert report.candidate_for_ocr is True
 
     def test_inspect_rotated_page_pdf(self):
         pdf_path = FIXTURES_DIR / "doc_08_rotated_page.pdf"
@@ -235,6 +272,20 @@ class TestNativeTextExtractor:
         with pytest.raises(InvalidInputError, match="exceeding the limit"):
             NativePdfTextExtractor.extract(pdf_path, max_pages=2)
 
+    def test_extract_preserves_readable_and_unreadable_pages(self, tmp_path: Path, monkeypatch):
+        _install_partially_unreadable_pdfium(monkeypatch)
+        pdf_path = tmp_path / "mixed.pdf"
+        pdf_path.write_bytes(b"%PDF-1.4\n")
+
+        result = NativePdfTextExtractor.extract(pdf_path)
+
+        assert result.page_count == 2
+        assert result.pages[0].text == "Readable text from page one."
+        assert result.pages[0].classification is PageContentClassification.MIXED_OR_UNCERTAIN
+        assert result.pages[1].text == ""
+        assert result.pages[1].classification is PageContentClassification.UNREADABLE
+        assert "simulated text extraction failure" in result.pages[1].warnings[0]
+
     def test_extract_unicode_digital_pdf(self, tmp_path: Path):
         # Synthesize a born-digital PDF containing non-ASCII / Unicode Latin text
         unicode_text = "LocalShift Tëst: Café résumé naïve façade. 100€ — OK."
@@ -253,6 +304,18 @@ class TestNativeTextExtractor:
 # ---------------------------------------------------------------------------
 
 class TestPdfToTxtConversion:
+    def test_partial_page_extraction_failure_leaves_no_output(self, tmp_path: Path, monkeypatch):
+        _install_partially_unreadable_pdfium(monkeypatch)
+        pdf_path = tmp_path / "mixed.pdf"
+        pdf_path.write_bytes(b"%PDF-1.4\n")
+        output_dir = tmp_path / "output"
+        request = ConversionRequest(source=pdf_path, target_format="txt", output_dir=output_dir)
+
+        with pytest.raises(ConversionFailedError, match=r"page\(s\): 2"):
+            convert_request(request)
+
+        assert list(output_dir.iterdir()) == []
+
     def test_adapter_registered_in_default_registry(self):
         adapter = default_registry.get_adapter("pdf", "txt")
         assert adapter is not None
@@ -362,8 +425,11 @@ class TestPdfToTxtConversion:
         assert plan.route_supported is True
         assert plan.adapter_id == "pdf_native_text"
         assert plan.is_ready is True
-        assert len(plan.applicable_options) == 1
-        assert plan.applicable_options[0].name == "page_separator"
+        assert len(plan.applicable_options) == 3
+        option_names = [opt.name for opt in plan.applicable_options]
+        assert "page_separator" in option_names
+        assert "ocr_mode" in option_names
+        assert "ocr_dpi" in option_names
 
     def test_plan_route_pdf_to_unsupported_format(self):
         plan = plan_route("pdf", "docx")

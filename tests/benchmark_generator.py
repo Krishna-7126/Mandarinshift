@@ -4,18 +4,22 @@ tests/benchmark_generator.py — Deterministic synthetic document fixture genera
 Generates reproducible, legally clean PDF test fixtures for:
 - Born-digital native text
 - Multi-page documents
-- Multi-column layouts
+- Multi-column layouts (sequential and interleaved stream order)
 - Tabular structures
 - Scanned raster text pages (English & Hindi)
 - Mixed native/scanned pages
 - Rotated pages
 - Encrypted/password-protected PDFs
 - Corrupt/damaged PDFs
+- Born-digital multilingual Unicode text (diacritics, symbols, Latin accents)
+- Heading & paragraph structural hierarchy
+- Truly empty/blank pages
 
-Requires only Pillow and Python standard library. No external binaries or non-permissive dependencies.
+Requires only Pillow, pypdfium2, and Python standard library.
 """
 from __future__ import annotations
 
+import io
 import os
 from pathlib import Path
 from typing import Optional
@@ -29,19 +33,13 @@ def _build_simple_pdf_bytes(
     rotation: int = 0,
     corrupt_trailer: bool = False,
 ) -> bytes:
-    """Generate a clean, minimal 7-bit ASCII PDF 1.4 byte string without external libraries.
+    """Generate a clean, minimal PDF 1.4 byte string without external binaries.
 
-    Supports simple native text streams, page counts, page rotation metadata, and intentional corruption.
+    Uses standard Helvetica with WinAnsiEncoding for accurate Latin-1 / Western
+    diacritic text representation and exact byte offsets.
     """
     if corrupt_trailer:
         return b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n%%EOF_CORRUPTED"
-
-    # Minimal PDF structure:
-    # 1 0 obj: Catalog
-    # 2 0 obj: Pages
-    # 3 0 obj: Font (Helvetica)
-    # Then for each page i:
-    # Page object (4 + 2*i), Content object (5 + 2*i)
 
     num_pages = len(pages_text)
     objects: list[bytes] = []
@@ -56,17 +54,15 @@ def _build_simple_pdf_bytes(
     )
     objects.append(pages_obj)
 
-    # Object 3: Standard Font (Helvetica)
-    objects.append(b"<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>")
+    # Object 3: Standard Font (Helvetica with WinAnsiEncoding for accented glyphs)
+    objects.append(b"<</Type/Font/Subtype/Type1/BaseFont/Helvetica/Encoding/WinAnsiEncoding>>")
 
     for i, text in enumerate(pages_text):
-        # Clean text for PDF literal string
         safe_text = text.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
-        # Content stream: BT /F1 12 Tf 50 750 Td (text) Tj ET
         lines = safe_text.split("\n")
         stream_cmds = [b"BT", b"/F1 12 Tf", b"50 750 Td", b"14 TL"]
         for line_idx, line in enumerate(lines):
-            line_bytes = line.encode("latin-1", errors="replace")
+            line_bytes = line.encode("cp1252", errors="replace")
             if line_idx > 0:
                 stream_cmds.append(b"T* (" + line_bytes + b") Tj")
             else:
@@ -112,23 +108,71 @@ def _build_simple_pdf_bytes(
     return bytes(output)
 
 
+#: Ground truth text for all benchmark fixtures where expected text exists.
+GROUND_TRUTH_TEXT: dict[str, str] = {
+    "doc_01_simple_digital": (
+        "LocalShift Document Engine\n"
+        "This is a clean, single-page born-digital PDF document.\n"
+        "It contains standard ASCII text suitable for evaluating native extraction."
+    ),
+    "doc_02_multipage_digital": (
+        "Page 1 of 3\nSection 1: Evaluation of multi-page flow and sequential reading order.\n\n"
+        "Page 2 of 3\nSection 2: Evaluation of multi-page flow and sequential reading order.\n\n"
+        "Page 3 of 3\nSection 3: Evaluation of multi-page flow and sequential reading order."
+    ),
+    "doc_03_multicolumn": (
+        "Column 1 Headline\nLocalShift provides local\nconversion workflows.\nPrivacy first.\n\n"
+        "Column 2 Headline\nIndependent modular\nadapter architecture.\nZero network leakage."
+    ),
+    "doc_04_table": (
+        "Item ID    Description       Qty    Unit Price    Total\n"
+        "-------------------------------------------------------\n"
+        "LS-001     Image Converter   1      $0.00         $0.00\n"
+        "LS-002     Job Queue         1      $0.00         $0.00\n"
+        "LS-003     Document Engine   1      $0.00         $0.00"
+    ),
+    "doc_05_english_scan": "",  # Raster image; 0 native text
+    "doc_06_hindi_scan": "",    # Raster image; 0 native text
+    "doc_07_mixed_pages": "Page 1: Digital Summary Report\nLocalShift engine supports mixed-content documents.",
+    "doc_08_rotated_page": "Landscape orientation test.\nThis page has /Rotate 90 metadata.",
+    "doc_09_corrupt": "",
+    "doc_10_encrypted": "",
+    "doc_11_unicode_digital": (
+        "LocalShift Multilingual Unicode Test\n"
+        "French: Café, naïve, résumé, façade.\n"
+        "German: Übergröße, Äpfel, Füße, Straßenbahn.\n"
+        "Spanish: Año del niño, pingüino, señorita.\n"
+        "Symbols: 100% — OK, ±5mm, ©2026 LocalShift, £50 / €75."
+    ),
+    "doc_12_hierarchy": (
+        "LOCALSHIFT ARCHITECTURE MANUAL\n\n"
+        "1. Executive Overview\n"
+        "LocalShift provides local, private conversion workflows.\n\n"
+        "1.1 Design Principles\n"
+        "- Privacy First: Zero network calls.\n"
+        "- Safety Boundary: In-process path reservations and atomic file replacement.\n"
+        "- Modularity: Directional adapter capability registry."
+    ),
+    "doc_13_empty": "",
+    "doc_14_interleaved_multicolumn": (
+        "Col 1 Line 1\nCol 1 Line 2\n\nCol 2 Line 1\nCol 2 Line 2"
+    ),
+}
+
+
 def generate_benchmark_fixtures(target_dir: Path) -> dict[str, Path]:
-    """Generate the 10 deterministic benchmark PDF fixtures in target_dir.
+    """Generate all 14 deterministic benchmark PDF fixtures in target_dir.
 
     Returns a mapping of stable fixture ID to output Path.
     """
+    import pypdfium2
+
     target_dir.mkdir(parents=True, exist_ok=True)
     fixtures: dict[str, Path] = {}
 
     # 1. Simple digital text PDF
     p1 = target_dir / "doc_01_simple_digital.pdf"
-    p1.write_bytes(
-        _build_simple_pdf_bytes([
-            "LocalShift Document Engine\n"
-            "This is a clean, single-page born-digital PDF document.\n"
-            "It contains standard ASCII text suitable for evaluating native extraction."
-        ])
-    )
+    p1.write_bytes(_build_simple_pdf_bytes([GROUND_TRUTH_TEXT["doc_01_simple_digital"]]))
     fixtures["doc_01_simple_digital"] = p1
 
     # 2. Multi-page digital PDF
@@ -141,26 +185,17 @@ def generate_benchmark_fixtures(target_dir: Path) -> dict[str, Path]:
     )
     fixtures["doc_02_multipage_digital"] = p2
 
-    # 3. Multi-column PDF (synthesized with column spacing in text layout)
+    # 3. Multi-column PDF (sequential stream order)
     p3 = target_dir / "doc_03_multicolumn.pdf"
-    col1 = "Column 1 Headline\nLocalShift provides local\nconversion workflows.\nPrivacy first."
-    col2 = "Column 2 Headline\nIndependent modular\nadapter architecture.\nZero network leakage."
-    p3.write_bytes(_build_simple_pdf_bytes([f"{col1}\n\n{col2}"]))
+    p3.write_bytes(_build_simple_pdf_bytes([GROUND_TRUTH_TEXT["doc_03_multicolumn"]]))
     fixtures["doc_03_multicolumn"] = p3
 
-    # 4. Table PDF (synthesized with ASCII text grid structure)
+    # 4. Table PDF
     p4 = target_dir / "doc_04_table.pdf"
-    table_text = (
-        "Item ID    Description       Qty    Unit Price    Total\n"
-        "-------------------------------------------------------\n"
-        "LS-001     Image Converter   1      $0.00         $0.00\n"
-        "LS-002     Job Queue         1      $0.00         $0.00\n"
-        "LS-003     Document Engine   1      $0.00         $0.00"
-    )
-    p4.write_bytes(_build_simple_pdf_bytes([table_text]))
+    p4.write_bytes(_build_simple_pdf_bytes([GROUND_TRUTH_TEXT["doc_04_table"]]))
     fixtures["doc_04_table"] = p4
 
-    # 5. English scanned PDF (raster image saved as PDF via Pillow)
+    # 5. English scanned PDF (pure raster image via Pillow)
     p5 = target_dir / "doc_05_english_scan.pdf"
     img_en = Image.new("RGB", (600, 800), "white")
     draw_en = ImageDraw.Draw(img_en)
@@ -171,33 +206,34 @@ def generate_benchmark_fixtures(target_dir: Path) -> dict[str, Path]:
     img_en.save(p5, format="PDF")
     fixtures["doc_05_english_scan"] = p5
 
-    # 6. Hindi scanned PDF (raster image with Hindi Unicode glyphs rendered)
+    # 6. Hindi scanned PDF (raster image with Devanagari text rendered to pixels)
     p6 = target_dir / "doc_06_hindi_scan.pdf"
     img_hi = Image.new("RGB", (600, 800), "white")
     draw_hi = ImageDraw.Draw(img_hi)
-    # Using Devanagari text string (Pillow default font will render or placeholder)
     draw_hi.text((50, 50), "LocalShift Hindi Document Scan", fill="black")
     draw_hi.text((50, 90), "नमस्ते दुनिया (Hello World in Hindi)", fill="black")
     draw_hi.text((50, 130), "यह एक हिंदी दस्तावेज़ परीक्षण है।", fill="black")
     img_hi.save(p6, format="PDF")
     fixtures["doc_06_hindi_scan"] = p6
 
-    # 7. Mixed native-text and scanned pages (2 pages via Pillow)
+    # 7. Genuine mixed pages: Page 1 digital native text, Page 2 scanned image
     p7 = target_dir / "doc_07_mixed_pages.pdf"
-    page1_img = Image.new("RGB", (400, 600), "white")
-    draw_p1 = ImageDraw.Draw(page1_img)
-    draw_p1.text((30, 40), "Page 1: Digital Summary", fill="black")
-
-    page2_img = Image.new("RGB", (400, 600), "lightgray")
-    draw_p2 = ImageDraw.Draw(page2_img)
-    draw_p2.text((30, 40), "Page 2: Photocopied Form Scan", fill="black")
-    page1_img.save(p7, format="PDF", save_all=True, append_images=[page2_img])
+    p7_text_bytes = _build_simple_pdf_bytes([GROUND_TRUTH_TEXT["doc_07_mixed_pages"]])
+    doc_p7_text = pypdfium2.PdfDocument(p7_text_bytes)
+    doc_p7_scan = pypdfium2.PdfDocument(p5)
+    doc_p7_merged = pypdfium2.PdfDocument.new()
+    doc_p7_merged.import_pages(doc_p7_text, [0])
+    doc_p7_merged.import_pages(doc_p7_scan, [0])
+    doc_p7_merged.save(p7)
+    doc_p7_text.close()
+    doc_p7_scan.close()
+    doc_p7_merged.close()
     fixtures["doc_07_mixed_pages"] = p7
 
     # 8. Rotated page PDF (90 degrees clockwise)
     p8 = target_dir / "doc_08_rotated_page.pdf"
     p8.write_bytes(
-        _build_simple_pdf_bytes(["Landscape orientation test.\nThis page has /Rotate 90 metadata."], rotation=90)
+        _build_simple_pdf_bytes([GROUND_TRUTH_TEXT["doc_08_rotated_page"]], rotation=90)
     )
     fixtures["doc_08_rotated_page"] = p8
 
@@ -208,7 +244,6 @@ def generate_benchmark_fixtures(target_dir: Path) -> dict[str, Path]:
 
     # 10. Encrypted PDF marker/simulation
     p10 = target_dir / "doc_10_encrypted.pdf"
-    # Minimal PDF dictionary declaring /Encrypt dictionary
     encrypted_pdf = (
         b"%PDF-1.4\n"
         b"1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
@@ -220,6 +255,50 @@ def generate_benchmark_fixtures(target_dir: Path) -> dict[str, Path]:
     )
     p10.write_bytes(encrypted_pdf)
     fixtures["doc_10_encrypted"] = p10
+
+    # 11. Unicode digital text PDF (diacritics, accented letters, currency symbols)
+    p11 = target_dir / "doc_11_unicode_digital.pdf"
+    p11.write_bytes(_build_simple_pdf_bytes([GROUND_TRUTH_TEXT["doc_11_unicode_digital"]]))
+    fixtures["doc_11_unicode_digital"] = p11
+
+    # 12. Heading and paragraph structural hierarchy
+    p12 = target_dir / "doc_12_hierarchy.pdf"
+    p12.write_bytes(_build_simple_pdf_bytes([GROUND_TRUTH_TEXT["doc_12_hierarchy"]]))
+    fixtures["doc_12_hierarchy"] = p12
+
+    # 13. Truly empty / blank page PDF (0 text, 0 image objects)
+    p13 = target_dir / "doc_13_empty.pdf"
+    doc_empty = pypdfium2.PdfDocument.new()
+    doc_empty.new_page(612, 792)
+    doc_empty.save(p13)
+    doc_empty.close()
+    fixtures["doc_13_empty"] = p13
+
+    # 14. Multi-column PDF with interleaved stream (to evaluate reading-order failure modes)
+    p14 = target_dir / "doc_14_interleaved_multicolumn.pdf"
+    stream_cmds = [
+        b"BT", b"/F1 12 Tf",
+        b"1 0 0 1 50 700 Tm", b"(Col 1 Line 1) Tj",
+        b"1 0 0 1 300 700 Tm", b"(Col 2 Line 1) Tj",
+        b"1 0 0 1 50 680 Tm", b"(Col 1 Line 2) Tj",
+        b"1 0 0 1 300 680 Tm", b"(Col 2 Line 2) Tj",
+        b"ET",
+    ]
+    stream_bytes = b"\n".join(stream_cmds)
+    p14_pdf = (
+        b"%PDF-1.4\n"
+        b"1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+        b"2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
+        b"3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Resources<</Font<</F1 4 0 R>>>>/Contents 5 0 R>>endobj\n"
+        b"4 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica/Encoding/WinAnsiEncoding>>endobj\n"
+        b"5 0 obj<</Length " + str(len(stream_bytes)).encode("ascii") + b">>\nstream\n"
+        + stream_bytes + b"\nendstream\nendobj\n"
+        b"xref\n0 6\n0000000000 65535 f \n"
+        b"0000000009 00000 n \n0000000052 00000 n \n0000000105 00000 n \n0000000219 00000 n \n0000000300 00000 n \n"
+        b"trailer\n<</Size 6/Root 1 0 R>>\nstartxref\n500\n%%EOF\n"
+    )
+    p14.write_bytes(p14_pdf)
+    fixtures["doc_14_interleaved_multicolumn"] = p14
 
     return fixtures
 

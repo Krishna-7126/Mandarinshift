@@ -133,13 +133,48 @@ class PdfInspector:
                     char_count = len(cleaned_text)
                     total_chars += char_count
 
+                    # Inspect page objects to distinguish text, image, and empty pages
+                    has_images = False
+                    has_paths = False
+                    has_other_objects = False
+                    text_objs = []
+                    try:
+                        for obj in page.get_objects():
+                            obj_type = getattr(obj, "type", None)
+                            type_name = type(obj).__name__
+                            if obj_type == 3 or type_name == "PdfImage":
+                                has_images = True
+                            elif obj_type == 1 or type_name == "PdfTextObj":
+                                text_objs.append(obj)
+                            elif obj_type == 2 or type_name == "PdfPath":
+                                has_paths = True
+                            else:
+                                has_other_objects = True
+                    except Exception:
+                        pass
+
                     if rotation != 0:
                         page_warnings.append(f"Page has non-zero rotation: {rotation} degrees.")
 
                     # Classification heuristics
                     if char_count == 0:
-                        classification = PageContentClassification.IMAGE_LIKELY
-                        page_warnings.append("No native extractable text found on page.")
+                        if has_images:
+                            classification = PageContentClassification.IMAGE_LIKELY
+                            page_warnings.append("No native extractable text found on page.")
+                        elif has_paths:
+                            classification = PageContentClassification.MIXED_OR_UNCERTAIN
+                            page_warnings.append("No native extractable text found on page; page contains vector path elements.")
+                        elif not has_other_objects:
+                            classification = PageContentClassification.EMPTY_OR_UNKNOWN
+                            page_warnings.append("Page appears to be empty; no text or graphics objects detected.")
+                        else:
+                            classification = PageContentClassification.IMAGE_LIKELY
+                            page_warnings.append("No native extractable text found on page.")
+                    elif has_images:
+                        classification = PageContentClassification.MIXED_OR_UNCERTAIN
+                        page_warnings.append(
+                            f"Page contains both native text ({char_count} chars) and embedded graphics; OCR may be required for full content."
+                        )
                     elif char_count < cls.SPARSE_TEXT_THRESHOLD:
                         classification = PageContentClassification.MIXED_OR_UNCERTAIN
                         page_warnings.append(
@@ -147,6 +182,21 @@ class PdfInspector:
                         )
                     else:
                         classification = PageContentClassification.TEXT_PRESENT
+
+                    # Detect potential reading order anomalies (e.g. non-monotonic vertical progression)
+                    y_jumps = 0
+                    for i in range(1, len(text_objs)):
+                        try:
+                            prev_b = text_objs[i - 1].get_bounds()
+                            curr_b = text_objs[i].get_bounds()
+                            if curr_b[1] > prev_b[1] + 25:
+                                y_jumps += 1
+                        except Exception:
+                            break
+                    if y_jumps >= 2:
+                        page_warnings.append(
+                            f"Suspicious reading order detected: text stream jumps upward {y_jumps} times."
+                        )
 
                     preview = cleaned_text[:120].replace("\r", " ").replace("\n", " ")
 

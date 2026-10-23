@@ -9,7 +9,7 @@ from typing import Any, Optional
 
 from ..exceptions import ConversionCancelledError, ConversionFailedError, InvalidInputError
 from ..models import ConversionContext, ConversionRequest, ConversionResult, OptionSpec
-from .pdf_inspector import PdfInspector
+from .pdf_inspector import PageContentClassification
 from .text_extractor import NativePdfTextExtractor
 
 log = logging.getLogger(__name__)
@@ -51,6 +51,19 @@ class PdfDocumentAdapter:
                     default="\n\n--- Page {page} ---\n\n",
                     description="Separator string placed between consecutive pages in output text.",
                 ),
+                OptionSpec(
+                    name="ocr_mode",
+                    type_name="str",
+                    default="auto",
+                    choices=("auto", "native_only", "force_ocr"),
+                    description="OCR strategy: 'auto' (OCR scanned/sparse pages), 'native_only' (fast digital text), 'force_ocr' (rasterize all pages).",
+                ),
+                OptionSpec(
+                    name="ocr_dpi",
+                    type_name="int",
+                    default=200,
+                    description="DPI resolution for OCR rasterization (72-400, default 200).",
+                ),
             )
         return ()
 
@@ -66,6 +79,11 @@ class PdfDocumentAdapter:
             raise ConversionFailedError(f"Unsupported target format for PdfDocumentAdapter: {context.target_format!r}")
 
         page_sep = request.options.get("page_separator", "\n\n--- Page {page} ---\n\n")
+        ocr_mode = str(request.options.get("ocr_mode", "auto"))
+        try:
+            ocr_dpi = int(request.options.get("ocr_dpi", 200))
+        except (ValueError, TypeError):
+            ocr_dpi = 200
         source_format = request.source_format or "pdf"
 
         try:
@@ -73,21 +91,33 @@ class PdfDocumentAdapter:
         except OSError:
             input_bytes = 0
 
-        # Perform native text extraction with cancellation check callback
+        # Perform text extraction (with automatic or manual OCR routing) and cancellation callback
         try:
             extraction = NativePdfTextExtractor.extract(
                 request.source,
                 cancel_check=context.is_cancelled,
+                ocr_mode=ocr_mode,
+                ocr_dpi=ocr_dpi,
             )
         except ConversionCancelledError:
             raise
         except InvalidInputError:
             raise
         except Exception as exc:
-            log.exception("Native PDF extraction failed for %s", request.source.name)
+            log.exception("PDF text extraction failed for %s", request.source.name)
             raise ConversionFailedError(f"Could not extract text from PDF: {exc}") from exc
 
         context.check_cancelled()
+
+        unreadable_pages = [
+            str(page.page_number)
+            for page in extraction.pages
+            if page.classification is PageContentClassification.UNREADABLE
+        ]
+        if unreadable_pages:
+            raise ConversionFailedError(
+                f"Could not extract text from PDF page(s): {', '.join(unreadable_pages)}."
+            )
 
         try:
             full_text = extraction.to_plain_text(page_separator=page_sep)

@@ -15,24 +15,46 @@
 - [x] **LS-BE-007A**: PDF → DOCX Conversion Engine: Architecture, Implementation & Verification (`PdfToDocxReconstructor`, headings, tables, paragraphs, images, 18 new tests, 354 tests passing).
 - [x] **LS-BE-007B**: PDF → DOCX Quality Verification, Visual Fidelity & Real-World Benchmarking (`DocxVisualRenderer` via Word COM, borderless tables, image-caption flow, 18-fixture benchmark, 23 PDF-to-DOCX tests, 359 tests passing).
 - [x] **LS-BE-007C**: PDF → DOCX Unseen-Document Validation & Reliability Audit (10 unseen validation fixtures, thousands-comma accounting table fix, Word COM DisplayAlerts hardening, 7 new tests, 366 tests passing).
+- [x] **LS-BE-007D**: OCR Quality Engineering, Language Support & Scanned PDF Reliability (CJK full-width normalization, faint preprocessing, 90°/270° orientation recovery, LanguagePackConfig, unsupported language diagnostics, 6 new tests, 372 tests passing).
+- [x] **LS-BE-008A**: Real-World PDF → DOCX Reliability & Quality Validation (10 real-world evaluation fixtures `rw_01` to `rw_10`, financial table parenthesized negative number matching, leading column alignment, Article heading detection, semicolon/numbered list boundaries, 4 new regression tests, 376 tests passing).
+- [x] **LS-BE-008B**: Independent Holdout Validation & Conversion Quality Gate (10 untouched holdout fixtures `holdout_01` to `holdout_10`, 180° upside-down scan automatic orientation recovery, document-order stream evaluation, category-specific quality gate release criteria, 1 new regression test, 377 tests passing).
+- [x] **LS-BE-009**: DOCX → PDF Conversion Engine: Feasibility, Implementation & Verification (`DocxToPdfRenderer`, `DocxToPdfAdapter`, dynamic availability, LibreOffice/Word COM backend discovery, isolated temp sandboxing, timeout kill, cooperative cancellation, 6 fixtures, 26 new tests, 403 tests passing).
+- [x] **LS-BE-010**: PDF → PNG/JPEG Conversion Engine, Batch Export & Verification (offline rasterization engine via `PdfToImageExporter`, routes `pdf -> png` and `pdf -> jpeg`, single and multipage export, configurable DPI 72-400, JPEG quality 1-100, page selection parser, custom naming patterns with token substitution, per-page atomic placement and collision protection, multi-output `output_paths` in ConversionResult, cooperative cancellation and cleanup, 39 new tests, 442 tests passing).
+- [x] **LS-BE-011**: Image → PDF Conversion Engine, Multi-Image Assembly & Verification (offline image-to-PDF conversion engine via `ImageToPdfConverter` and `ImageToPdfAdapter`, routes `png|jpeg|webp|bmp|tiff -> pdf`, single image to PDF, ordered multipage assembly, batch conversion, validated options for page size `original|a4|letter`, fit `contain|cover`, orientation `portrait|landscape|auto`, point margins, background color fill with transparency compositing, non-RGB conversions, EXIF auto-transposition, pixel ceilings, collision avoidance, atomic placement, 39 new tests, 481 tests passing).
+- [x] **LS-BE-012**: PDF Workbench Engine: Merge, Split, Reorder & Rotate (offline structural PDF workbench via `PdfWorkbench`, operations `merge_pdfs`, `split_pdf`, `extract_pdf_pages`, `reorder_pdf_pages`, `rotate_pdf_pages`, multi-document merge ordering and dimension preservation, single-page and subset splits with custom pattern tokens, 1-based index page reordering, relative and absolute rotations for 90°/180°/270°/-90°, source input immutability, safe volume-local temp files, collision avoidance, cooperative cancellation, CLI subcommands `localshift pdf merge|split|extract|reorder|rotate`, 41 new tests, 522 tests passing).
+- [x] **LS-BE-013**: Unified PySide6 GUI Integration & PDF Workbench UX (clean, minimal PySide6 desktop interface integrating 5 dedicated workflows: General File Converter, PDF ↔ DOCX interchange with live backend discovery, PDF → PNG/JPEG rasterizer with DPI/quality/page selection, Images → PDF ordered multi-image assembly, and PDF Workbench Merge/Split/Extract/Reorder/Rotate; drag-and-drop queue, output directory selection, options binding, responsive `QThread` workers with cooperative cancellation, 30 new tests, 552 tests passing).
+- [x] **LS-BE-014**: Windows Packaging, Installer & Release Readiness (reproducible PyInstaller packaging producing `LocalShift.exe` GUI and `localshift-cli.exe` console binary, bundled OCR models, `pdfium.dll`, `onnxruntime.dll`, multi-resolution icons, Inno Setup 6 installer `LocalShift-Setup-0.14.0.exe` with silent install and clean uninstall, Defender/SmartScreen guidance, 6 new packaging tests, 558 tests passing).
+- [x] **LS-BE-015**: Release Candidate QA, Installation Reliability & Stability Audit (audit of v0.14.0-RC1, resolved RapidOCR dynamic module loading in frozen PyInstaller bundles, fixed Windows console Unicode charmap encode crash, resolved multipage CLI reporting, 5 new RC audit tests, verified installer lifecycle, 563 tests passing).
+- [x] **LS-BE-016**: Final Release & GitHub Publication Readiness (verified 37-point release gate, prepared third-party licenses manifest, generated portable zip bundle, synchronized version metadata, created GitHub release notes, release manifest, and publication commands).
 
 ---
 
 ## Current Status
 
-- **Test Suite:** 369 collected, 366 passed, 3 skipped, 0 failed.
+- **Version:** 0.14.0 (Final Release).
+- **Test Suite:** 566 collected, 563 passed, 3 skipped, 0 failed.
 - **Python Version:** 3.14.3 on Windows 11 AMD64.
+- **Packaging:** PyInstaller onedir distribution with dual GUI (`LocalShift.exe`) and CLI (`localshift-cli.exe`) targets.
+- **Installer:** Inno Setup 6 compiled installer `dist/installer/LocalShift-Setup-0.14.0.exe` (93.34 MB, LZMA2/ultra64 compressed).
+- **Portable Bundle:** `dist/LocalShift-v0.14.0-windows-x64.zip` (146.26 MB, SHA-256: `de04a9b9f5000a05324760a2355703a06f4f50a15a8070ced464d92a630412d2`).
+- **GUI Framework:** PySide6 v6.12.0 (LGPL-3.0) with zero backend dependency linkage.
 - **DOCX Engine:** `python-docx` v1.2.0 (MIT) + `lxml` v6.1.3 (BSD-3).
 - **OCR Engine:** RapidOCR v1.2.3 with ONNX Runtime v1.26.0 (CPUExecutionProvider).
-- **Visual QA Harness:** Microsoft Word COM automation rendering DOCX to PDF/images with 100% visual QA pass across 28 fixtures (18 known + 10 unseen).
-- **Generalization Verification:** Evaluated across 10 unseen fixtures (`val_01` to `val_10`). Recovered legal contracts, borderless financial ledger tables with thousands commas, technical figures, multilingual text, and multi-page manuscripts with 0.0% digital CER.
+- **Rendering Backends:** LibreOffice headless (`soffice.exe`) and Microsoft Word COM automation (`winword.exe`).
+- **Language Support:** Bundled Latin + Simplified Chinese; clean offline `LanguagePackConfig` registration interface for Hindi/Devanagari and non-Latin scripts.
+- **Visual QA Harness:** Microsoft Word COM automation rendering DOCX to PDF/images with 100% visual QA pass across 54 fixtures (18 synthetic + 10 unseen + 10 real-world + 10 holdout + 6 DOCX-to-PDF).
+- **PDF Image Export:** Fully offline raster export to PNG/JPEG with page subset selection, custom naming tokens, atomic placement, and collision protection.
+- **Image → PDF Engine:** Fully offline single and ordered multipage assembly from raster images with configurable geometry, margins, background compositing, and orientation.
+- **PDF Workbench Engine:** High-performance offline PDF merge, split, extract, reorder, and rotate engine with source immutability, atomic placement, and full CLI integration.
+- **Desktop Application:** Unified PySide6 desktop application with 5 dedicated workflow tabs and responsive worker threads.
 - **Offline Guarantee:** 100% offline, local CPU processing. Zero network telemetry.
 
 ---
 
-## Next Milestone
+## Future Roadmap (Post v0.14.0)
 
-- [ ] **LS-BE-008**: Document Conversion Route Expansion & Office Ingestion Foundation.
-  - Implement DOCX inspection and text extraction engine.
-  - Establish DOCX → PDF route design using available local rendering engines.
-  - Add bidirectional document format tests and preflight capability discovery.
+- [ ] **LS-FEAT-001**: Office Document Text Extraction & Batch DOCX Ingestion (`docx` -> `txt`).
+- [ ] **LS-FEAT-002**: Automatic Telemetry-Free GitHub Release Update Checking.
+
+
+

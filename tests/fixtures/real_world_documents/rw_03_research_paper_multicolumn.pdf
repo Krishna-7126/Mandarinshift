@@ -1,0 +1,56 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<</Type/Catalog/Pages 2 0 R>>
+endobj
+2 0 obj
+<</Type/Pages/Kids[4 0 R]/Count 1>>
+endobj
+3 0 obj
+<</Type/Font/Subtype/Type1/BaseFont/Helvetica/Encoding/WinAnsiEncoding>>
+endobj
+4 0 obj
+<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Resources<</Font<</F1 3 0 R>>>>/Contents 5 0 R>>
+endobj
+5 0 obj
+<</Length 1031>>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+14 TL
+(Fast Deterministic PDF Text Reconstruction) Tj
+T* () Tj
+T* (Abstract ó We present an offline document extraction pipeline for modern desktop environments.) Tj
+T* (The method combines PDFium native stream parsing with local ONNX-based OCR routing.) Tj
+T* () Tj
+T* (1. Introduction) Tj
+T* (Document conversion in privacy-critical environments requires fully local computation.) Tj
+T* (Cloud-based extraction introduces telemetry risks and latency penalties.) Tj
+T* () Tj
+T* (2. Methodology) Tj
+T* (Our pipeline classifies pages into born-digital text and raster scans.) Tj
+T* (Digital pages bypass rasterization completely, achieving sub-millisecond throughput.) Tj
+T* () Tj
+T* (3. Experimental Results) Tj
+T* (Evaluation across diverse benchmarks demonstrates 0.0% CER on born-digital text.) Tj
+T* (Peak heap memory remains below 10 KiB for native extraction pipelines.) Tj
+T* () Tj
+T* (4. Conclusion) Tj
+T* (Offline document conversion provides superior privacy and predictable resource limits.) Tj
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000015 00000 n 
+0000000060 00000 n 
+0000000111 00000 n 
+0000000199 00000 n 
+0000000311 00000 n 
+trailer
+<</Size 6/Root 1 0 R>>
+startxref
+1392
+%%EOF

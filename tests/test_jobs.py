@@ -337,7 +337,7 @@ class TestSingleJobFailure:
         q = JobQueue(max_workers=1)
         try:
             with pytest.raises(ValueError, match="Invalid target format"):
-                q.submit(src, "pdf", output_dir=tmp_path)
+                q.submit(src, "xyz", output_dir=tmp_path)
         finally:
             q.shutdown(wait=True)
 

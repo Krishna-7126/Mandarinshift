@@ -28,7 +28,7 @@ Backend modules have NO dependency on PySide6.
 """
 from __future__ import annotations
 
-__version__ = "0.5.0"
+__version__ = "0.14.0"
 __all__ = [
     # Single-image conversion (original API — unchanged).
     "convert_image",
@@ -47,12 +47,26 @@ __all__ = [
     "ConversionFailedError",
     "ConversionCancelledError",
     "AdapterRegistrationError",
-    # Adapter & Registry architecture (LS-BE-004)
+    # Adapter & Registry architecture (LS-BE-004, LS-BE-009, LS-BE-010, LS-BE-011)
     "ConversionAdapter",
     "AdapterRegistry",
     "default_registry",
     "PillowImageAdapter",
     "PdfDocumentAdapter",
+    "DocxToPdfAdapter",
+    "DocxToPdfRenderer",
+    "PdfToImageExporter",
+    "ImageToPdfAdapter",
+    "ImageToPdfConverter",
+    "convert_images_to_pdf",
+    "convert_images_batch_to_pdf",
+    # PDF Workbench (LS-BE-012)
+    "PdfWorkbench",
+    "merge_pdfs",
+    "split_pdf",
+    "extract_pdf_pages",
+    "reorder_pdf_pages",
+    "rotate_pdf_pages",
     # Documents (LS-BE-006B)
     "PdfInspector",
     "PdfInspectionReport",
@@ -93,6 +107,18 @@ __all__ = [
 # Re-export primary backend interface.
 from .adapters.image import PillowImageAdapter
 from .documents.adapter import PdfDocumentAdapter
+from .documents.docx_adapter import DocxToPdfAdapter
+from .documents.docx_renderer import DocxToPdfRenderer
+from .documents.pdf_image_exporter import PdfToImageExporter
+from .documents.image_to_pdf import ImageToPdfAdapter, ImageToPdfConverter
+from .documents.pdf_workbench import (
+    PdfWorkbench,
+    extract_pdf_pages,
+    merge_pdfs,
+    reorder_pdf_pages,
+    rotate_pdf_pages,
+    split_pdf,
+)
 from .documents.pdf_inspector import (
     PageContentClassification,
     PdfInspectionReport,
@@ -113,6 +139,8 @@ from .converter import (
     UnsupportedConversionError,
     UnsupportedFormatError,
     convert_image,
+    convert_images_to_pdf,
+    convert_images_batch_to_pdf,
     convert_request,
 )
 from .exceptions import AdapterRegistrationError

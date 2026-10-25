@@ -51,8 +51,8 @@ class TestPdfDocxPlanningAndRegistry:
 
     def test_docx_registered_and_route_supported(self):
         assert route_supported("pdf", "docx") is True
-        # PDF -> DOCX is directional; DOCX -> PDF is not supported
-        assert route_supported("docx", "pdf") is False
+        from localshift.documents.docx_adapter import DocxToPdfAdapter
+        assert route_supported("docx", "pdf") is DocxToPdfAdapter().is_available()
 
     def test_output_formats_for_pdf_includes_docx(self):
         pdf_path = FIXTURES_DIR / "doc_01_simple_digital.pdf"
@@ -356,4 +356,76 @@ class TestPdfDocxSafetyAndRobustness:
         assert len(img_paths) >= 1
         assert img_paths[0].exists()
         assert img_paths[0].stat().st_size > 0
+
+
+class TestRealWorldDocxEdgeCases:
+    """Verifies edge cases uncovered during LS-BE-008A real-world validation."""
+
+    def test_numeric_cell_pattern_negative_accounting(self):
+        from localshift.documents.docx_builder import NUMERIC_CELL_PATTERN
+        valid_numbers = [
+            "$45,200.00",
+            "($1,250.00)",
+            "(450.00)",
+            "[-100]",
+            "-50.5%",
+            "€1,000",
+            "£350.50",
+            "¥50,000",
+            "(15.4%)",
+        ]
+        for val in valid_numbers:
+            assert NUMERIC_CELL_PATTERN.match(val) is not None, f"Failed on: {val}"
+
+        non_numbers = ["Description", "Assets", "Cash and Cash Equivalents", "Total Current Assets"]
+        for val in non_numbers:
+            assert NUMERIC_CELL_PATTERN.match(val) is None, f"Unexpected match on: {val}"
+
+    def test_article_and_roman_numeral_heading_candidate(self):
+        from localshift.documents.docx_builder import _is_heading_candidate
+        is_h, lvl = _is_heading_candidate("Article I: General Principles")
+        assert is_h is True
+        assert lvl == 1
+
+        is_h, lvl = _is_heading_candidate("Article 4 - Non-Tariff Barriers")
+        assert is_h is True
+        assert lvl == 1
+
+        is_h, lvl = _is_heading_candidate("Chapter IV: Institutional Arrangements")
+        assert is_h is True
+        assert lvl == 1
+
+    def test_semicolon_and_numbered_list_paragraph_grouping(self):
+        from localshift.documents.docx_builder import _group_lines_into_paragraphs
+        lines = [
+            "The licensee agrees to the following conditions:",
+            "1. Shall submit compliance records semi-annually;",
+            "2. Shall notify the Authority of changes within 14 days;",
+            "(a) Detailed schematics must be preserved.",
+        ]
+        paras = _group_lines_into_paragraphs(lines)
+        assert len(paras) == 4
+        assert paras[1].startswith("1. Shall submit")
+        assert paras[2].startswith("2. Shall notify")
+        assert paras[3].startswith("(a) Detailed")
+
+    def test_balance_sheet_table_recovery(self):
+        from localshift.documents.docx_builder import _parse_table_structure
+        lines = [
+            "Assets 2026 2025",
+            "--------------------------------------------------",
+            "Cash and Cash Equivalents $45,200.00 $38,100.00",
+            "Accounts Receivable $28,400.00 $24,500.00",
+            "Less: Allowance for Credit ($1,250.00) ($950.00)",
+            "Total Current Assets $72,350.00 $61,650.00",
+        ]
+        res = _parse_table_structure(lines)
+        assert res is not None
+        rows, start, end = res
+        assert len(rows) == 5  # 1 header + 4 data rows
+        assert len(rows[0]) == 3
+        # Ensure description is consolidated in column 0
+        assert rows[3][0] == "Less: Allowance for Credit"
+        assert rows[3][1] == "($1,250.00)"
+        assert rows[3][2] == "($950.00)"
 

@@ -14,9 +14,12 @@ from PIL import Image, ImageDraw
 from localshift.converter import convert_request
 from localshift.documents.adapter import PdfDocumentAdapter
 from localshift.documents.ocr import (
+    LanguagePackConfig,
     OcrPageResult,
     OcrTextBlock,
     RapidOcrEngine,
+    normalize_ocr_text,
+    preprocess_image_for_ocr,
     reconstruct_reading_order,
 )
 from localshift.documents.pdf_inspector import PageContentClassification, PdfInspector
@@ -352,4 +355,123 @@ class TestPdfOcrReliabilityHardening:
         assert any("\u4e00" <= c <= "\u9fff" for c in chars)
         # Devanagari (Hindi) is absent from default bundled model
         assert not any("\u0900" <= c <= "\u097f" for c in chars)
+
+
+# ===========================================================================
+# 6. Quality Engineering, Language Support & Diagnostics Tests (LS-BE-007D)
+# ===========================================================================
+
+class TestOcrQualityAndLanguageSupport:
+    def test_normalize_ocr_text_fullwidth_cjk(self):
+        """Verify full-width CJK punctuation and currency digit confusion are normalized."""
+        sample = "INVOICE（ENGLISH）：\u3000Total $o.0o"
+        norm = normalize_ocr_text(sample)
+        assert norm == "INVOICE(ENGLISH): Total $0.00"
+
+    def test_preprocess_image_faint_contrast_enhancement(self):
+        """Verify dynamic range expansion on faint scans while leaving clean scans untouched."""
+        # Faint low-contrast image (values 120-180)
+        faint_im = Image.new("RGB", (100, 100), (180, 180, 180))
+        d = ImageDraw.Draw(faint_im)
+        d.text((10, 10), "Faint", fill=(120, 120, 120))
+        enhanced_arr = preprocess_image_for_ocr(faint_im)
+        # Stretched range min should be significantly lower than 120 and max higher
+        assert int(np.min(enhanced_arr)) < 50
+        assert int(np.max(enhanced_arr)) > 230
+
+        # Clean high-contrast image (values 0-255)
+        clean_im = Image.new("RGB", (100, 100), (255, 255, 255))
+        d_clean = ImageDraw.Draw(clean_im)
+        d_clean.text((10, 10), "Clean", fill=(0, 0, 0))
+        clean_arr = np.array(clean_im)
+        processed_clean = preprocess_image_for_ocr(clean_arr)
+        # Should be completely unchanged
+        assert np.array_equal(clean_arr, processed_clean)
+
+    def test_orientation_recovery_90_degree_sideways(self):
+        """Verify 90-degree sideways scan is automatically recovered with correct reading order."""
+        im = Image.new("RGB", (500, 200), (255, 255, 255))
+        d = ImageDraw.Draw(im)
+        d.text((40, 40), "Line 1: Top Heading", fill=(0, 0, 0))
+        d.text((40, 90), "Line 2: Second Sentence", fill=(0, 0, 0))
+
+        # Rotate 90 degrees clockwise
+        im_90 = im.rotate(90, expand=True)
+        res = RapidOcrEngine.process_image(im_90, page_number=1, correct_orientation=True)
+
+        assert "Line 1: Top Heading" in res.text
+        assert "Line 2: Second Sentence" in res.text
+        lines = [l for l in res.text.splitlines() if l.strip()]
+        assert len(lines) == 2
+        assert lines[0] == "Line 1: Top Heading"
+        assert lines[1] == "Line 2: Second Sentence"
+        assert any("sideways" in w.lower() or "orientation" in w.lower() for w in res.warnings)
+
+    def test_orientation_recovery_270_degree_sideways(self):
+        """Verify 270-degree sideways scan is automatically recovered with correct reading order."""
+        im = Image.new("RGB", (500, 200), (255, 255, 255))
+        d = ImageDraw.Draw(im)
+        d.text((40, 40), "Line 1: Top Heading", fill=(0, 0, 0))
+        d.text((40, 90), "Line 2: Second Sentence", fill=(0, 0, 0))
+
+        # Rotate 270 degrees clockwise
+        im_270 = im.rotate(270, expand=True)
+        res = RapidOcrEngine.process_image(im_270, page_number=1, correct_orientation=True)
+
+        assert "Line 1: Top Heading" in res.text
+        assert "Line 2: Second Sentence" in res.text
+        lines = [l for l in res.text.splitlines() if l.strip()]
+        assert len(lines) == 2
+        assert lines[0] == "Line 1: Top Heading"
+        assert lines[1] == "Line 2: Second Sentence"
+        assert any("sideways" in w.lower() or "orientation" in w.lower() for w in res.warnings)
+
+    def test_orientation_recovery_180_degree_upside_down(self):
+        """Verify 180-degree upside-down scan is automatically inverted to preserve top-to-bottom reading order."""
+        im = Image.new("RGB", (500, 200), (255, 255, 255))
+        d = ImageDraw.Draw(im)
+        d.text((40, 40), "Line 1: First Line", fill=(0, 0, 0))
+        d.text((40, 90), "Line 2: Second Line", fill=(0, 0, 0))
+
+        # Rotate 180 degrees
+        im_180 = im.rotate(180, expand=True)
+        res = RapidOcrEngine.process_image(im_180, page_number=1, correct_orientation=True)
+
+        assert "Line 1: First Line" in res.text
+        assert "Line 2: Second Line" in res.text
+        lines = [l for l in res.text.splitlines() if l.strip()]
+        assert len(lines) == 2
+        assert lines[0] == "Line 1: First Line"
+        assert lines[1] == "Line 2: Second Line"
+        assert any("upside-down" in w.lower() or "orientation" in w.lower() for w in res.warnings)
+
+    def test_language_pack_registration_and_discovery(self):
+        """Verify LanguagePackConfig registration and capability discovery without network."""
+        assert RapidOcrEngine.is_language_supported("en") is True
+        assert RapidOcrEngine.is_language_supported("ch") is True
+        assert RapidOcrEngine.is_language_supported("hi") is False
+
+        pack = LanguagePackConfig(
+            language_code="hi",
+            display_name="Hindi (Devanagari)",
+            rec_model_path="models/devanagari_PP-OCRv3_rec_infer.onnx",
+            keys_path="models/devanagari_dict.txt",
+            description="Offline Devanagari OCR model pack.",
+        )
+        try:
+            RapidOcrEngine.register_language_pack(pack)
+            assert RapidOcrEngine.is_language_supported("hi") is True
+            assert "hi" in RapidOcrEngine.get_supported_languages()
+        finally:
+            # Clean up registered test pack
+            RapidOcrEngine._registered_language_packs.pop("hi", None)
+            RapidOcrEngine._cached_instances.pop("hi", None)
+
+    def test_unsupported_language_diagnostic_warning(self):
+        """Verify requesting unsupported language emits clear diagnostic warning."""
+        white_img = np.full((100, 200, 3), 255, dtype=np.uint8)
+        res = RapidOcrEngine.process_image(white_img, page_number=1, language="hi")
+        assert any("not supported by the default bundled model" in w for w in res.warnings)
+        assert any("register_language_pack" in w for w in res.warnings)
+
 

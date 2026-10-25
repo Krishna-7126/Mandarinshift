@@ -329,7 +329,8 @@ class TestPdfToTxtConversion:
 
     def test_capability_discovery_pdf_to_txt(self):
         assert route_supported("pdf", "txt") is True
-        assert route_supported("pdf", "jpeg") is False
+        assert route_supported("pdf", "jpeg") is True
+        assert route_supported("pdf", "xyz") is False
         assert "txt" in output_formats_for(FIXTURES_DIR / "doc_01_simple_digital.pdf")
 
     def test_convert_simple_pdf_to_txt(self, tmp_path: Path):
@@ -425,11 +426,12 @@ class TestPdfToTxtConversion:
         assert plan.route_supported is True
         assert plan.adapter_id == "pdf_native_text"
         assert plan.is_ready is True
-        assert len(plan.applicable_options) == 3
+        assert len(plan.applicable_options) == 4
         option_names = [opt.name for opt in plan.applicable_options]
         assert "page_separator" in option_names
         assert "ocr_mode" in option_names
         assert "ocr_dpi" in option_names
+        assert "ocr_language" in option_names
 
     def test_plan_route_pdf_to_docx_supported(self):
         plan = plan_route("pdf", "docx")

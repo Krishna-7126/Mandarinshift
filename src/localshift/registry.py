@@ -159,24 +159,41 @@ class AdapterRegistry:
     def can_convert(self, source_format: str, target_format: str) -> bool:
         """Return True if an adapter is available for ``(source_format, target_format)``."""
         with self._lock:
-            return (source_format, target_format) in self._routes
+            adapter = self._routes.get((source_format, target_format))
+            if adapter is None:
+                return False
+            if hasattr(adapter, "is_available") and not adapter.is_available():
+                return False
+            return True
 
     def supported_routes(self) -> frozenset[tuple[str, str]]:
-        """Return all registered directional conversion routes."""
+        """Return all registered directional conversion routes with available adapters."""
         with self._lock:
-            return frozenset(self._routes.keys())
+            return frozenset(
+                route for route, adapter in self._routes.items()
+                if not hasattr(adapter, "is_available") or adapter.is_available()
+            )
 
     def supported_source_formats(self) -> frozenset[str]:
         """Return all formats that can act as conversion inputs."""
         with self._lock:
-            return frozenset(src for src, _ in self._routes.keys())
+            return frozenset(
+                src for (src, _), adapter in self._routes.items()
+                if not hasattr(adapter, "is_available") or adapter.is_available()
+            )
 
     def supported_target_formats(self, source_format: Optional[str] = None) -> frozenset[str]:
         """Return all target formats, optionally filtered by a specific source format."""
         with self._lock:
             if source_format is None:
-                return frozenset(tgt for _, tgt in self._routes.keys())
-            return frozenset(tgt for src, tgt in self._routes.keys() if src == source_format)
+                return frozenset(
+                    tgt for (_, tgt), adapter in self._routes.items()
+                    if not hasattr(adapter, "is_available") or adapter.is_available()
+                )
+            return frozenset(
+                tgt for (src, tgt), adapter in self._routes.items()
+                if src == source_format and (not hasattr(adapter, "is_available") or adapter.is_available())
+            )
 
     def get_supported_options(self, source_format: str, target_format: str) -> tuple[Any, ...]:
         """Return supported OptionSpec instances for the given route, or empty tuple."""
@@ -211,6 +228,10 @@ default_registry: AdapterRegistry = AdapterRegistry()
 # Pre-register built-in adapters at initialization
 from .adapters.image import PillowImageAdapter
 from .documents.adapter import PdfDocumentAdapter
+from .documents.docx_adapter import DocxToPdfAdapter
+from .documents.image_to_pdf import ImageToPdfAdapter
 
 default_registry.register(PillowImageAdapter())
 default_registry.register(PdfDocumentAdapter())
+default_registry.register(DocxToPdfAdapter())
+default_registry.register(ImageToPdfAdapter())

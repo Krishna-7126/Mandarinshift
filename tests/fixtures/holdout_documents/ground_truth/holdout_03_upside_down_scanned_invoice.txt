@@ -1,0 +1,9 @@
+EXPRESS COURIER SERVICE - INVOICE
+Invoice Number: INV-882190
+Date: 2026-10-14
+Customer: Apex Global Distribution
+Tracking ID: TRK-99201-US
+Freight Handling 50.00
+Fuel Surcharge 12.50
+Customs Clearance 25.00
+Total Amount Due 87.50

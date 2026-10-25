@@ -228,7 +228,7 @@ class TestCapabilityDiscovery:
         src = tmp_path / "test.png"
         src.touch()
         targets = output_formats_for(src)
-        assert sorted(targets) == ["bmp", "jpeg", "tiff", "webp"]
+        assert sorted(targets) == ["bmp", "jpeg", "pdf", "tiff", "webp"]
 
     def test_formats_py_output_formats_for_unknown_returns_empty(self, tmp_path):
         src = tmp_path / "test.xyz"

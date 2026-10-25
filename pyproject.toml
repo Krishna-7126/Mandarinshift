@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "localshift"
-version = "0.5.0"
+version = "0.14.0"
 description = "Free, offline-first desktop file converter"
 requires-python = ">=3.10"
 # Pillow 10+ required for reliable EXIF transpose and WebP support.

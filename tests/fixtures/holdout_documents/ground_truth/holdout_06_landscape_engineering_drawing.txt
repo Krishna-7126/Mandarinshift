@@ -1,0 +1,9 @@
+ENGINEERING SPECIFICATION & TOLERANCES
+Component ID: ENG-BRG-2044
+Tolerance Class: ISO 2768-m
+
+Part Dimension Nominal Lower Tol Upper Tol
+Bore Diameter 45.00 mm -0.01 mm +0.02 mm
+Outer Ring 85.00 mm -0.02 mm +0.03 mm
+Width 19.00 mm -0.05 mm +0.05 mm
+Chamfer 1.50 mm -0.10 mm +0.10 mm

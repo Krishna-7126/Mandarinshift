@@ -15,6 +15,7 @@ from ..exceptions import (
 )
 from ..models import ConversionContext, ConversionRequest, ConversionResult, OptionSpec
 from .docx_builder import PdfToDocxReconstructor
+from .pdf_image_exporter import PdfToImageExporter
 from .pdf_inspector import PageContentClassification
 from .text_extractor import NativePdfTextExtractor
 
@@ -22,15 +23,20 @@ log = logging.getLogger(__name__)
 
 
 class PdfDocumentAdapter:
-    """Conversion adapter for PDF document processing (TXT text extraction and DOCX reconstruction)."""
+    """Conversion adapter for PDF document processing (TXT text extraction, DOCX reconstruction, and PNG/JPEG raster export)."""
 
     adapter_id: str = "pdf_native_text"
     name: str = "PDF Document Adapter"
 
     def __init__(self) -> None:
         self._source_formats = frozenset({"pdf"})
-        self._target_formats = frozenset({"txt", "docx"})
-        self._routes = frozenset({("pdf", "txt"), ("pdf", "docx")})
+        self._target_formats = frozenset({"txt", "docx", "png", "jpeg"})
+        self._routes = frozenset({
+            ("pdf", "txt"),
+            ("pdf", "docx"),
+            ("pdf", "png"),
+            ("pdf", "jpeg"),
+        })
 
     @property
     def supported_source_formats(self) -> frozenset[str]:
@@ -70,6 +76,12 @@ class PdfDocumentAdapter:
                     default=200,
                     description="DPI resolution for OCR rasterization (72-400, default 200).",
                 ),
+                OptionSpec(
+                    name="ocr_language",
+                    type_name="str",
+                    default="auto",
+                    description="Target OCR language: 'auto'/'en'/'ch' (bundled) or registered language pack (e.g. 'hi').",
+                ),
             )
         elif (source_format, target_format) == ("pdf", "docx"):
             return (
@@ -87,10 +99,70 @@ class PdfDocumentAdapter:
                     description="DPI resolution for OCR rasterization (72-400, default 200).",
                 ),
                 OptionSpec(
+                    name="ocr_language",
+                    type_name="str",
+                    default="auto",
+                    description="Target OCR language: 'auto'/'en'/'ch' (bundled) or registered language pack (e.g. 'hi').",
+                ),
+                OptionSpec(
                     name="extract_images",
                     type_name="bool",
                     default=True,
                     description="Extract and embed illustrations and graphics into the Word document.",
+                ),
+            )
+        elif (source_format, target_format) == ("pdf", "png"):
+            return (
+                OptionSpec(
+                    name="dpi",
+                    type_name="int",
+                    default=200,
+                    description="Resolution in DPI for rasterizing PDF pages (72-400, default 200).",
+                ),
+                OptionSpec(
+                    name="pages",
+                    type_name="str",
+                    default="all",
+                    description="Page selection specification: 'all', single page ('1'), range ('1-3'), or comma list ('1,3,5'). 1-based indexing.",
+                ),
+                OptionSpec(
+                    name="output_pattern",
+                    type_name="str",
+                    default="{stem}_page_{page}.{ext}",
+                    description="Naming pattern for exported page images. Placeholders: {stem}, {page}, {page_count}, {ext}.",
+                ),
+            )
+        elif (source_format, target_format) == ("pdf", "jpeg"):
+            return (
+                OptionSpec(
+                    name="dpi",
+                    type_name="int",
+                    default=200,
+                    description="Resolution in DPI for rasterizing PDF pages (72-400, default 200).",
+                ),
+                OptionSpec(
+                    name="pages",
+                    type_name="str",
+                    default="all",
+                    description="Page selection specification: 'all', single page ('1'), range ('1-3'), or comma list ('1,3,5'). 1-based indexing.",
+                ),
+                OptionSpec(
+                    name="output_pattern",
+                    type_name="str",
+                    default="{stem}_page_{page}.{ext}",
+                    description="Naming pattern for exported page images. Placeholders: {stem}, {page}, {page_count}, {ext}.",
+                ),
+                OptionSpec(
+                    name="quality",
+                    type_name="int",
+                    default=90,
+                    description="JPEG compression quality from 1 to 100 (default 90).",
+                ),
+                OptionSpec(
+                    name="jpeg_background",
+                    type_name="tuple[int, int, int]",
+                    default=(255, 255, 255),
+                    description="Background color used when compositing or rendering PDF pages to JPEG.",
                 ),
             )
         return ()
@@ -100,17 +172,12 @@ class PdfDocumentAdapter:
         request: ConversionRequest,
         context: ConversionContext,
     ) -> ConversionResult:
-        """Convert a PDF document into TXT or DOCX at context.temp_output_path."""
+        """Convert a PDF document into TXT, DOCX, PNG, or JPEG."""
         context.check_cancelled()
 
-        if context.target_format not in ("txt", "docx"):
+        if context.target_format not in ("txt", "docx", "png", "jpeg"):
             raise ConversionFailedError(f"Unsupported target format for PdfDocumentAdapter: {context.target_format!r}")
 
-        ocr_mode = str(request.options.get("ocr_mode", "auto"))
-        try:
-            ocr_dpi = int(request.options.get("ocr_dpi", 200))
-        except (ValueError, TypeError):
-            ocr_dpi = 200
         source_format = request.source_format or "pdf"
 
         try:
@@ -123,6 +190,36 @@ class PdfDocumentAdapter:
                 f"PDF input size ({input_bytes} bytes) exceeds limit of {context.max_input_bytes} bytes."
             )
 
+        # Route: PDF -> PNG / JPEG raster image export
+        if context.target_format in ("png", "jpeg"):
+            folder = request.output_dir if request.output_dir is not None else request.source.parent
+            output_paths, output_bytes = PdfToImageExporter.export_pdf_to_images(
+                request.source,
+                folder,
+                context.target_format,
+                options=request.options,
+                max_input_bytes=context.max_input_bytes,
+                cancel_check=context.is_cancelled,
+            )
+            context.check_cancelled()
+            return ConversionResult(
+                output_path=output_paths[0],
+                source_format=source_format,
+                target_format=context.target_format,
+                input_bytes=input_bytes,
+                output_bytes=output_bytes,
+                adapter_id=self.adapter_id,
+                warnings=(),
+                output_paths=output_paths,
+            )
+
+        ocr_mode = str(request.options.get("ocr_mode", "auto"))
+        try:
+            ocr_dpi = int(request.options.get("ocr_dpi", 200))
+        except (ValueError, TypeError):
+            ocr_dpi = 200
+        ocr_language = request.options.get("ocr_language") or request.options.get("language")
+
         if context.target_format == "docx":
             extract_images = bool(request.options.get("extract_images", True))
             recon_res = PdfToDocxReconstructor.reconstruct(
@@ -133,6 +230,7 @@ class PdfDocumentAdapter:
                 ocr_dpi=ocr_dpi,
                 extract_images=extract_images,
                 max_input_bytes=context.max_input_bytes,
+                ocr_language=ocr_language,
             )
             context.check_cancelled()
             try:
@@ -159,6 +257,7 @@ class PdfDocumentAdapter:
                 cancel_check=context.is_cancelled,
                 ocr_mode=ocr_mode,
                 ocr_dpi=ocr_dpi,
+                ocr_language=ocr_language,
             )
         except ConversionCancelledError:
             raise

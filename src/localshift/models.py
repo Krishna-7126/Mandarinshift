@@ -97,6 +97,12 @@ class ConversionResult:
     adapter_id: str = "pillow_raster"
     #: Diagnostic warnings emitted during conversion, if any.
     warnings: tuple[str, ...] = ()
+    #: Complete list of all output files written (e.g. for multipage document image exports).
+    output_paths: tuple[Path, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not self.output_paths and self.output_path:
+            object.__setattr__(self, "output_paths", (self.output_path,))
 
 
 # ---------------------------------------------------------------------------

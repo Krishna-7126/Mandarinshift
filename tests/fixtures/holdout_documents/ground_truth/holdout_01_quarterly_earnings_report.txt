@@ -1,0 +1,31 @@
+QUARTERLY FINANCIAL REPORT - Q3 2026
+Global Logistics & Technology Corp.
+
+Section 1: Executive Overview
+The Corporation delivered resilient operating performance during the third quarter.
+Revenue increased 8.2% year-over-year driven by digital supply chain expansion.
+- Total operating revenue reached $482.5 million.
+- Operating cash flow improved by 14.3% across core logistics units.
+- Cloud automation software subscriptions grew 27.5%.
+Income Statement Summary
+--------------------------------------------------
+Revenue Category 2026 2025
+Enterprise Services $245,100.00 $210,500.00
+Logistics Freight $182,400.00 $175,200.00
+Software Subscriptions $55,000.00 $43,100.00
+Total Operating Revenue $482,500.00 $428,800.00
+Operating Expenses ($395,200.00) ($358,400.00)
+Restructuring Costs ($14,200.00) ($8,100.00)
+Operating Income $73,100.00 $62,300.00
+Segment Financial Performance
+--------------------------------------------------
+Division Revenue Margin Growth
+North America $215,000.00 18.5% 9.2%
+Europe Region $145,500.00 14.2% 6.1%
+Asia Pacific $122,000.00 21.0% 12.4%
+Consolidated Total $482,500.00 17.8% 8.2%
+Section 4: Forward-Looking Statements
+Certain disclosures contained herein constitute forward-looking statements:
+1. Projected capital expenditures remain subject to supply chain market conditions;
+2. Regulatory clearance in European ports is anticipated by fourth quarter;
+3. Technology investments may fluctuate based on enterprise adoption cycles.

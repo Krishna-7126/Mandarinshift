@@ -1,0 +1,23 @@
+OFFICIAL PURCHASE ORDER
+PO Number: PO-2026-8812
+Date: 2026-10-22
+Supplier: Precision Hardware Components Ltd.
+Delivery Location: Central Logistics Depot Bay 4
+
+Order Line Items
+--------------------------------------------------
+Line Description Qty Unit Price Total Price
+101 Titanium Bolts M8 500 $4.50 $2,250.00
+102 Ceramic Bearings 120 $18.00 $2,160.00
+103 Synthetic Lubricant 25 $32.00 $800.00
+104 O-Ring Sealing Pack 50 $15.50 $775.00
+Subtotal $5,985.00
+Sales Tax 8.0% $478.80
+Total Order Value $6,463.80
+TERMS AND CONDITIONS OF DELIVERY
+Section 1: Delivery Terms
+All shipments are delivered DAP (Incoterms 2020) unloaded at buyer facility.
+Section 2: Payment Terms
+Payment is Net 30 days following receipt of conforming goods and invoice.
+Section 3: Warranty
+Supplier warrants all delivered parts free from defects for 24 months.

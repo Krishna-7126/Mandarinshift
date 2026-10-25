@@ -81,6 +81,7 @@ class NativePdfTextExtractor:
         cancel_check: Optional[Callable[[], bool]] = None,
         ocr_mode: str = "native_only",
         ocr_dpi: int = PdfPageRenderer.DEFAULT_DPI,
+        ocr_language: Optional[str] = None,
     ) -> DocumentExtractionResult:
         """Extract text from *path* page by page with cooperative cancellation checks and OCR routing."""
         import pypdfium2
@@ -198,7 +199,9 @@ class NativePdfTextExtractor:
                         if RapidOcrEngine.is_available():
                             try:
                                 img_arr = PdfPageRenderer.render_page(page, dpi=ocr_dpi)
-                                ocr_result = RapidOcrEngine.process_image(img_arr, page_number=page_num)
+                                ocr_result = RapidOcrEngine.process_image(
+                                    img_arr, page_number=page_num, language=ocr_language
+                                )
 
                                 if ocr_result.text:
                                     if ocr_mode_norm == "force_ocr" or not cleaned_text:

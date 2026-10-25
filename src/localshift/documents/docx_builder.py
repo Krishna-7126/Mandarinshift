@@ -29,7 +29,7 @@ from .text_extractor import _is_duplicate_text
 
 log = logging.getLogger(__name__)
 
-NUMERIC_CELL_PATTERN = re.compile(r"^[\$€£¥]?-?\d[\d,]*(\.\d+)?%?$")
+NUMERIC_CELL_PATTERN = re.compile(r"^[\(\[]?[\$€£¥]?-?\d[\d,]*(\.\d+)?%?[\)\]]?$")
 
 
 @dataclass(frozen=True)
@@ -68,8 +68,8 @@ def _is_heading_candidate(
         level = min(3, max(1, dots + 1))
         return True, level
 
-    # Rule 3: Common heading prefixes (e.g. "Section 1:", "Chapter 2:")
-    if re.match(r"^(Section|Chapter|Appendix)\s+\d+[:\s]", clean, re.IGNORECASE):
+    # Rule 3: Common heading prefixes (e.g. "Section 1:", "Chapter 2:", "Article I:")
+    if re.match(r"^(Section|Chapter|Article|Appendix)\s+([0-9]+|[IVXLCDM]+|[A-Z])([:\s\.\-\—]|$)", clean, re.IGNORECASE):
         return True, 1
 
     # Rule 4: Prominent all-uppercase short titles
@@ -114,9 +114,14 @@ def _parse_table_structure(lines: list[str]) -> Optional[tuple[list[list[str]], 
                         trailing.insert(0, tokens[k])
                         k -= 1
                     if trailing and k >= 0:
-                        first = tokens[0]
-                        mid = " ".join(tokens[1 : k + 1]) if k > 0 else ""
-                        row_cols = [first, mid] + trailing if mid else [first] + trailing
+                        h_tok_count = len(header_line.split())
+                        expected_leading = max(1, h_tok_count - len(trailing))
+                        if expected_leading == 1:
+                            row_cols = [" ".join(tokens[: k + 1])] + trailing
+                        else:
+                            first = tokens[0]
+                            mid = " ".join(tokens[1 : k + 1]) if k > 0 else ""
+                            row_cols = [first, mid] + trailing if mid else [first] + trailing
                         data_rows.append(row_cols)
                         data_end = j + 1
                     else:
@@ -235,7 +240,10 @@ def _parse_table_structure(lines: list[str]) -> Optional[tuple[list[list[str]], 
             leading = tokens[: k + 1]
             if not leading:
                 break
-            if len(leading) >= 2:
+            expected_leading = max(1, len(header_tokens) - expected_trailing)
+            if expected_leading == 1:
+                row_cols = [" ".join(leading)] + trailing
+            elif len(leading) >= 2:
                 if re.match(r"^[\w\d-]+$", leading[0]) and len(leading) > 2:
                     row_cols = [leading[0], " ".join(leading[1:])] + trailing
                 else:
@@ -278,8 +286,8 @@ def _group_lines_into_paragraphs(lines: list[str]) -> list[str]:
                 current_chunk = []
             continue
 
-        # Bullet points are always their own paragraph
-        if stripped.startswith(("- ", "* ", "• ", "▪ ", "– ")):
+        # Bullet points and numbered/lettered lists are always their own paragraph
+        if stripped.startswith(("- ", "* ", "• ", "▪ ", "– ")) or re.match(r"^(\d+[\.\)]|\([a-zA-Z\d]+\)|[a-zA-Z][\.\)])\s+", stripped):
             if current_chunk:
                 paragraphs.append(" ".join(current_chunk))
                 current_chunk = []
@@ -299,11 +307,11 @@ def _group_lines_into_paragraphs(lines: list[str]) -> list[str]:
             # If previous line ends with hyphen, join word without space
             if prev.endswith("-") and len(prev) > 1 and prev[-2].isalpha():
                 current_chunk[-1] = prev[:-1] + stripped
-            # If previous line does NOT end with sentence-ending punctuation, join
-            elif not re.search(r"[.?!:]$", prev):
+            # If previous line does NOT end with sentence/clause-ending punctuation, join
+            elif not re.search(r"[.?!:;]$", prev):
                 current_chunk.append(stripped)
             else:
-                # Previous line was a complete sentence. Start a new paragraph.
+                # Previous line was a complete sentence or clause. Start a new paragraph.
                 paragraphs.append(" ".join(current_chunk))
                 current_chunk = [stripped]
         else:
@@ -331,6 +339,7 @@ class PdfToDocxReconstructor:
         ocr_dpi: int = 200,
         extract_images: bool = True,
         max_input_bytes: Optional[int] = None,
+        ocr_language: Optional[str] = None,
     ) -> DocxReconstructionResult:
         """Execute full offline PDF to DOCX document reconstruction."""
         import pypdfium2
@@ -481,7 +490,9 @@ class PdfToDocxReconstructor:
                     if RapidOcrEngine.is_available():
                         try:
                             img_arr = PdfPageRenderer.render_page(page, dpi=ocr_dpi)
-                            ocr_res = RapidOcrEngine.process_image(img_arr, page_number=page_num)
+                            ocr_res = RapidOcrEngine.process_image(
+                                img_arr, page_number=page_num, language=ocr_language
+                            )
                             if ocr_res.text:
                                 ocr_applied = True
                                 ocr_pages_count += 1

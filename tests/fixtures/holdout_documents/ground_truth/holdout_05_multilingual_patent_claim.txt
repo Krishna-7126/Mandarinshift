@@ -1,0 +1,19 @@
+INTERNATIONAL PATENT SPECIFICATION
+Publication Number: WO 2026/091284 A1
+
+Article I: Technical Field
+The present invention relates to electrochemical energy storage systems.
+Specifically, high-efficiency electrolyte mixtures for solid-state batteries.
+
+Patentansprüche (German Claims)
+1. Festkörper-Elektrolyt umfassend Lithium-Verbindungen;
+2. Vorrichtung gemäß Anspruch 1 mit erhöhter thermischer Stabilität;
+3. Elektrode mit homogener Oberflächenbeschichtung.
+Article II: Detailed Scope
+Revendications (French Claims)
+1. Système de stockage électrochimique haute capacité;
+2. Procédé selon la revendication précédente comprenant un blindage thermique;
+3. Ensemble de cellules doté d un régulateur électronique intégré.
+
+Article III: Industrial Applicability
+The described technology is suitable for electric vehicle battery packs.

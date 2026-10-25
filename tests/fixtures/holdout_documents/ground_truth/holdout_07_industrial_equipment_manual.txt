@@ -1,0 +1,23 @@
+INDUSTRIAL TURBINE OPERATIONS MANUAL
+Model: TURBO-MAX 5000
+
+Section 1: General Safety Procedures
+Ensure all technicians wear certified hearing protection before start-up.
+Verify emergency shut-off valves are accessible and unobstructed.
+- Check hydraulic fluid pressure before activating ignition circuit;
+- Inspect intake filters for debris every 250 operating hours.
+Section 2: Valve Assembly Overview
+Figure 1: High Pressure Valve Assembly
+The dual bypass valve regulates chamber pressure under peak load.
+Maintenance Schedule
+Component Interval Action
+Intake Filter 250 Hours Clean or Replace
+Bypass Valve 500 Hours Pressure Calibration
+Turbine Rotor 2000 Hours Ultrasonic Inspection
+Section 3: Troubleshooting Protocols
+Fault Code Description Corrective Action
+ERR-101 Pressure Drop Check bypass seal
+ERR-104 Temp High Increase coolant flow
+ERR-202 Vibration Check rotor balance
+
+Contact authorized field service engineers for major overhaul procedures.

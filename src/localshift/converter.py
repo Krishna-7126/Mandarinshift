@@ -301,6 +301,12 @@ def convert_request(
 
     # 3. Route check & Adapter lookup
     if not reg.can_convert(src_key, target_key):
+        raw_adapter = reg.get_adapter(src_key, target_key)
+        if raw_adapter is not None and hasattr(raw_adapter, "is_available") and not raw_adapter.is_available():
+            raise AdapterUnavailableError(
+                f"Conversion route {src_key!r} → {target_key!r} requires an offline document rendering "
+                "backend (LibreOffice or Microsoft Word), but none was detected on this system."
+            )
         raise UnsupportedConversionError(
             f"Unsupported conversion: {src_key!r} → {target_key!r}. "
             "These formats may be identical or not supported by any registered adapter."
@@ -330,25 +336,36 @@ def convert_request(
     folder = request.output_dir if request.output_dir is not None else source.parent
     folder.mkdir(parents=True, exist_ok=True)
 
-    reservation = reserve_output_path(folder, source.stem, target_key)
-    output = reservation.path
+    manages_own_output = (src_key == "pdf" and target_key in ("png", "jpeg", "jpg"))
+    target_stem = str(request.options.get("output_name") or request.options.get("output_stem") or source.stem)
+    reservation = None
+    output: Optional[Path] = None
     tmp_path: Optional[Path] = None
 
-    try:
-        _validate_no_source_dest_collision(source, output)
+    if not manages_own_output:
+        reservation = reserve_output_path(folder, target_stem, target_key)
+        output = reservation.path
 
-        # 5. Create secure temporary file on same volume for atomic replacement
-        fd, tmp_str = tempfile.mkstemp(
-            suffix=f".{target_key}.tmp",
-            dir=folder,
-            prefix=f".localshift_{source.stem}_",
-        )
-        os.close(fd)
-        tmp_path = Path(tmp_str)
+    try:
+        if output is not None:
+            _validate_no_source_dest_collision(source, output)
+
+        if not manages_own_output:
+            # 5. Create secure temporary file on same volume for atomic replacement
+            fd, tmp_str = tempfile.mkstemp(
+                suffix=f".{target_key}.tmp",
+                dir=folder,
+                prefix=f".localshift_{target_stem}_",
+            )
+            os.close(fd)
+            tmp_path = Path(tmp_str)
+            context_tmp = tmp_path
+        else:
+            context_tmp = folder / f".localshift_{target_stem}.tmp"
 
         # 6. Create execution context
         context = ConversionContext(
-            temp_output_path=tmp_path,
+            temp_output_path=context_tmp,
             target_format=target_key,
             max_input_bytes=max_input_bytes,
             _is_cancelled=cancel_check or (lambda: False),
@@ -366,34 +383,50 @@ def convert_request(
         adapter_result = adapter.convert(adapter_req, context)
 
         # 8. Result correctness verification
-        if not tmp_path.exists() or not tmp_path.is_file():
-            raise ConversionFailedError(
-                f"Adapter {adapter.adapter_id!r} completed without producing a valid output file."
-            )
+        if manages_own_output or (adapter_result and adapter_result.output_path != tmp_path):
+            # Multi-output or self-placed adapter managed its own atomic placement (e.g. multipage PDF image export)
+            output = adapter_result.output_path
+            output_paths = adapter_result.output_paths
+            output_bytes = adapter_result.output_bytes
+            # Clean up placeholder tmp_path created by converter if any
+            if tmp_path is not None and tmp_path.exists():
+                try:
+                    tmp_path.unlink()
+                except OSError:
+                    pass
+                tmp_path = None
+        else:
+            if not tmp_path.exists() or not tmp_path.is_file():
+                raise ConversionFailedError(
+                    f"Adapter {adapter.adapter_id!r} completed without producing a valid output file."
+                )
 
-        try:
-            in_size = source.stat().st_size
-        except OSError:
-            in_size = 0
+            try:
+                in_size = source.stat().st_size
+            except OSError:
+                in_size = 0
 
-        # Non-text conversions must produce non-empty files. Text outputs may legitimately
-        # be empty (0 bytes) when documents have no extractable native text.
-        if in_size > 0 and tmp_path.stat().st_size == 0 and target_key != "txt":
-            raise ConversionFailedError(
-                f"Adapter {adapter.adapter_id!r} completed without producing a valid output file (empty output)."
-            )
+            # Non-text conversions must produce non-empty files. Text outputs may legitimately
+            # be empty (0 bytes) when documents have no extractable native text.
+            if in_size > 0 and tmp_path.stat().st_size == 0 and target_key != "txt":
+                raise ConversionFailedError(
+                    f"Adapter {adapter.adapter_id!r} completed without producing a valid output file (empty output)."
+                )
 
-        # 9. Atomic replace
-        os.replace(tmp_path, output)
-        tmp_path = None  # Successfully consumed
+            # 9. Atomic replace
+            os.replace(tmp_path, output)
+            tmp_path = None  # Successfully consumed
+            output_paths = (output,)
+            output_bytes = output.stat().st_size if output.exists() else 0
 
     except ConversionError:
         raise
     except Exception as exc:
         raise ConversionFailedError(f"Conversion failed: {exc}") from exc
     finally:
-        # Release in-process reservation.
-        reservation.release()
+        # Release in-process reservation if acquired.
+        if reservation is not None:
+            reservation.release()
 
         # Clean up any leftover temporary file on failure.
         if tmp_path is not None and tmp_path.exists():
@@ -406,8 +439,6 @@ def convert_request(
         input_bytes = source.stat().st_size
     except OSError:
         input_bytes = 0
-
-    output_bytes = output.stat().st_size if output.exists() else 0
 
     log.info(
         "Conversion complete: %s → %s (%d bytes)",
@@ -422,6 +453,7 @@ def convert_request(
         output_bytes=output_bytes,
         adapter_id=adapter.adapter_id,
         warnings=adapter_result.warnings if adapter_result else (),
+        output_paths=output_paths,
     )
 
 
@@ -476,6 +508,107 @@ def convert_image(
     )
     result = convert_request(req, max_input_bytes=max_input_bytes)
     return result.output_path
+
+
+def convert_images_to_pdf(
+    sources: Sequence[Path | str],
+    output_path: Optional[Path | str] = None,
+    *,
+    output_dir: Optional[Path | str] = None,
+    output_name: Optional[str] = None,
+    options: Optional[dict[str, Any]] = None,
+    max_input_bytes: int = MAX_INPUT_BYTES,
+) -> Path:
+    """Convert multiple raster images into a single ordered multipage PDF document.
+
+    Parameters
+    ----------
+    sources:
+        Sequence of image paths to assemble in order.
+    output_path:
+        Optional exact destination file path. If specified, output_dir and output_name
+        are derived from it.
+    output_dir:
+        Directory for the output PDF. Defaults to parent of the first source image.
+    output_name:
+        Base filename (without extension). Defaults to stem of the first source image.
+    options:
+        Conversion options (page_size, fit, orientation, margin, background_color, dpi, quality).
+    max_input_bytes:
+        Maximum allowed cumulative input file size.
+
+    Returns
+    -------
+    Path
+        Path to the successfully written PDF document.
+    """
+    if not sources:
+        raise InvalidInputError("No source images provided for PDF conversion.")
+
+    src_paths = [Path(s) for s in sources]
+    first_src = src_paths[0]
+    additional = src_paths[1:]
+
+    opts = dict(options or {})
+    if additional:
+        opts["additional_sources"] = tuple(additional)
+
+    if output_path is not None:
+        dest = Path(output_path)
+        folder = dest.parent
+        opts["output_name"] = dest.stem
+    else:
+        folder = Path(output_dir) if output_dir is not None else first_src.parent
+        if output_name is not None:
+            opts["output_name"] = output_name
+
+    req = ConversionRequest(
+        source=first_src,
+        target_format="pdf",
+        output_dir=folder,
+        options=opts,
+    )
+    result = convert_request(req, max_input_bytes=max_input_bytes)
+    return result.output_path
+
+
+def convert_images_batch_to_pdf(
+    sources: Sequence[Path | str],
+    output_dir: Optional[Path | str] = None,
+    *,
+    options: Optional[dict[str, Any]] = None,
+    max_input_bytes: int = MAX_INPUT_BYTES,
+) -> list[Path]:
+    """Batch convert multiple raster images into separate individual PDF files.
+
+    Parameters
+    ----------
+    sources:
+        Sequence of image paths to convert.
+    output_dir:
+        Destination directory for all output PDFs. Defaults to each source's parent.
+    options:
+        Conversion options applied to each conversion.
+    max_input_bytes:
+        Maximum allowed input file size per image.
+
+    Returns
+    -------
+    list[Path]
+        List of paths to the successfully written individual PDF files.
+    """
+    out_paths: list[Path] = []
+    for s in sources:
+        p = Path(s)
+        req = ConversionRequest(
+            source=p,
+            target_format="pdf",
+            output_dir=Path(output_dir) if output_dir is not None else None,
+            options=dict(options or {}),
+        )
+        res = convert_request(req, max_input_bytes=max_input_bytes)
+        out_paths.append(res.output_path)
+    return out_paths
 
 
 # ---------------------------------------------------------------------------

@@ -195,6 +195,99 @@ def validate_conversion_options(
                     )
                 )
 
+        elif opt_name == "dpi":
+            if not isinstance(opt_val, int) or isinstance(opt_val, bool) or not (72 <= opt_val <= 400):
+                findings.append(
+                    ValidationFinding(
+                        code=FindingCode.INVALID_OPTION_VALUE,
+                        message=f"Option 'dpi' must be an integer between 72 and 400, got {opt_val!r}",
+                        severity=FindingSeverity.ERROR,
+                        field="options.dpi",
+                    )
+                )
+
+        elif opt_name == "quality":
+            if not isinstance(opt_val, int) or isinstance(opt_val, bool) or not (1 <= opt_val <= 100):
+                findings.append(
+                    ValidationFinding(
+                        code=FindingCode.INVALID_OPTION_VALUE,
+                        message=f"Option 'quality' must be an integer between 1 and 100, got {opt_val!r}",
+                        severity=FindingSeverity.ERROR,
+                        field="options.quality",
+                    )
+                )
+
+        elif opt_name == "pages":
+            from localshift.documents.pdf_image_exporter import parse_page_selection
+            try:
+                if isinstance(opt_val, (int, str)):
+                    parse_page_selection(opt_val, total_pages=999999)
+                elif isinstance(opt_val, (list, tuple)):
+                    if not all(isinstance(p, int) and p >= 1 for p in opt_val):
+                        raise ValueError("Page numbers must be integers >= 1")
+                else:
+                    raise ValueError(f"Unsupported page selection type: {type(opt_val)}")
+            except Exception as exc:
+                findings.append(
+                    ValidationFinding(
+                        code=FindingCode.INVALID_OPTION_VALUE,
+                        message=f"Invalid page selection {opt_val!r}: {exc}",
+                        severity=FindingSeverity.ERROR,
+                        field="options.pages",
+                    )
+                )
+
+        elif opt_name == "background_color":
+            valid = False
+            if isinstance(opt_val, (tuple, list)) and len(opt_val) == 3:
+                if all(isinstance(c, int) and 0 <= c <= 255 for c in opt_val):
+                    valid = True
+            if not valid:
+                findings.append(
+                    ValidationFinding(
+                        code=FindingCode.INVALID_OPTION_VALUE,
+                        message=(
+                            f"Option {opt_name!r} must be an RGB tuple of 3 integers "
+                            f"(0-255), got {opt_val!r}"
+                        ),
+                        severity=FindingSeverity.ERROR,
+                        field=f"options.{opt_name}",
+                    )
+                )
+
+        elif opt_name == "margin":
+            if not isinstance(opt_val, (int, float)) or isinstance(opt_val, bool) or opt_val < 0:
+                findings.append(
+                    ValidationFinding(
+                        code=FindingCode.INVALID_OPTION_VALUE,
+                        message=f"Option 'margin' must be a non-negative number, got {opt_val!r}",
+                        severity=FindingSeverity.ERROR,
+                        field="options.margin",
+                    )
+                )
+
+        elif opt_name == "additional_sources":
+            if not isinstance(opt_val, (list, tuple)) or not all(isinstance(p, (str, Path)) for p in opt_val):
+                findings.append(
+                    ValidationFinding(
+                        code=FindingCode.INVALID_OPTION_VALUE,
+                        message=f"Option 'additional_sources' must be a sequence of paths, got {opt_val!r}",
+                        severity=FindingSeverity.ERROR,
+                        field="options.additional_sources",
+                    )
+                )
+
+        elif opt_name in ("output_pattern", "output_name"):
+            if not isinstance(opt_val, str) or any(c in opt_val for c in ("/\\")) or ".." in opt_val:
+                findings.append(
+                    ValidationFinding(
+                        code=FindingCode.INVALID_OPTION_VALUE,
+                        message=f"Invalid {opt_name} {opt_val!r}: directory separators and '..' are prohibited",
+                        severity=FindingSeverity.ERROR,
+                        field=f"options.{opt_name}",
+                    )
+                )
+
         if spec.choices is not None and opt_val not in spec.choices:
             findings.append(
                 ValidationFinding(
@@ -410,14 +503,28 @@ def validate_preflight(
                 )
             )
         elif not reg.can_convert(src_key, target_key):
-            findings.append(
-                ValidationFinding(
-                    code=FindingCode.ROUTE_UNSUPPORTED,
-                    message=f"No adapter supports route: {src_key!r} → {target_key!r}.",
-                    severity=FindingSeverity.ERROR,
-                    field="target_format",
+            raw_adapter = reg.get_adapter(src_key, target_key)
+            if raw_adapter is not None and hasattr(raw_adapter, "is_available") and not raw_adapter.is_available():
+                findings.append(
+                    ValidationFinding(
+                        code=FindingCode.ADAPTER_UNAVAILABLE,
+                        message=(
+                            f"Conversion route {src_key!r} → {target_key!r} requires an offline document rendering "
+                            "backend (LibreOffice or Microsoft Word), but none was detected on this system."
+                        ),
+                        severity=FindingSeverity.ERROR,
+                        field="target_format",
+                    )
                 )
-            )
+            else:
+                findings.append(
+                    ValidationFinding(
+                        code=FindingCode.ROUTE_UNSUPPORTED,
+                        message=f"No adapter supports route: {src_key!r} → {target_key!r}.",
+                        severity=FindingSeverity.ERROR,
+                        field="target_format",
+                    )
+                )
         else:
             adapter = reg.get_adapter(src_key, target_key)
             if adapter is None:

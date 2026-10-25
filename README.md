@@ -1,10 +1,56 @@
 # LocalShift
 
-**Free, offline-first Windows file converter. MVP supports raster images: PNG, JPEG, WebP, BMP, TIFF.**
+**Free, offline-first Windows file converter and document workbench.**
+Zero telemetry. 100% local processing. Original files stay untouched.
 
 ---
 
-## Setup (PowerShell)
+## Windows Installation & Release Binaries
+
+### Option 1: Standard Windows Installer (Recommended)
+Download and run the modern Windows setup executable:
+- **Installer:** `dist/installer/LocalShift-Setup-0.14.0.exe` (93.34 MB)
+- **SHA-256:** `13469bf14d85e1d4d33a616b8b477c7654a5286449eeb25063c74fecdca92974`
+- Installs to `{autopf}\LocalShift` (per-user or machine-wide with UAC dialog override).
+- Creates Start Menu shortcuts for **LocalShift** (GUI) and **LocalShift CLI**.
+- Desktop shortcut (optional).
+- Clean Windows uninstaller included (`unins000.exe`), registered in Windows Settings / Control Panel.
+- **Silent Installation (IT / Enterprise):**
+  ```powershell
+  LocalShift-Setup-0.14.0.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+  ```
+- **Silent Uninstallation:**
+  ```powershell
+  "${env:ProgramFiles}\LocalShift\unins000.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+  ```
+
+### Option 2: Portable Application (Zero Install)
+The portable distribution requires zero installation and leaves no system footprint:
+- **Portable Zip:** `dist/LocalShift-v0.14.0-windows-x64.zip` (146.26 MB)
+- **SHA-256:** `de04a9b9f5000a05324760a2355703a06f4f50a15a8070ced464d92a630412d2`
+- Unzip and run `LocalShift.exe` for the graphical desktop application.
+- Run `localshift-cli.exe` for command-line conversion and scripting.
+- Carry on a USB flash drive or run from any writable directory without administrator rights.
+
+---
+
+## Building from Source
+
+### Automated Build Pipeline (PyInstaller + Inno Setup)
+To build both the standalone bundle and installer reproducibly:
+```powershell
+# 1. Install packaging tool
+pip install pyinstaller
+
+# 2. Compile portable folder and installer executable
+py -3.14 packaging/build.py
+```
+*Note: Inno Setup 6 (`ISCC.exe`) is automatically discovered on `PATH`, in `%LOCALAPPDATA%\Programs\Inno Setup 6\`, or Program Files.*
+
+---
+
+## Development Setup (PowerShell)
+
 
 > **Note:** PyPI connectivity may be required to install dependencies.
 > If `pip install` times out on pypi.org, use the Aliyun mirror (see below).

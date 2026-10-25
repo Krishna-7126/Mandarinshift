@@ -1,0 +1,130 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<</Type/Catalog/Pages 2 0 R>>
+endobj
+2 0 obj
+<</Type/Pages/Kids[4 0 R 6 0 R 8 0 R 10 0 R 12 0 R 14 0 R]/Count 6>>
+endobj
+3 0 obj
+<</Type/Font/Subtype/Type1/BaseFont/Helvetica/Encoding/WinAnsiEncoding>>
+endobj
+4 0 obj
+<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Resources<</Font<</F1 3 0 R>>>>/Contents 5 0 R>>
+endobj
+5 0 obj
+<</Length 537>>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+14 TL
+(DATA PRIVACY AND COMPUTATIONAL INTEGRITY ACT) Tj
+T* () Tj
+T* (1. Mandatory Local Processing Standard) Tj
+T* (Any software system processing user files within this jurisdiction shall adhere to:) Tj
+T* (1. Local storage of all document streams without external telemetry;) Tj
+T* (2. Immediate in-memory cryptographic verification of file bounds;) Tj
+T* (3. Prohibition of automatic network transmissions of document contents;) Tj
+T* (4. Explicit user consent prior to external model pack installations.) Tj
+ET
+endstream
+endobj
+6 0 obj
+<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Resources<</Font<</F1 3 0 R>>>>/Contents 7 0 R>>
+endobj
+7 0 obj
+<</Length 157>>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+14 TL
+(2. Penalties and Enforcement) Tj
+T* (Failure to adhere to the requirements of Section 1 shall incur statutory penalties.) Tj
+ET
+endstream
+endobj
+8 0 obj
+<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Resources<</Font<</F1 3 0 R>>>>/Contents 9 0 R>>
+endobj
+9 0 obj
+<</Length 149>>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+14 TL
+(3. Scope of Exemptions) Tj
+T* (The provisions of this Act shall apply equally to desktop and embedded workflows.) Tj
+ET
+endstream
+endobj
+10 0 obj
+<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Resources<</Font<</F1 3 0 R>>>>/Contents 11 0 R>>
+endobj
+11 0 obj
+<</Length 154>>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+14 TL
+(4. Audit and Compliance) Tj
+T* (Entities shall maintain offline reproducibility records for all benchmark assertions.) Tj
+ET
+endstream
+endobj
+12 0 obj
+<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Resources<</Font<</F1 3 0 R>>>>/Contents 13 0 R>>
+endobj
+13 0 obj
+<</Length 144>>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+14 TL
+(5. Technical Governance) Tj
+T* (All computational units must maintain strict heap boundaries under 250 MiB.) Tj
+ET
+endstream
+endobj
+14 0 obj
+<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Resources<</Font<</F1 3 0 R>>>>/Contents 15 0 R>>
+endobj
+15 0 obj
+<</Length 143>>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+14 TL
+(6. Final Enactment) Tj
+T* (This Act shall take effect immediately upon signature by the presiding officer.) Tj
+ET
+endstream
+endobj
+xref
+0 16
+0000000000 65535 f 
+0000000015 00000 n 
+0000000060 00000 n 
+0000000144 00000 n 
+0000000232 00000 n 
+0000000344 00000 n 
+0000000930 00000 n 
+0000001042 00000 n 
+0000001248 00000 n 
+0000001360 00000 n 
+0000001558 00000 n 
+0000001672 00000 n 
+0000001876 00000 n 
+0000001990 00000 n 
+0000002184 00000 n 
+0000002298 00000 n 
+trailer
+<</Size 16/Root 1 0 R>>
+startxref
+2491
+%%EOF

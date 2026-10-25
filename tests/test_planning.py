@@ -80,26 +80,28 @@ class TestCapabilityDiscovery:
         srcs = get_supported_source_formats()
         assert isinstance(srcs, list)
         assert srcs == sorted(srcs)
-        assert set(srcs) == {"bmp", "jpeg", "pdf", "png", "tiff", "webp"}
+        from localshift.documents.docx_adapter import DocxToPdfAdapter
+        expected_srcs = {"bmp", "docx", "jpeg", "pdf", "png", "tiff", "webp"} if DocxToPdfAdapter().is_available() else {"bmp", "jpeg", "pdf", "png", "tiff", "webp"}
+        assert set(srcs) == expected_srcs
 
     def test_get_supported_target_formats_unfiltered(self):
         tgts = get_supported_target_formats()
         assert isinstance(tgts, list)
         assert tgts == sorted(tgts)
-        assert set(tgts) == {"bmp", "docx", "jpeg", "png", "tiff", "txt", "webp"}
+        assert set(tgts) == {"bmp", "docx", "jpeg", "pdf", "png", "tiff", "txt", "webp"}
 
     def test_get_supported_target_formats_for_source(self):
         # PNG cannot convert to PNG (no-op), should support remaining 4 image formats
         tgts = get_supported_target_formats("png")
-        assert tgts == ["bmp", "jpeg", "tiff", "webp"]
+        assert tgts == ["bmp", "jpeg", "pdf", "tiff", "webp"]
 
-        # PDF supports docx and txt
+        # PDF supports docx, jpeg, png, and txt
         tgts_pdf = get_supported_target_formats("pdf")
-        assert tgts_pdf == ["docx", "txt"]
+        assert tgts_pdf == ["docx", "jpeg", "png", "txt"]
 
         # Alias "jpg" should resolve to "jpeg" targets
         tgts_jpg = get_supported_target_formats("jpg")
-        assert tgts_jpg == ["bmp", "png", "tiff", "webp"]
+        assert tgts_jpg == ["bmp", "pdf", "png", "tiff", "webp"]
 
         # Unknown source format returns empty list
         assert get_supported_target_formats("nonexistent") == []
@@ -108,10 +110,18 @@ class TestCapabilityDiscovery:
         routes = get_supported_routes()
         assert isinstance(routes, list)
         assert routes == sorted(routes)
-        assert len(routes) == 22
+        from localshift.documents.docx_adapter import DocxToPdfAdapter
+        expected_len = 30 if DocxToPdfAdapter().is_available() else 29
+        assert len(routes) == expected_len
         assert ("png", "jpeg") in routes
+        assert ("png", "pdf") in routes
+        assert ("jpeg", "pdf") in routes
         assert ("pdf", "txt") in routes
         assert ("pdf", "docx") in routes
+        assert ("pdf", "png") in routes
+        assert ("pdf", "jpeg") in routes
+        if DocxToPdfAdapter().is_available():
+            assert ("docx", "pdf") in routes
         assert ("png", "png") not in routes
 
     def test_is_route_supported_canonical_and_aliases(self):

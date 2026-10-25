@@ -1,0 +1,23 @@
+CLINICAL STUDY PROTOCOL
+Protocol ID: BIO-2026-PHASE3
+
+Section 1: Primary Objectives
+The primary objective is to evaluate efficacy and safety of Compound-712.
+Patients will receive standardized oral dosing once daily over 24 weeks.
+1.1 Patient Eligibility Criteria
+- Age 18 to 75 years inclusive at time of screening;
+- Confirmed diagnostic indication according to ICD-11 guidelines;
+- Normal liver and renal biomarker function at baseline.
+Section 2: Multi-Arm Dosing Schedule
+Treatment Arm Dosage Frequency Duration
+Arm A - Active 50 mg Daily 24 Weeks
+Arm B - Active 100 mg Daily 24 Weeks
+Arm C - Placebo 0 mg Daily 24 Weeks
+
+Adverse Event Monitoring
+Clinical safety reviews occur at Weeks 2, 4, 8, 12, and 24.
+Section 3: Statistical Methodology
+Statistical analyses will follow intent-to-treat principles.
+Continuous variables will be summarized using mean and standard deviation.
+Categorical data will be evaluated using Fisher exact test comparisons.
+Interim monitoring will be conducted by an independent Data Safety Board.

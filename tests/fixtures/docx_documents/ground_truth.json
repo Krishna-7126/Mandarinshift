@@ -1,0 +1,58 @@
+{
+  "docx_01_simple.docx": {
+    "title": "LocalShift Simple Document",
+    "expected_pages": 1,
+    "keywords": [
+      "LocalShift Simple Document",
+      "Bold text statement",
+      "Italic text explanation"
+    ]
+  },
+  "docx_02_multipage.docx": {
+    "title": "Multipage Document Analysis",
+    "expected_pages": 3,
+    "keywords": [
+      "Page 1 introductory overview",
+      "Section Two",
+      "Section Three"
+    ]
+  },
+  "docx_03_tables.docx": {
+    "title": "System Benchmark Metrics",
+    "expected_pages": 1,
+    "keywords": [
+      "Backend",
+      "LibreOffice",
+      "Word COM",
+      "MPL-2.0",
+      "145"
+    ]
+  },
+  "docx_04_images.docx": {
+    "title": "Document with Embedded Media",
+    "expected_pages": 1,
+    "keywords": [
+      "Document with Embedded Media",
+      "Figure 1"
+    ]
+  },
+  "docx_05_headers_footers.docx": {
+    "title": "Document with Headers and Footers",
+    "expected_pages": 1,
+    "keywords": [
+      "Document with Headers and Footers",
+      "github.com/Krishna-7126/LocalShift"
+    ]
+  },
+  "docx_06_unicode_margins_landscape.docx": {
+    "title": "Multilingual & Custom Layout Specification",
+    "expected_pages": 1,
+    "keywords": [
+      "Universal offline document conversion",
+      "Conversión de documentos",
+      "lokale",
+      "隐私",
+      "Privacy First"
+    ]
+  }
+}

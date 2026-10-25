@@ -135,7 +135,8 @@ class TestFormats:
         assert not route_supported("jpg", "jpeg")  # aliases of same format
 
     def test_route_unknown_format_returns_false(self):
-        assert not route_supported("pdf", "png")
+        assert route_supported("pdf", "png")
+        assert not route_supported("pdf", "xyz")
         assert not route_supported("png", "xyz")
 
     def test_output_formats_for_png(self, tmp_path):
@@ -144,6 +145,7 @@ class TestFormats:
         formats = output_formats_for(p)
         assert "jpeg" in formats
         assert "webp" in formats
+        assert "pdf" in formats
         assert "png" not in formats
 
     def test_output_formats_for_unsupported(self, tmp_path):
@@ -152,7 +154,7 @@ class TestFormats:
 
     def test_output_formats_for_pdf(self, tmp_path):
         p = tmp_path / "file.pdf"
-        assert output_formats_for(p) == ["docx", "txt"]
+        assert output_formats_for(p) == ["docx", "jpeg", "png", "txt"]
 
     def test_sniff_format_real_png(self, tmp_path):
         p = tmp_path / "test.png"
@@ -320,7 +322,7 @@ class TestInputValidation:
 
     def test_unsupported_target_raises(self, tmp_path, rgb_png):
         with pytest.raises(ConversionError):
-            convert_image(rgb_png, "pdf", tmp_path)
+            convert_image(rgb_png, "docx", tmp_path)
 
     def test_unknown_format_string_raises(self, tmp_path, rgb_png):
         with pytest.raises(ConversionError):
@@ -454,8 +456,12 @@ class TestRegression:
 
     def test_unsupported_input_baseline(self):
         """Original test_unsupported_input."""
-        assert output_formats_for(Path("file.docx")) == []
-        assert not route_supported("pdf", "png")
+        assert output_formats_for(Path("file.xyz")) == []
+        from localshift.documents.docx_adapter import DocxToPdfAdapter
+        expected_docx_targets = ["pdf"] if DocxToPdfAdapter().is_available() else []
+        assert output_formats_for(Path("file.docx")) == expected_docx_targets
+        assert route_supported("pdf", "png")
+        assert not route_supported("pdf", "xyz")
 
     def test_route_aliases_baseline(self):
         """Original test_route_aliases."""

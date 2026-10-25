@@ -1,7 +1,7 @@
 # LocalShift — Test Plan & Quality Assurance Strategy
 
-**Version:** 0.7.0 (Updated: Milestone LS-BE-007A)  
-**Test Suite Size:** 357 tests collected (354 passed, 3 skipped on non-admin Windows)  
+**Version:** 0.7.2 (Updated: Milestone LS-BE-007C)  
+**Test Suite Size:** 369 tests collected (366 passed, 3 skipped on non-admin Windows)  
 
 ---
 
@@ -12,7 +12,9 @@ LocalShift uses a layered testing strategy focused strictly on backend correctne
 - **Integration Tests:** End-to-end execution of `convert_request()` with real adapters, destination path collision resolution, atomic replacement, and cleanup verification.
 - **Reliability & Concurrency Tests:** In-process path reservation locks, thread-safe job queue lifecycle, worker pool thread exhaustion, and cancel propagation.
 - **Document & OCR Tests:** Offline OCR engine invocation, bounding box parsing, line grouping, memory-bounded rendering, DPI bounds, per-page routing (`auto`, `native_only`, `force_ocr`), text de-duplication, memory ownership, and language model audits.
-- **Benchmark Corpus Quality Tests:** Deterministic evaluation of text extraction accuracy (Character Error Rate, Word Error Rate, Unicode preservation, reading order, and heap memory tracing) in both native and auto OCR modes.
+- **Benchmark Corpus Quality Tests:** Deterministic evaluation of text extraction accuracy (Character Error Rate, Word Error Rate, Unicode preservation, reading order, and heap memory tracing) in both native and auto OCR modes across 18 benchmark categories.
+- **Unseen Document Generalization Tests:** Independent validation against 10 unseen fixtures (`val_01` to `val_10`) never used for tuning, testing generalization on contracts, ledgers, receipts, multilingual text, and multi-page manuscripts.
+- **Visual QA Fidelity Tests:** Headless rendering of generated `.docx` documents to PDF and high-DPI page images using local Microsoft Word COM automation or LibreOffice, with page count and visual integrity assertions.
 
 ---
 
@@ -25,11 +27,12 @@ LocalShift uses a layered testing strategy focused strictly on backend correctne
 | [`tests/test_jobs.py`](file:///Z:/LocalShift/tests/test_jobs.py) | Asynchronous JobQueue & batching | 80 | Lifecycle states, queue limits, eviction, thread safety |
 | [`tests/test_planning.py`](file:///Z:/LocalShift/tests/test_planning.py) | Planning API & preflight validation | 30 | Capability discovery, `ConversionPlan`, point-in-time checks |
 | [`tests/test_reliability.py`](file:///Z:/LocalShift/tests/test_reliability.py) | Concurrency & resource stress | 51 | Collision races, symlink safety, cancellation, memory safety |
-| [`tests/test_document_foundation.py`](file:///Z:/LocalShift/tests/test_document_foundation.py) | Document container sniffing | 5 | PDF `%PDF-` sniffing, DOCX OpenXML structure validation |
+| [`tests/test_document_foundation.py`](file:///Z:/LocalShift/tests/test_document_foundation.py) | Document container sniffing & fixtures | 5 | PDF `%PDF-` sniffing, DOCX OpenXML structure, 18 fixture generation |
 | [`tests/test_pdf_extraction.py`](file:///Z:/LocalShift/tests/test_pdf_extraction.py) | PDF inspection & text extraction | 33 | Page counts, dimensions, rotations, text previews, adapter |
 | [`tests/test_pdf_reliability.py`](file:///Z:/LocalShift/tests/test_pdf_reliability.py) | Benchmark quality & metrics | 18 | CER / WER calculations, benchmark corpus verification, latency |
 | [`tests/test_pdf_ocr.py`](file:///Z:/LocalShift/tests/test_pdf_ocr.py) | Offline OCR engine, renderer & routing | 24 | RapidOCR detection, reading order, scanned PDF extraction, DPI bounds, de-duplication, memory safety, language audit |
-| [`tests/test_pdf_docx.py`](file:///Z:/LocalShift/tests/test_pdf_docx.py) | PDF to DOCX document reconstruction | 18 | Born-digital, scanned, mixed, tables, headings, orientation, Unicode, cancellation, collision |
+| [`tests/test_pdf_docx.py`](file:///Z:/LocalShift/tests/test_pdf_docx.py) | PDF to DOCX document reconstruction | 23 | Born-digital, scanned, mixed, tables (bordered & borderless), headings, orientation, Unicode, image-caption flow, visual rendering QA |
+| [`tests/test_unseen_validation.py`](file:///Z:/LocalShift/tests/test_unseen_validation.py) | Unseen document validation set | 7 | Generalization on legal contracts, financial ledgers, academic papers, multilingual text, manuscripts |
 
 ---
 

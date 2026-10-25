@@ -1,8 +1,8 @@
 # LocalShift — Project Status & Roadmap
 
-**Current Version:** 0.7.0  
-**Active Workstream:** PDF → DOCX Conversion Engine: Architecture, Implementation & Verification (LS-BE-007A)  
-**Total Tests:** 357 collected (354 passing, 3 skipped, 0 failing)  
+**Current Version:** 0.7.2  
+**Active Workstream:** PDF → DOCX Unseen-Document Validation & Reliability Audit (LS-BE-007C)  
+**Total Tests:** 369 collected (366 passing, 3 skipped, 0 failing)  
 
 ---
 
@@ -19,8 +19,10 @@
 | **LS-BE-006B** | PDF inspection & native text extraction adapter | `30d3da4` | 291 passed | Complete |
 | **LS-BE-006C** | Quality verification, benchmark corpus & extraction reliability | `3100a1f` | 311 passed | Complete |
 | **LS-BE-006D** | Offline OCR engine foundation & scanned PDF extraction | `3100a1f` | 330 passed | Complete |
-| **LS-BE-006E** | Hybrid PDF reliability, OCR accuracy & compatibility audit | Working tree | 335 passed | Complete |
-| **LS-BE-007A** | PDF → DOCX Conversion Engine: Architecture, Implementation & Verification | Working tree | 354 passed | **Complete (Current)** |
+| **LS-BE-006E** | Hybrid PDF reliability, OCR accuracy & compatibility audit | `ee77f3a` | 335 passed | Complete |
+| **LS-BE-007A** | PDF → DOCX Conversion Engine: Architecture, Implementation & Verification | `ee77f3a` | 354 passed | Complete |
+| **LS-BE-007B** | PDF → DOCX Quality Verification, Visual Fidelity & Real-World Benchmarking | `ee77f3a` | 359 passed | Complete |
+| **LS-BE-007C** | PDF → DOCX Unseen-Document Validation & Reliability Audit | Working tree | 366 passed | **Complete (Current)** |
 
 ---
 
@@ -40,14 +42,14 @@
   - `RapidOcrEngine`: Offline CPU-first OCR using RapidOCR and ONNX Runtime with bundled PP-OCRv4 models (Apache-2.0).
   - `reconstruct_reading_order`: Deterministic 2D line-grouping and reading-order reconstruction.
   - `NativePdfTextExtractor`: Safe page-by-page extraction, per-page routing (`auto`, `native_only`, `force_ocr`), cooperative cancellation, robust text de-duplication (`_is_duplicate_text`), and clean UTF-8 plain-text formatting.
-  - `PdfToDocxReconstructor`: Structured document reconstruction pipeline into Microsoft Word (.docx) with multi-level headings, conservative paragraph grouping, native table detection, embedded raster image extraction, and orientation preservation.
-  - `Quality Evaluator`: Automated CER, WER, latency, and heap memory tracing against 14 benchmark fixtures in native mode, auto OCR mode, and DOCX reconstruction mode.
+  - `PdfToDocxReconstructor`: Structured document reconstruction pipeline into Microsoft Word (.docx) with multi-level headings, conservative paragraph grouping, native table detection (bordered and borderless), table header bolding, numeric right-alignment, embedded raster image extraction placed above captions, and orientation preservation.
+  - `Quality Evaluator`: Automated CER, WER, latency, and heap memory tracing against 18 benchmark fixtures in native mode, auto OCR mode, and DOCX reconstruction mode with offline visual QA rendering via Microsoft Word COM automation.
 
 ---
 
 ## 3. Next Milestone Recommendation
 
-- **Milestone LS-BE-007B:** Advanced DOCX Formatting, Vector Graphics & Table Styling  
-  - Enhance table borders, cell background styling, and alignment recovery.
-  - Implement heuristic column-width estimation.
-  - Add optional header/footer and page-number field insertion.
+- **Milestone LS-BE-008:** Document Conversion Route Expansion & Office Ingestion Foundation
+  - Implement DOCX inspection and text extraction engine.
+  - Establish DOCX → PDF route design using available local rendering engines.
+  - Add bidirectional document format tests and preflight capability discovery.

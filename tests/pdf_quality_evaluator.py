@@ -133,6 +133,10 @@ BENCHMARK_CATEGORIES: dict[str, str] = {
     "doc_12_hierarchy": "5. Heading & paragraph hierarchy",
     "doc_13_empty": "10. Empty or nearly empty PDF",
     "doc_14_interleaved_multicolumn": "4. Multi-column document (interleaved)",
+    "doc_15_borderless_table": "13. Borderless tables",
+    "doc_16_image_caption": "10. Images and captions",
+    "doc_17_headers_footers": "11. Headers, footers and page numbers",
+    "doc_18_dense_document": "14. Dense documents",
 }
 
 OCR_GROUND_TRUTH_TEXT: dict[str, str] = {
@@ -281,25 +285,32 @@ def format_markdown_table(metrics: list[QualityMetric]) -> str:
 @dataclass(frozen=True)
 class DocxQualityMetric:
     fixture_id: str
+    category: str
     tables_count: int
     headings_count: int
     paragraphs_count: int
+    images_count: int
     cer: float
     wer: float
     peak_memory_kib: float
     duration_ms: float
+    visual_render_status: str
     notes: str
 
 
 def evaluate_all_docx_fixtures(fixtures_dir: Path) -> list[DocxQualityMetric]:
     import docx
     import tempfile
+    from tests.visual_renderer import DocxVisualRenderer
+
+    visual_available = DocxVisualRenderer.is_available()
 
     metrics: list[DocxQualityMetric] = []
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
         for p in sorted(fixtures_dir.glob("*.pdf")):
             fid = p.stem
+            category = BENCHMARK_CATEGORIES.get(fid, "Standard Document")
             expected = GROUND_TRUTH_TEXT.get(fid, "")
             tracemalloc.start()
             t0 = time.perf_counter()
@@ -313,6 +324,7 @@ def evaluate_all_docx_fixtures(fixtures_dir: Path) -> list[DocxQualityMetric]:
                 d = docx.Document(res.output_path)
                 para_texts = [para.text for para in d.paragraphs if para.text]
                 hdgs = [para.text for para in d.paragraphs if para.style.name.startswith("Heading")]
+                img_count = len(d.inline_shapes)
                 tbl_texts = []
                 for t in d.tables:
                     for row in t.rows:
@@ -323,16 +335,35 @@ def evaluate_all_docx_fixtures(fixtures_dir: Path) -> list[DocxQualityMetric]:
                 cer = levenshtein_distance(norm_exp, norm_hyp) / max(1, len(norm_exp)) if norm_exp else 0.0
                 wer = levenshtein_distance(norm_exp.split(), norm_hyp.split()) / max(1, len(norm_exp.split())) if norm_exp else 0.0
 
+                # Visual QA rendering verification
+                visual_status = "N/A"
+                if visual_available:
+                    try:
+                        rendered_pdf = tmp_path / f"{fid}_qa_rendered.pdf"
+                        DocxVisualRenderer.render_docx_to_pdf(res.output_path, rendered_pdf)
+                        import pypdfium2
+                        rendered_doc = pypdfium2.PdfDocument(rendered_pdf)
+                        pages_rendered = len(rendered_doc)
+                        rendered_doc.close()
+                        visual_status = f"PASS ({pages_rendered}p)"
+                    except Exception as v_err:
+                        visual_status = f"FAIL ({v_err})"
+                else:
+                    visual_status = "Renderer Unavailable"
+
                 metrics.append(
                     DocxQualityMetric(
                         fixture_id=fid,
+                        category=category,
                         tables_count=len(d.tables),
                         headings_count=len(hdgs),
                         paragraphs_count=len(para_texts),
+                        images_count=img_count,
                         cer=round(cer, 4),
                         wer=round(wer, 4),
                         peak_memory_kib=round(peak / 1024, 1),
                         duration_ms=round((t1 - t0) * 1000, 2),
+                        visual_render_status=visual_status,
                         notes="OK" if cer < 0.1 else f"CER={cer*100:.1f}%",
                     )
                 )
@@ -341,13 +372,16 @@ def evaluate_all_docx_fixtures(fixtures_dir: Path) -> list[DocxQualityMetric]:
                 metrics.append(
                     DocxQualityMetric(
                         fixture_id=fid,
+                        category=category,
                         tables_count=0,
                         headings_count=0,
                         paragraphs_count=0,
+                        images_count=0,
                         cer=1.0,
                         wer=1.0,
                         peak_memory_kib=0.0,
                         duration_ms=0.0,
+                        visual_render_status="N/A",
                         notes=f"Rejected: {exc}",
                     )
                 )
@@ -356,14 +390,14 @@ def evaluate_all_docx_fixtures(fixtures_dir: Path) -> list[DocxQualityMetric]:
 
 def format_docx_markdown_table(metrics: list[DocxQualityMetric]) -> str:
     lines = [
-        "| Fixture | Tables | Headings | Paragraphs | CER | WER | Peak Mem (KiB) | Time (ms) | Notes |",
-        "|---|---|---|---|---|---|---|---|---|",
+        "| Fixture | Category | Tables | Headings | Paragraphs | Images | CER | WER | Visual QA | Mem (KiB) | Time (ms) | Notes |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for m in metrics:
         cer_pct = f"{m.cer * 100:.1f}%"
         wer_pct = f"{m.wer * 100:.1f}%"
         lines.append(
-            f"| `{m.fixture_id}` | {m.tables_count} | {m.headings_count} | {m.paragraphs_count} | {cer_pct} | {wer_pct} | {m.peak_memory_kib} | {m.duration_ms} | {m.notes} |"
+            f"| `{m.fixture_id}` | {m.category} | {m.tables_count} | {m.headings_count} | {m.paragraphs_count} | {m.images_count} | {cer_pct} | {wer_pct} | {m.visual_render_status} | {m.peak_memory_kib} | {m.duration_ms} | {m.notes} |"
         )
     return "\n".join(lines)
 

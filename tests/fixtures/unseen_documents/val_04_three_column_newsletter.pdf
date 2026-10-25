@@ -1,0 +1,48 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<</Type/Catalog/Pages 2 0 R>>
+endobj
+2 0 obj
+<</Type/Pages/Kids[4 0 R]/Count 1>>
+endobj
+3 0 obj
+<</Type/Font/Subtype/Type1/BaseFont/Helvetica/Encoding/WinAnsiEncoding>>
+endobj
+4 0 obj
+<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Resources<</Font<</F1 3 0 R>>>>/Contents 5 0 R>>
+endobj
+5 0 obj
+<</Length 300>>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+14 TL
+(Tech Briefing) Tj
+T* (LocalShift releases v0.7.1.) Tj
+T* (Privacy first.) Tj
+T* () Tj
+T* (Engineering Note) Tj
+T* (Modular adapters provide) Tj
+T* (reliable conversion.) Tj
+T* () Tj
+T* (Community Update) Tj
+T* (Zero network calls.) Tj
+T* (Fully offline operation.) Tj
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000015 00000 n 
+0000000060 00000 n 
+0000000111 00000 n 
+0000000199 00000 n 
+0000000311 00000 n 
+trailer
+<</Size 6/Root 1 0 R>>
+startxref
+660
+%%EOF

@@ -29,6 +29,8 @@ from .text_extractor import _is_duplicate_text
 
 log = logging.getLogger(__name__)
 
+NUMERIC_CELL_PATTERN = re.compile(r"^[\$€£¥]?-?\d[\d,]*(\.\d+)?%?$")
+
 
 @dataclass(frozen=True)
 class DocxReconstructionResult:
@@ -108,7 +110,7 @@ def _parse_table_structure(lines: list[str]) -> Optional[tuple[list[list[str]], 
                     tokens = row_str.split()
                     trailing: list[str] = []
                     k = len(tokens) - 1
-                    while k >= 0 and re.match(r"^[\$€£¥]?\d+([.,]\d+)?%?$", tokens[k]):
+                    while k >= 0 and NUMERIC_CELL_PATTERN.match(tokens[k]):
                         trailing.insert(0, tokens[k])
                         k -= 1
                     if trailing and k >= 0:
@@ -162,6 +164,100 @@ def _parse_table_structure(lines: list[str]) -> Optional[tuple[list[list[str]], 
     if len(pipe_rows) >= 2:
         return pipe_rows, pipe_start, len(lines)
 
+    # Strategy 3: Borderless / space-aligned multi-column tables (no rule separator)
+    candidate_start = -1
+    candidate_rows: list[list[str]] = []
+    for i, line in enumerate(lines):
+        clean = line.strip()
+        if clean.startswith(("- ", "* ", "• ", "▪ ")) or _is_heading_candidate(clean)[0]:
+            if len(candidate_rows) >= 2:
+                max_cols = max(len(r) for r in candidate_rows)
+                norm = [r + [""] * (max_cols - len(r)) for r in candidate_rows]
+                return norm, candidate_start, i
+            candidate_rows = []
+            candidate_start = -1
+            continue
+
+        parts = [p.strip() for p in re.split(r"\s{2,}|\t", clean) if p.strip()]
+        if len(parts) >= 2:
+            if not candidate_rows:
+                candidate_start = i
+                candidate_rows.append(parts)
+            else:
+                expected_cols = len(candidate_rows[0])
+                if abs(len(parts) - expected_cols) <= 1:
+                    candidate_rows.append(parts)
+                else:
+                    if len(candidate_rows) >= 2:
+                        max_cols = max(len(r) for r in candidate_rows)
+                        norm = [r + [""] * (max_cols - len(r)) for r in candidate_rows]
+                        return norm, candidate_start, i
+                    candidate_rows = []
+                    candidate_start = -1
+        else:
+            if len(candidate_rows) >= 2:
+                max_cols = max(len(r) for r in candidate_rows)
+                norm = [r + [""] * (max_cols - len(r)) for r in candidate_rows]
+                return norm, candidate_start, i
+            candidate_rows = []
+            candidate_start = -1
+
+    if len(candidate_rows) >= 2:
+        max_cols = max(len(r) for r in candidate_rows)
+        norm = [r + [""] * (max_cols - len(r)) for r in candidate_rows]
+        return norm, candidate_start, len(lines)
+
+    # Strategy 3b: Borderless table with trailing numeric/currency tokens
+    for i in range(len(lines)):
+        header_line = lines[i].strip()
+        if header_line.startswith(("- ", "* ", "• ", "▪ ")) or _is_heading_candidate(header_line)[0]:
+            continue
+        header_tokens = header_line.split()
+        data_rows: list[list[str]] = []
+        expected_trailing: Optional[int] = None
+        data_end = i + 1
+        for j in range(i + 1, len(lines)):
+            row_str = lines[j].strip()
+            if not row_str or row_str.startswith(("- ", "* ", "• ", "▪ ")) or _is_heading_candidate(row_str)[0]:
+                break
+            tokens = row_str.split()
+            k = len(tokens) - 1
+            trailing: list[str] = []
+            while k >= 0 and NUMERIC_CELL_PATTERN.match(tokens[k]):
+                trailing.insert(0, tokens[k])
+                k -= 1
+            if len(trailing) < 2:
+                break
+            if expected_trailing is None:
+                expected_trailing = len(trailing)
+            elif len(trailing) != expected_trailing:
+                break
+            leading = tokens[: k + 1]
+            if not leading:
+                break
+            if len(leading) >= 2:
+                if re.match(r"^[\w\d-]+$", leading[0]) and len(leading) > 2:
+                    row_cols = [leading[0], " ".join(leading[1:])] + trailing
+                else:
+                    row_cols = [" ".join(leading[:-1]), leading[-1]] + trailing
+            else:
+                row_cols = leading + trailing
+            data_rows.append(row_cols)
+            data_end = j + 1
+
+        if len(data_rows) >= 2 and expected_trailing is not None:
+            num_cols = len(data_rows[0])
+            diff = len(header_tokens) - num_cols
+            if diff > 0:
+                h_cols = [" ".join(header_tokens[: diff + 1])] + header_tokens[diff + 1 :]
+                if len(h_cols) > num_cols:
+                    h_cols = h_cols[: num_cols - expected_trailing] + header_tokens[-expected_trailing:]
+            elif diff == 0:
+                h_cols = header_tokens
+            else:
+                h_cols = header_tokens + [""] * (num_cols - len(header_tokens))
+            return [h_cols] + data_rows, i, data_end
+
     return None
 
 
@@ -169,7 +265,7 @@ def _group_lines_into_paragraphs(lines: list[str]) -> list[str]:
     """Group visual lines into logical paragraphs, preserving explicit paragraph breaks.
 
     Joins wrapped lines within the same sentence while respecting headings,
-    bullet points, and sentence termination.
+    bullet points, captions, page numbers, and sentence termination.
     """
     paragraphs: list[str] = []
     current_chunk: list[str] = []
@@ -184,6 +280,14 @@ def _group_lines_into_paragraphs(lines: list[str]) -> list[str]:
 
         # Bullet points are always their own paragraph
         if stripped.startswith(("- ", "* ", "• ", "▪ ", "– ")):
+            if current_chunk:
+                paragraphs.append(" ".join(current_chunk))
+                current_chunk = []
+            paragraphs.append(stripped)
+            continue
+
+        # Captions, table titles, page numbers, and headers/footers are independent paragraphs
+        if re.match(r"^(Figure|Table|Page)\s+\d+", stripped, re.IGNORECASE) or re.match(r"^(Header|Footer):", stripped, re.IGNORECASE):
             if current_chunk:
                 paragraphs.append(" ".join(current_chunk))
                 current_chunk = []
@@ -415,16 +519,56 @@ class PdfToDocxReconstructor:
                         before_lines = raw_lines[:s_idx]
                         after_lines = raw_lines[e_idx:]
 
-                    # Render lines before table
-                    cls._render_text_lines(docx_doc, before_lines, median_font_size)
+                    def _insert_images() -> None:
+                        nonlocal images_count
+                        if extract_images and image_objects:
+                            for img_obj in list(image_objects):
+                                try:
+                                    bmp = img_obj.get_bitmap()
+                                    if bmp:
+                                        pil_img = bmp.to_pil()
+                                        w_px, h_px = pil_img.size
+                                        # Skip tiny icons or full-page backgrounds
+                                        if w_px >= 32 and h_px >= 32:
+                                            buf = io.BytesIO()
+                                            pil_img.save(buf, format="PNG")
+                                            buf.seek(0)
+                                            # Calculate display width (max 5.5 inches)
+                                            display_w = min(5.5, max(1.5, w_px / 150.0))
+                                            docx_doc.add_picture(buf, width=Inches(display_w))
+                                            images_count += 1
+                                except Exception as img_exc:
+                                    log.debug("Failed to extract embedded image: %s", img_exc)
+                            image_objects.clear()
+
+                    # Render lines before table (inserting images before caption if present)
+                    caption_idx_before = next(
+                        (i for i, l in enumerate(before_lines) if re.match(r"^Figure\s+\d+", l.strip(), re.IGNORECASE)),
+                        None,
+                    )
+                    if caption_idx_before is not None:
+                        cls._render_text_lines(docx_doc, before_lines[:caption_idx_before], median_font_size)
+                        _insert_images()
+                        cls._render_text_lines(docx_doc, before_lines[caption_idx_before:], median_font_size)
+                    else:
+                        cls._render_text_lines(docx_doc, before_lines, median_font_size)
 
                     # Render table if detected
                     if table_rows:
                         cls._add_table(docx_doc, table_rows)
                         tables_count += 1
 
-                    # Render lines after table
-                    cls._render_text_lines(docx_doc, after_lines, median_font_size)
+                    # Render lines after table (inserting images before caption if present)
+                    caption_idx_after = next(
+                        (i for i, l in enumerate(after_lines) if re.match(r"^Figure\s+\d+", l.strip(), re.IGNORECASE)),
+                        None,
+                    )
+                    if caption_idx_after is not None:
+                        cls._render_text_lines(docx_doc, after_lines[:caption_idx_after], median_font_size)
+                        _insert_images()
+                        cls._render_text_lines(docx_doc, after_lines[caption_idx_after:], median_font_size)
+                    else:
+                        cls._render_text_lines(docx_doc, after_lines, median_font_size)
 
                     # If OCR produced non-duplicate text on a mixed page, append it
                     if ocr_applied and ocr_text:
@@ -435,25 +579,8 @@ class PdfToDocxReconstructor:
 
                     total_chars += char_count
 
-                    # Extract embedded images if enabled and page is not a full-page scan
-                    if extract_images and image_objects:
-                        for img_obj in image_objects:
-                            try:
-                                bmp = img_obj.get_bitmap()
-                                if bmp:
-                                    pil_img = bmp.to_pil()
-                                    w_px, h_px = pil_img.size
-                                    # Skip tiny icons or full-page backgrounds
-                                    if w_px >= 32 and h_px >= 32:
-                                        buf = io.BytesIO()
-                                        pil_img.save(buf, format="PNG")
-                                        buf.seek(0)
-                                        # Calculate display width (max 5.5 inches)
-                                        display_w = min(5.5, max(1.5, w_px / 150.0))
-                                        docx_doc.add_picture(buf, width=Inches(display_w))
-                                        images_count += 1
-                            except Exception as img_exc:
-                                log.debug("Failed to extract embedded image: %s", img_exc)
+                    # Extract remaining embedded images if not placed before a caption
+                    _insert_images()
                 else:
                     # Blank or empty page
                     if classification is PageContentClassification.EMPTY_OR_UNKNOWN:
@@ -540,4 +667,13 @@ class PdfToDocxReconstructor:
             for c_idx, val in enumerate(row):
                 if c_idx < num_cols:
                     cell = table.cell(r_idx, c_idx)
-                    cell.text = str(val).strip()
+                    val_str = str(val).strip()
+                    cell.text = val_str
+                    if r_idx == 0:
+                        for p in cell.paragraphs:
+                            for r in p.runs:
+                                r.font.bold = True
+                    elif NUMERIC_CELL_PATTERN.match(val_str):
+                        from docx.enum.text import WD_ALIGN_PARAGRAPH
+                        for p in cell.paragraphs:
+                            p.alignment = WD_ALIGN_PARAGRAPH.RIGHT

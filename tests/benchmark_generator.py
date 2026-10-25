@@ -157,6 +157,33 @@ GROUND_TRUTH_TEXT: dict[str, str] = {
     "doc_14_interleaved_multicolumn": (
         "Col 1 Line 1\nCol 1 Line 2\n\nCol 2 Line 1\nCol 2 Line 2"
     ),
+    "doc_15_borderless_table": (
+        "Item Name          SKU Code    Quantity    Unit Rate    Total\n"
+        "Widget Core        WDG-01      10          $12.50       $125.00\n"
+        "Sensor Mod         SNR-02      4           $45.00       $180.00\n"
+        "Power Cell         PWR-03      2           $89.99       $179.98"
+    ),
+    "doc_16_image_caption": (
+        "Architecture Overview\n\n"
+        "Figure 1: Core System Architecture\n\n"
+        "The diagram above illustrates the modular offline adapter pipeline."
+    ),
+    "doc_17_headers_footers": (
+        "Header: LocalShift Technical Specification — Confidential\n\n"
+        "Chapter 1: Security Boundaries and Isolation\n\n"
+        "All file conversions operate in strictly offline sandboxes.\n"
+        "Memory resources and temporary files are tracked and unlinked on exit.\n\n"
+        "Footer: Page 1 of 1"
+    ),
+    "doc_18_dense_document": (
+        "Dense Document Evaluation\n\n"
+        "Section 1: Workload Stress Analysis\n"
+        "LocalShift processes high density multi-paragraph documents with sustained accuracy.\n"
+        "Paragraph boundaries must remain intact across complex text wraps and line spacing variations.\n\n"
+        "Section 2: Layout Robustness\n"
+        "Document converters must not lose words or create orphan sentences in dense paragraphs.\n"
+        "Every paragraph should preserve its semantic boundary and natural reading order."
+    ),
 }
 
 
@@ -299,6 +326,39 @@ def generate_benchmark_fixtures(target_dir: Path) -> dict[str, Path]:
     )
     p14.write_bytes(p14_pdf)
     fixtures["doc_14_interleaved_multicolumn"] = p14
+
+    # 15. Borderless table PDF (columns aligned with multi-spaces, no horizontal rule)
+    p15 = target_dir / "doc_15_borderless_table.pdf"
+    p15.write_bytes(_build_simple_pdf_bytes([GROUND_TRUTH_TEXT["doc_15_borderless_table"]]))
+    fixtures["doc_15_borderless_table"] = p15
+
+    # 16. Embedded raster image with caption and text
+    p16 = target_dir / "doc_16_image_caption.pdf"
+    p16_base_bytes = _build_simple_pdf_bytes([GROUND_TRUTH_TEXT["doc_16_image_caption"]])
+    doc_p16 = pypdfium2.PdfDocument(p16_base_bytes)
+    page_p16 = doc_p16[0]
+    img_p16_obj = pypdfium2.PdfImage.new(doc_p16)
+    pil_p16_img = Image.new("RGB", (180, 100), color=(52, 101, 164))
+    draw_p16 = ImageDraw.Draw(pil_p16_img)
+    draw_p16.rectangle([10, 10, 170, 90], outline="white", width=2)
+    bmp_p16 = pypdfium2.PdfBitmap.from_pil(pil_p16_img)
+    img_p16_obj.set_bitmap(bmp_p16)
+    img_p16_obj.set_matrix(pypdfium2.PdfMatrix(180, 0, 0, 100, 100, 600))
+    page_p16.insert_obj(img_p16_obj)
+    page_p16.gen_content()
+    doc_p16.save(p16)
+    doc_p16.close()
+    fixtures["doc_16_image_caption"] = p16
+
+    # 17. Headers, footers, and page numbers
+    p17 = target_dir / "doc_17_headers_footers.pdf"
+    p17.write_bytes(_build_simple_pdf_bytes([GROUND_TRUTH_TEXT["doc_17_headers_footers"]]))
+    fixtures["doc_17_headers_footers"] = p17
+
+    # 18. Dense multi-paragraph document
+    p18 = target_dir / "doc_18_dense_document.pdf"
+    p18.write_bytes(_build_simple_pdf_bytes([GROUND_TRUTH_TEXT["doc_18_dense_document"]]))
+    fixtures["doc_18_dense_document"] = p18
 
     return fixtures
 

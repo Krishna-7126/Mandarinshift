@@ -161,7 +161,7 @@ class TestCorpusEdgeCasesAndClassification:
 class TestPerformanceAndResourceBounds:
     def test_all_fixtures_memory_and_latency_bounds(self):
         metrics = evaluate_all_fixtures(FIXTURES_DIR)
-        assert len(metrics) == 14
+        assert len(metrics) == 18
 
         for m in metrics:
             # Heap delta must be well under 2 MiB (2048 KiB)

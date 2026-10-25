@@ -1,7 +1,7 @@
 # LocalShift — Format Support Specification
 
-**Version:** 0.7.0 (Updated: Milestone LS-BE-007A)  
-**Status:** Implemented & Verified  
+**Version:** 0.7.2 (Updated: Milestone LS-BE-007C)  
+**Status:** Implemented, Verified & Unseen-Validated  
 
 ---
 
@@ -37,7 +37,7 @@ Every distinct pair among `{"png", "jpeg", "webp", "bmp", "tiff"}` is supported 
 
 ### Document Routes (2 Routes via `PdfDocumentAdapter`)
 - `pdf` → `txt`: Hybrid native text extraction and offline OCR to UTF-8 plain text.
-- `pdf` → `docx`: Structured document reconstruction into editable Microsoft Word (.docx) documents with headings, paragraphs, tables, embedded images, and page sequences.
+- `pdf` → `docx`: Structured document reconstruction into editable Microsoft Word (.docx) documents with headings, paragraphs, bordered and borderless tables, bold headers, right-aligned currency cells, image-before-caption positioning, and page sequences.
 
 ---
 

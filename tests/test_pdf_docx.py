@@ -283,3 +283,77 @@ class TestPdfDocxSafetyAndRobustness:
         assert res.output_path.exists()
         assert res.output_path != temp_pdf
         assert temp_pdf.read_bytes() == orig_bytes
+
+    def test_borderless_table_reconstruction(self, tmp_path: Path):
+        pdf_path = FIXTURES_DIR / "doc_15_borderless_table.pdf"
+        req = ConversionRequest(source=pdf_path, target_format="docx", output_dir=tmp_path)
+        res = convert_request(req)
+        assert res.output_path.exists()
+
+        d = docx.Document(res.output_path)
+        assert len(d.tables) == 1
+        tbl = d.tables[0]
+        assert len(tbl.rows) == 4
+        # Verify header bolding
+        for c in tbl.rows[0].cells:
+            assert any(r.font.bold for p in c.paragraphs for r in p.runs)
+
+    def test_image_and_caption_flow(self, tmp_path: Path):
+        pdf_path = FIXTURES_DIR / "doc_16_image_caption.pdf"
+        req = ConversionRequest(source=pdf_path, target_format="docx", output_dir=tmp_path)
+        res = convert_request(req)
+        assert res.output_path.exists()
+
+        d = docx.Document(res.output_path)
+        assert len(d.inline_shapes) == 1
+        texts = [p.text for p in d.paragraphs if p.text]
+        assert any("Architecture Overview" in t for t in texts)
+        assert any("Figure 1: Core System Architecture" in t for t in texts)
+        assert any("modular offline adapter pipeline" in t for t in texts)
+
+    def test_headers_footers_paragraph_protection(self, tmp_path: Path):
+        pdf_path = FIXTURES_DIR / "doc_17_headers_footers.pdf"
+        req = ConversionRequest(source=pdf_path, target_format="docx", output_dir=tmp_path)
+        res = convert_request(req)
+        assert res.output_path.exists()
+
+        d = docx.Document(res.output_path)
+        texts = [p.text for p in d.paragraphs if p.text]
+        assert any(t.startswith("Header:") for t in texts)
+        assert any(t.startswith("Footer:") for t in texts)
+
+    def test_dense_document_reconstruction(self, tmp_path: Path):
+        pdf_path = FIXTURES_DIR / "doc_18_dense_document.pdf"
+        req = ConversionRequest(source=pdf_path, target_format="docx", output_dir=tmp_path)
+        res = convert_request(req)
+        assert res.output_path.exists()
+
+        d = docx.Document(res.output_path)
+        texts = [p.text for p in d.paragraphs if p.text]
+        assert len(texts) >= 5
+        assert any("Workload Stress Analysis" in t for t in texts)
+        assert any("Layout Robustness" in t for t in texts)
+
+    def test_visual_renderer_integration(self, tmp_path: Path):
+        from tests.visual_renderer import DocxVisualRenderer
+
+        if not DocxVisualRenderer.is_available():
+            pytest.skip("No local Word COM or LibreOffice renderer installed.")
+
+        # Convert simple digital PDF to DOCX
+        pdf_path = FIXTURES_DIR / "doc_01_simple_digital.pdf"
+        req = ConversionRequest(source=pdf_path, target_format="docx", output_dir=tmp_path)
+        res = convert_request(req)
+
+        # Render DOCX to PDF for visual QA
+        rendered_pdf = tmp_path / "rendered_qa.pdf"
+        success = DocxVisualRenderer.render_docx_to_pdf(res.output_path, rendered_pdf)
+        assert success is True
+        assert rendered_pdf.exists()
+
+        # Render page to PNG
+        img_paths = DocxVisualRenderer.render_docx_to_page_images(res.output_path, tmp_path / "img_out", dpi=100)
+        assert len(img_paths) >= 1
+        assert img_paths[0].exists()
+        assert img_paths[0].stat().st_size > 0
+

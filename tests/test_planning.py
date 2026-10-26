@@ -81,19 +81,19 @@ class TestCapabilityDiscovery:
         assert isinstance(srcs, list)
         assert srcs == sorted(srcs)
         from localshift.documents.docx_adapter import DocxToPdfAdapter
-        expected_srcs = {"bmp", "docx", "jpeg", "pdf", "png", "tiff", "webp"} if DocxToPdfAdapter().is_available() else {"bmp", "jpeg", "pdf", "png", "tiff", "webp"}
+        expected_srcs = {"bmp", "docx", "gif", "ico", "jpeg", "pdf", "png", "tiff", "webp"} if DocxToPdfAdapter().is_available() else {"bmp", "gif", "ico", "jpeg", "pdf", "png", "tiff", "webp"}
         assert set(srcs) == expected_srcs
 
     def test_get_supported_target_formats_unfiltered(self):
         tgts = get_supported_target_formats()
         assert isinstance(tgts, list)
         assert tgts == sorted(tgts)
-        assert set(tgts) == {"bmp", "docx", "jpeg", "pdf", "png", "tiff", "txt", "webp"}
+        assert set(tgts) == {"bmp", "docx", "gif", "ico", "jpeg", "pdf", "png", "tiff", "txt", "webp"}
 
     def test_get_supported_target_formats_for_source(self):
-        # PNG cannot convert to PNG (no-op), should support remaining 4 image formats
+        # PNG cannot convert to PNG (no-op), should support remaining 6 image formats + PDF
         tgts = get_supported_target_formats("png")
-        assert tgts == ["bmp", "jpeg", "pdf", "tiff", "webp"]
+        assert tgts == ["bmp", "gif", "ico", "jpeg", "pdf", "tiff", "webp"]
 
         # PDF supports docx, jpeg, png, and txt
         tgts_pdf = get_supported_target_formats("pdf")
@@ -101,7 +101,7 @@ class TestCapabilityDiscovery:
 
         # Alias "jpg" should resolve to "jpeg" targets
         tgts_jpg = get_supported_target_formats("jpg")
-        assert tgts_jpg == ["bmp", "pdf", "png", "tiff", "webp"]
+        assert tgts_jpg == ["bmp", "gif", "ico", "pdf", "png", "tiff", "webp"]
 
         # Unknown source format returns empty list
         assert get_supported_target_formats("nonexistent") == []
@@ -111,7 +111,7 @@ class TestCapabilityDiscovery:
         assert isinstance(routes, list)
         assert routes == sorted(routes)
         from localshift.documents.docx_adapter import DocxToPdfAdapter
-        expected_len = 30 if DocxToPdfAdapter().is_available() else 29
+        expected_len = 54 if DocxToPdfAdapter().is_available() else 53
         assert len(routes) == expected_len
         assert ("png", "jpeg") in routes
         assert ("png", "pdf") in routes
@@ -148,7 +148,7 @@ class TestCapabilityDiscovery:
         assert info is not None
         assert info["adapter_id"] == "pillow_raster"
         assert info["name"] == "Pillow Raster Image Adapter"
-        assert info["supported_routes_count"] == 20
+        assert info["supported_routes_count"] == 42
         assert "png" in info["supported_source_formats"]
 
         assert get_adapter_info("nonexistent") is None

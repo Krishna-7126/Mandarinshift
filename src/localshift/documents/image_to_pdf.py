@@ -41,7 +41,7 @@ log = logging.getLogger(__name__)
 
 #: Supported canonical raster format keys.
 SUPPORTED_IMAGE_FORMATS: frozenset[str] = frozenset(
-    {"png", "jpeg", "webp", "bmp", "tiff"}
+    {"png", "jpeg", "webp", "bmp", "tiff", "gif", "ico"}
 )
 
 #: Standard page dimensions in PostScript points (1/72 inch).

@@ -46,6 +46,8 @@ _REGISTRY: dict[str, FormatInfo] = {
         FormatInfo("webp", "WebP image",   "WEBP", ("webp",)),
         FormatInfo("bmp",  "BMP image",    "BMP",  ("bmp",)),
         FormatInfo("tiff", "TIFF image",   "TIFF", ("tiff", "tif")),
+        FormatInfo("gif",  "GIF image",    "GIF",  ("gif",)),
+        FormatInfo("ico",  "ICO icon",     "ICO",  ("ico",)),
         FormatInfo("pdf",  "PDF document", "",     ("pdf",)),
         FormatInfo("txt",  "Plain text",   "",     ("txt",)),
         FormatInfo("docx", "Word document", "",    ("docx",)),

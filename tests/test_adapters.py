@@ -102,7 +102,7 @@ class TestAdapterContract:
         assert adapter.adapter_id == "pillow_raster"
         assert adapter.name == "Pillow Raster Image Adapter"
         assert isinstance(adapter.supported_routes, frozenset)
-        assert len(adapter.supported_routes) == 20  # 5 formats * 4 targets
+        assert len(adapter.supported_routes) == 42  # 7 formats * 6 targets
 
     def test_dummy_adapter_conforms_to_protocol(self):
         adapter = DummyAdapter()
@@ -228,7 +228,7 @@ class TestCapabilityDiscovery:
         src = tmp_path / "test.png"
         src.touch()
         targets = output_formats_for(src)
-        assert sorted(targets) == ["bmp", "jpeg", "pdf", "tiff", "webp"]
+        assert sorted(targets) == ["bmp", "gif", "ico", "jpeg", "pdf", "tiff", "webp"]
 
     def test_formats_py_output_formats_for_unknown_returns_empty(self, tmp_path):
         src = tmp_path / "test.xyz"

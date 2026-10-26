@@ -1,7 +1,7 @@
 # LocalShift — Test Plan & Quality Assurance Strategy
 
-**Version:** 0.14.0-RC1 (Updated: Milestone LS-BE-015)  
-**Test Suite Size:** 566 tests collected (563 passed, 3 skipped on non-admin Windows)  
+**Version:** 0.16.2 (Updated: Milestone LS-BE-016D)  
+**Test Suite Size:** 609 tests collected (606 passed, 3 skipped on non-admin Windows)  
 
 ---
 
@@ -10,6 +10,10 @@
 LocalShift uses a layered testing strategy focused strictly on backend correctness, safety, and reliability:
 - **Unit Tests:** Fast, isolated testing of format normalization, magic-byte sniffing, options validation, and capability lookups.
 - **Integration Tests:** End-to-end execution of `convert_request()` with real adapters, destination path collision resolution, atomic replacement, and cleanup verification.
+- **PDF Color Fidelity & Pixel Accuracy Tests:** Automated visual color test suite asserting native RGB byte alignment, channel order verification (no Red/Blue swapping), pure primary color patch accuracy, Team Lemon yellow verification, alpha compositing against background, and Mean Absolute Error (MAE < 3.0) against reference specifications.
+- **Radial Menu Stability & Hysteresis Tests:** Polar sector collision accuracy, sticky boundary hysteresis (±6° deadband), circular disc proximity, multi-monitor DPI boundary clamping, continuous cursor movement without jitter or oscillation, and non-focus-stealing window flags.
+- **Windows Shell & Background Gesture Tests:** Active Explorer selection retrieval via `IShellWindows`, foreground window validation, "Start with Windows" registry key configuration, non-invasive drag tracking, source-adapter architecture (Explorer, Desktop, OLE, Fallback), discrete state machine transitions (`GestureState`), instant Escape cancellation, and system tray integration.
+- **XML 1.0 Compatibility & Reconstruction Tests:** Centralized sanitization of illegal ASCII control chars (`0x00–0x08`, `0x0E–0x1F`), conversion of vertical tabs and form feeds, Unicode emoji and multi-lingual preservation, atomic temporary replacement.
 - **Reliability & Concurrency Tests:** In-process path reservation locks, thread-safe job queue lifecycle, worker pool thread exhaustion, and cancel propagation.
 - **Document & OCR Tests:** Offline OCR engine invocation, bounding box parsing, line grouping, memory-bounded rendering, DPI bounds, per-page routing (`auto`, `native_only`, `force_ocr`), text de-duplication, memory ownership, language model audits, CJK punctuation normalization, faint scan preprocessing, 180° upside-down and 90°/270° orientation recovery, and offline language pack registration.
 - **Benchmark Corpus Quality Tests:** Deterministic evaluation of text extraction accuracy (Character Error Rate, Word Error Rate, Unicode preservation, reading order, and heap memory tracing) in both native and auto OCR modes across 18 benchmark categories.
@@ -46,6 +50,10 @@ LocalShift uses a layered testing strategy focused strictly on backend correctne
 | [`tests/test_image_to_pdf.py`](file:///Z:/LocalShift/tests/test_image_to_pdf.py) | Image to PDF conversion & assembly | 39 | All raster formats, multi-image assembly, page sizes, fit (contain/cover), orientation, margins, alpha background, CMYK/greyscale, EXIF, cancellation, cleanup |
 | [`tests/test_pdf_workbench.py`](file:///Z:/LocalShift/tests/test_pdf_workbench.py) | PDF Workbench (Merge, Split, Extract, Reorder, Rotate) | 41 | Multi-PDF merge order & dimension preservation, split subset exports & pattern tokens, page extraction, 1-based index reorder, relative/absolute rotations (90/180/270/-90), immutability, collision avoidance, CLI commands |
 | [`tests/test_gui.py`](file:///Z:/LocalShift/tests/test_gui.py) | PySide6 Desktop GUI integration & workflows | 30 | Tabs, queue loading, reorder, options binding, worker execution, cancellation, error dialogs |
+| [`tests/test_radial_menu.py`](file:///Z:/LocalShift/tests/test_radial_menu.py) | Shift-activated Radial Conversion Menu & OLE gesture | 20 | Target derivation, multi-file intersection, keyboard nav, hit-testing, overlay mode, drag tracking, escape cancel, boundary hysteresis, fast sweep |
+| [`tests/test_shell_integration.py`](file:///Z:/LocalShift/tests/test_shell_integration.py) | Windows Shell integration & GestureStateMachine | 8 | IShellWindows selection, autostart registry, DragSourceAdapter hierarchy, state machine transitions, Escape cancellation, non-activating window flags |
+| [`tests/test_pdf_color_fidelity.py`](file:///Z:/LocalShift/tests/test_pdf_color_fidelity.py) | PDF color rendering fidelity & channel accuracy | 6 | Pure RGB primaries, Team Lemon yellow, neutral grays, PNG/JPEG/WebP/TIFF exports, MAE < 3.0 |
+| [`tests/test_settings.py`](file:///Z:/LocalShift/tests/test_settings.py) | Persistent AppSettings, Save to Folder & resolution | 7 | QSettings persistence, directory validation probe, 3-tier precedence hierarchy |
 | [`tests/test_packaging.py`](file:///Z:/LocalShift/tests/test_packaging.py) | Windows packaging, assets, version & installer | 6 | Spec configuration, dual targets, icon assets, version metadata, Inno Setup config |
 | [`tests/test_rc_audit.py`](file:///Z:/LocalShift/tests/test_rc_audit.py) | Release Candidate QA & stability audit | 5 | Unicode console stream safety, multi-page CLI reporting, RapidOCR aliasing, corrupt input trap |
 

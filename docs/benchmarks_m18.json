@@ -1,0 +1,98 @@
+[
+  {
+    "name": "PDF_to_DOCX (Multipage Digital)",
+    "elapsed_ms": 52.04,
+    "elapsed_s": 0.052,
+    "peak_mem_mb": 2.44,
+    "source_size_kb": 1.31,
+    "output_size_kb": 34.55
+  },
+  {
+    "name": "PDF_to_DOCX (Dense Digital)",
+    "elapsed_ms": 35.45,
+    "elapsed_s": 0.035,
+    "peak_mem_mb": 2.4,
+    "source_size_kb": 1.06,
+    "output_size_kb": 34.72
+  },
+  {
+    "name": "PDF_to_DOCX (Scanned + RapidOCR)",
+    "elapsed_ms": 1971.0,
+    "elapsed_s": 1.971,
+    "peak_mem_mb": 157.5,
+    "source_size_kb": 13.8,
+    "output_size_kb": 34.57
+  },
+  {
+    "name": "Image (1080p PNG -> WebP)",
+    "elapsed_ms": 273.11,
+    "elapsed_s": 0.273,
+    "peak_mem_mb": 1.93,
+    "source_size_kb": 10.24,
+    "output_size_kb": 4.62
+  },
+  {
+    "name": "Image (512px PNG -> JPEG)",
+    "elapsed_ms": 7.6,
+    "elapsed_s": 0.008,
+    "peak_mem_mb": 0.14,
+    "source_size_kb": 3.14,
+    "output_size_kb": 5.09
+  },
+  {
+    "name": "Images -> PDF (5 Pages Assembly)",
+    "elapsed_ms": 173.94,
+    "elapsed_s": 0.174,
+    "peak_mem_mb": 0.28,
+    "source_size_kb": 29.18,
+    "output_size_kb": 210.19
+  },
+  {
+    "name": "PDF -> PNG Rasterization (150 DPI)",
+    "elapsed_ms": 71.43,
+    "elapsed_s": 0.071,
+    "peak_mem_mb": 6.05,
+    "source_size_kb": 1.31,
+    "output_size_kb": 78.12
+  },
+  {
+    "name": "PDF Tool: Compress PDF (High)",
+    "elapsed_ms": 5.51,
+    "elapsed_s": 0.006,
+    "peak_mem_mb": 0.15,
+    "source_size_kb": 1.31,
+    "output_size_kb": 1.47
+  },
+  {
+    "name": "PDF Tool: Crop PDF Margins",
+    "elapsed_ms": 5.79,
+    "elapsed_s": 0.006,
+    "peak_mem_mb": 0.14,
+    "source_size_kb": 1.31,
+    "output_size_kb": 1.54
+  },
+  {
+    "name": "PDF Tool: PDF to Markdown",
+    "elapsed_ms": 6.13,
+    "elapsed_s": 0.006,
+    "peak_mem_mb": 0.15,
+    "source_size_kb": 1.31,
+    "output_size_kb": 0.35
+  },
+  {
+    "name": "PDF Tool: Add Watermark (150 DPI)",
+    "elapsed_ms": 386.34,
+    "elapsed_s": 0.386,
+    "peak_mem_mb": 6.07,
+    "source_size_kb": 1.31,
+    "output_size_kb": 126.64
+  },
+  {
+    "name": "PDF Tool: HTML to PDF",
+    "elapsed_ms": 91.14,
+    "elapsed_s": 0.091,
+    "peak_mem_mb": 0.53,
+    "source_size_kb": 0.07,
+    "output_size_kb": 13.69
+  }
+]

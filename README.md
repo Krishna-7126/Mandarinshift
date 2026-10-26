@@ -5,6 +5,32 @@ Zero telemetry. 100% local processing. Original files stay untouched.
 
 ---
 
+## Modern Desktop Experience & Shift-Activated Radial Conversion Menu
+
+LocalShift features a modern, Windows-native desktop interface with a **Shift-activated radial conversion menu** inspired by circular radial desktop tools.
+
+![LocalShift Main Window](docs/screenshots/02_main_window_queue_dark.png)
+*(Above: LocalShift in Dark Slate theme with conversion queue, format badges, and inline completion actions.)*
+
+![Radial Conversion Menu](docs/screenshots/04_radial_conversion_menu.png)
+*(Above: Shift-activated radial conversion menu showing live thumbnail, formatted size, and dynamic format petals.)*
+
+### Key Highlights
+- **Comprehensive 32-Tool PDF Productivity Suite**: Dedicated offline PDF toolkit with searchable 3-column card grid, category pill filtering, status badges, and interactive execution dialog covering page deletion, cropping, compression, unlocking, repair, Markdown conversion, page numbering, watermark, visual comparison, forms inspection, and more.
+- **Cross-Application Shift + Drag Direct Conversion**: Drag files from Windows File Explorer or Desktop while holding `Shift` to summon the non-focus-stealing radial menu right under your cursor. Hover over any target format petal and release to convert instantly!
+- **Zero-Jitter Radial Menu with Boundary Hysteresis**: Polar sector collision detection with ±6° sticky angular deadbands prevents boundary flickering and oscillating hover states during fast or subtle cursor movement.
+- **Color-Accurate PDF Rendering**: Byte-order rectified PDF rendering engine (`rev_byteorder=True` and native C-level buffer decoding) eliminates Red/Blue channel inversions, guaranteeing exact color fidelity for graphics, logos, and photos across PNG, JPEG, WebP, and TIFF.
+- **Persistent Global "Save to Folder"**: Centrally configure a dedicated output destination folder (similar to LocalSend) with automatic write-probe validation, directory browse, and instant open folder actions.
+- **54 Verified Conversion Routes**: Full format matrix supporting `PNG`, `JPEG`, `WebP`, `BMP`, `TIFF`, `GIF`, `ICO`, `PDF`, `DOCX`, and `TXT`.
+- **Center File Hub**: Displays live file thumbnail/icon, primary filename pill, formatted file size badge, and item count badge for multi-file batches.
+- **Safety & Non-Intrusive**: Non-focus-stealing architecture (`WA_ShowWithoutActivating`, `WindowDoesNotAcceptFocus`) preserves Windows OLE drag ownership without kernel drivers or invasive DLL injection. Never intercepts typing in `QLineEdit` or `QTextEdit`.
+- **Keyboard & Mouse Navigation**: Full keyboard control via `Tab` / `Shift+Tab`, `Arrow keys`, `1`-`9` direct format selection, `Enter` to convert, and instant `Esc` cancellation.
+- **DPI Scaling & Multi-Monitor Clamping**: Menu geometry is clamped with safety margins so it remains 100% visible across multiple screens and display scales.
+- **Dark / Light Theme**: Premium slate dark mode with accent indigo highlights, plus a clean light mode toggle.
+- **Inline Result Actions**: Completed conversions provide instant "Open File" and "Open Folder" action buttons across all workflows.
+
+---
+
 ## Windows Installation & Release Binaries
 
 ### Option 1: Standard Windows Installer (Recommended)
@@ -95,25 +121,28 @@ localshift --verbose convert .\photo.png --to bmp  # debug logging
 
 ---
 
-## Supported conversions
+## Supported conversions (54 Routes)
 
-- **Raster images**: Any different pair among `PNG`, `JPEG` (`jpg`), `WebP`, `BMP`, `TIFF` (`tif`).
-- **Documents (LS-BE-006B)**: `PDF` → `TXT` via `PdfDocumentAdapter` (native text extraction).
-  *(Note: OCR and PDF-to-DOCX are deferred to future milestones and not yet available).*
+- **Raster images (42 Routes)**: Any different pair among `PNG`, `JPEG` (`jpg`), `WebP`, `BMP`, `TIFF` (`tif`), `GIF`, and `ICO`.
+- **Documents & PDF (12 Routes)**:
+  - `PDF` → `TXT` (native stream extraction + RapidOCR)
+  - `PDF` → `DOCX` (full structured document reconstruction with tables and headings)
+  - `PDF` → `PNG` / `JPEG` (high-DPI page rasterization)
+  - `DOCX` → `PDF` (offline LibreOffice / Word COM rendering)
+  - `Image` → `PDF` (ordered multipage PDF assembly from PNG, JPEG, WebP, BMP, TIFF, GIF, ICO)
 
 | Behaviour | Detail |
 |-----------|--------|
-| Source formats | `PNG`, `JPEG`/`JPG`, `WebP`, `BMP`, `TIFF`/`TIF`, `PDF` |
-| Target formats | `PNG`, `JPEG`/`JPG`, `WebP`, `BMP`, `TIFF`/`TIF`, `TXT` |
+| Source formats | `PNG`, `JPEG`/`JPG`, `WebP`, `BMP`, `TIFF`/`TIF`, `GIF`, `ICO`, `PDF`, `DOCX` |
+| Target formats | `PNG`, `JPEG`/`JPG`, `WebP`, `BMP`, `TIFF`/`TIF`, `GIF`, `ICO`, `PDF`, `DOCX`, `TXT` |
 | Extension aliases | `jpg` = `jpeg`, `tif` = `tiff` (accepted everywhere) |
 | JPEG transparency | Transparent areas composited to white by default |
-| PDF inspection | Page dimensions, rotation, encryption status, and text density classification |
-| PDF extraction | Deterministic, page-by-page UTF-8 text extraction with configurable page separators |
-| Animated input | First frame only used in MVP |
+| ICO downscaling | Clamped to Windows standard max 256×256 pixels via Lanczos resampling with RGBA preservation |
+| GIF transparency | Adaptive palette indexing preserving single-frame transparency |
+| Save destination | Centralized policy: Explicit job override > Global save folder > Workflow fallback |
 | Input size limit | 250 MiB maximum (page cap: 2,000 pages for PDF) |
-| Output collision | Never overwrites; adds ` (2)`, ` (3)` suffix |
-| Original files | Never modified |
-| Format detection | Magic bytes preferred over file extension (`%PDF-` sniffing for PDF) |
+| Output collision | Never overwrites; adds ` (1)`, ` (2)` suffix |
+| Original files | Never modified (100% immutable inputs) |
 
 ---
 

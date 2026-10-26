@@ -1,0 +1,138 @@
+[
+  {
+    "name": "PDF_to_DOCX (Multipage Digital)",
+    "elapsed_ms": 54.37,
+    "elapsed_s": 0.054,
+    "peak_mem_mb": 2.44,
+    "source_size_kb": 1.31,
+    "output_size_kb": 34.55
+  },
+  {
+    "name": "PDF_to_DOCX (Dense Digital)",
+    "elapsed_ms": 34.74,
+    "elapsed_s": 0.035,
+    "peak_mem_mb": 2.4,
+    "source_size_kb": 1.06,
+    "output_size_kb": 34.72
+  },
+  {
+    "name": "PDF_to_DOCX (Scanned + RapidOCR)",
+    "elapsed_ms": 1967.05,
+    "elapsed_s": 1.967,
+    "peak_mem_mb": 157.51,
+    "source_size_kb": 13.8,
+    "output_size_kb": 34.57
+  },
+  {
+    "name": "Image (1080p PNG -> WebP)",
+    "elapsed_ms": 285.45,
+    "elapsed_s": 0.285,
+    "peak_mem_mb": 1.93,
+    "source_size_kb": 10.24,
+    "output_size_kb": 4.62
+  },
+  {
+    "name": "Image (512px PNG -> JPEG)",
+    "elapsed_ms": 9.13,
+    "elapsed_s": 0.009,
+    "peak_mem_mb": 0.14,
+    "source_size_kb": 3.14,
+    "output_size_kb": 5.09
+  },
+  {
+    "name": "Images -> PDF (5 Pages Assembly)",
+    "elapsed_ms": 193.27,
+    "elapsed_s": 0.193,
+    "peak_mem_mb": 0.28,
+    "source_size_kb": 29.18,
+    "output_size_kb": 210.19
+  },
+  {
+    "name": "PDF -> PNG Rasterization (150 DPI)",
+    "elapsed_ms": 81.01,
+    "elapsed_s": 0.081,
+    "peak_mem_mb": 6.05,
+    "source_size_kb": 1.31,
+    "output_size_kb": 78.12
+  },
+  {
+    "name": "PDF Tool: Compress PDF (High)",
+    "elapsed_ms": 5.95,
+    "elapsed_s": 0.006,
+    "peak_mem_mb": 0.15,
+    "source_size_kb": 1.31,
+    "output_size_kb": 1.47
+  },
+  {
+    "name": "PDF Tool: Crop PDF Margins",
+    "elapsed_ms": 6.06,
+    "elapsed_s": 0.006,
+    "peak_mem_mb": 0.14,
+    "source_size_kb": 1.31,
+    "output_size_kb": 1.54
+  },
+  {
+    "name": "PDF Tool: PDF to Markdown",
+    "elapsed_ms": 6.92,
+    "elapsed_s": 0.007,
+    "peak_mem_mb": 0.15,
+    "source_size_kb": 1.31,
+    "output_size_kb": 0.35
+  },
+  {
+    "name": "PDF Tool: Add Watermark (150 DPI)",
+    "elapsed_ms": 428.0,
+    "elapsed_s": 0.428,
+    "peak_mem_mb": 6.07,
+    "source_size_kb": 1.31,
+    "output_size_kb": 126.65
+  },
+  {
+    "name": "PDF Tool: HTML to PDF",
+    "elapsed_ms": 88.05,
+    "elapsed_s": 0.088,
+    "peak_mem_mb": 0.52,
+    "source_size_kb": 0.07,
+    "output_size_kb": 13.69
+  },
+  {
+    "name": "PDF Tool: PDF to Excel (.xlsx)",
+    "elapsed_ms": 7.47,
+    "elapsed_s": 0.007,
+    "peak_mem_mb": 0.51,
+    "source_size_kb": 1.31,
+    "output_size_kb": 1.67
+  },
+  {
+    "name": "PDF Tool: PDF to PowerPoint (.pptx)",
+    "elapsed_ms": 5359.76,
+    "elapsed_s": 5.36,
+    "peak_mem_mb": 6.08,
+    "source_size_kb": 1.31,
+    "output_size_kb": 112.81
+  },
+  {
+    "name": "PDF Tool: Sign PDF (Digital Seal)",
+    "elapsed_ms": 48.87,
+    "elapsed_s": 0.049,
+    "peak_mem_mb": 6.04,
+    "source_size_kb": 1.31,
+    "output_size_kb": 130.83
+  },
+  {
+    "name": "PDF Tool: Redact PDF (Purge & Rasterize)",
+    "elapsed_ms": 55.62,
+    "elapsed_s": 0.056,
+    "peak_mem_mb": 6.04,
+    "source_size_kb": 1.31,
+    "output_size_kb": 125.97
+  },
+  {
+    "name": "PDF Tool: AI Summarizer (TextRank)",
+    "elapsed_ms": 7.91,
+    "elapsed_s": 0.008,
+    "peak_mem_mb": 0.14,
+    "source_size_kb": 1.31,
+    "output_size_kb": 0.4
+  }
+]

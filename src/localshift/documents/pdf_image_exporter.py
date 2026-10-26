@@ -219,7 +219,7 @@ class PdfToImageExporter:
         target_norm = target_format.lower().strip().lstrip(".")
         if target_norm == "jpg":
             target_norm = "jpeg"
-        if target_norm not in ("png", "jpeg"):
+        if target_norm not in ("png", "jpeg", "webp", "tiff", "tif"):
             raise InvalidInputError(f"Unsupported target format for PDF export: {target_format!r}")
 
         cls.validate_options(opts, target_norm)
@@ -313,18 +313,19 @@ class PdfToImageExporter:
                 dest_path = res.path
                 _validate_no_source_dest_collision(source_pdf, dest_path)
 
-                # Render page
+                # Render page directly to color-accurate PIL Image
                 page = doc[page_num - 1]
-                arr = PdfPageRenderer.render_page(page, dpi=dpi)
+                im = PdfPageRenderer.render_page_to_image(page, dpi=dpi)
 
-                # Convert to PIL Image
-                im = Image.fromarray(arr, mode="RGB")
-
-                # If JPEG with alpha compositing requested (though arr is RGB)
-                if target_norm == "jpeg" and im.mode == "RGBA":
-                    bg = Image.new("RGB", im.size, color=jpeg_bg)
-                    bg.paste(im, mask=im.split()[3])
-                    im = bg
+                # If JPEG with alpha compositing requested
+                if target_norm == "jpeg":
+                    if im.mode in ("RGBA", "LA", "P"):
+                        im = im.convert("RGBA")
+                        bg = Image.new("RGB", im.size, color=jpeg_bg)
+                        bg.paste(im, mask=im.split()[3])
+                        im = bg
+                    elif im.mode != "RGB":
+                        im = im.convert("RGB")
 
                 # Write to secure temporary file
                 fd, tmp_str = tempfile.mkstemp(
@@ -338,11 +339,14 @@ class PdfToImageExporter:
 
                 if target_norm == "png":
                     im.save(tmp_p, format="PNG")
+                elif target_norm == "webp":
+                    im.save(tmp_p, format="WEBP")
+                elif target_norm in ("tiff", "tif"):
+                    im.save(tmp_p, format="TIFF")
                 else:
                     im.save(tmp_p, format="JPEG", quality=quality)
 
                 # Explicitly release memory
-                del arr
                 del im
 
                 # Atomically commit page

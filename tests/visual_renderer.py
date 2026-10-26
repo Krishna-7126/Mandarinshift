@@ -87,20 +87,31 @@ class DocxVisualRenderer:
                 f"  [System.Runtime.Interopservices.Marshal]::ReleaseComObject($w) | Out-Null\n"
                 f"}}\n"
             )
-            with tempfile.NamedTemporaryFile("w", suffix=".ps1", delete=False, encoding="utf-8") as f:
-                f.write(ps_script)
-                script_path = f.name
-            try:
-                res = subprocess.run(
-                    ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script_path],
-                    capture_output=True,
-                    text=True,
-                    timeout=60,
-                )
-                return res.returncode == 0 and output_pdf.exists() and output_pdf.stat().st_size > 0
-            finally:
-                if os.path.exists(script_path):
-                    os.unlink(script_path)
+            for attempt in range(2):
+                with tempfile.NamedTemporaryFile("w", suffix=".ps1", delete=False, encoding="utf-8") as f:
+                    f.write(ps_script)
+                    script_path = f.name
+                try:
+                    res = subprocess.run(
+                        ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script_path],
+                        capture_output=True,
+                        text=True,
+                        timeout=60,
+                    )
+                    if res.returncode == 0 and output_pdf.exists() and output_pdf.stat().st_size > 0:
+                        return True
+                    if attempt == 0:
+                        import time
+                        time.sleep(1.0)
+                    else:
+                        log.warning("DocxVisualRenderer Word COM output:\n%s\nErrors:\n%s", res.stdout, res.stderr)
+                finally:
+                    if os.path.exists(script_path):
+                        try:
+                            os.unlink(script_path)
+                        except OSError:
+                            pass
+            return output_pdf.exists() and output_pdf.stat().st_size > 0
 
         elif renderer == "libreoffice":
             soffice = shutil.which("soffice") or "soffice"

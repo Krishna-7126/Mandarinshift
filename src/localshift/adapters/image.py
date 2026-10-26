@@ -15,7 +15,7 @@ from ..models import ConversionContext, ConversionRequest, ConversionResult
 log = logging.getLogger(__name__)
 
 #: Supported canonical raster format keys.
-IMAGE_FORMATS: frozenset[str] = frozenset({"png", "jpeg", "webp", "bmp", "tiff"})
+IMAGE_FORMATS: frozenset[str] = frozenset({"png", "jpeg", "webp", "bmp", "tiff", "gif", "ico"})
 
 #: Mapping of canonical format key to Pillow save format string.
 PIL_SAVE_FORMATS: dict[str, str] = {
@@ -24,6 +24,8 @@ PIL_SAVE_FORMATS: dict[str, str] = {
     "webp": "WEBP",
     "bmp": "BMP",
     "tiff": "TIFF",
+    "gif": "GIF",
+    "ico": "ICO",
 }
 
 
@@ -33,6 +35,22 @@ def _coerce_image_mode(
     jpeg_background: tuple[int, int, int],
 ) -> Image.Image:
     """Return *image* converted to the appropriate colour mode for *target_key*."""
+    if target_key == "ico":
+        if image.width > 256 or image.height > 256:
+            image = image.copy()
+            image.thumbnail((256, 256), Image.Resampling.LANCZOS)
+        if image.mode not in ("RGBA", "RGB", "1"):
+            image = image.convert("RGBA")
+        return image
+
+    if target_key == "gif":
+        if image.mode not in ("P", "L", "RGBA", "1"):
+            if "A" in image.getbands():
+                image = image.convert("RGBA")
+            else:
+                image = image.convert("RGB").convert("P", palette=Image.Palette.ADAPTIVE)
+        return image
+
     if target_key == "jpeg":
         has_alpha = image.mode in ("RGBA", "LA", "PA") or "transparency" in image.info
         if has_alpha:

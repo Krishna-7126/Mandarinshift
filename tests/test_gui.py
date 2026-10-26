@@ -35,6 +35,7 @@ from localshift.gui import (
     PdfWorkbenchTab,
     SingleTaskWorker,
 )
+from localshift.pdf_suite_ui import PdfToolsSuiteTab
 
 
 @pytest.fixture(scope="session")
@@ -44,6 +45,19 @@ def qapp():
     if app is None:
         app = QApplication([])
     return app
+
+
+_qt_widget_cache: list[object] = []
+
+
+@pytest.fixture(autouse=True)
+def qt_session_cleanup():
+    """Keep test widgets referenced until process exit to prevent PySide6 Shiboken premature deletion crash."""
+    yield
+    app = QApplication.instance()
+    if app:
+        _qt_widget_cache.extend(app.topLevelWidgets())
+        app.processEvents()
 
 
 @pytest.fixture(autouse=True)
@@ -103,13 +117,14 @@ class TestMainWindow:
     def test_window_initialization(self, qapp):
         win = MainWindow()
         assert win.windowTitle().startswith("LocalShift")
-        assert win.tabs.count() == 5
-        tab_names = [win.tabs.tabText(i) for i in range(5)]
+        assert win.tabs.count() == 6
+        tab_names = [win.tabs.tabText(i) for i in range(6)]
         assert "File Converter" in tab_names
         assert "PDF ↔ DOCX" in tab_names
         assert "PDF → Images" in tab_names
         assert "Images → PDF" in tab_names
         assert "PDF Workbench" in tab_names
+        assert "PDF Suite" in tab_names
 
     def test_tab_instances(self, qapp):
         win = MainWindow()
@@ -118,6 +133,22 @@ class TestMainWindow:
         assert isinstance(win.rasterize_tab, PdfRasterizeTab)
         assert isinstance(win.assembly_tab, ImagesToPdfTab)
         assert isinstance(win.workbench_tab, PdfWorkbenchTab)
+        assert isinstance(win.pdf_suite_tab, PdfToolsSuiteTab)
+
+    def test_suite_tab_routing(self, qapp):
+        win = MainWindow()
+        # Verify navigation to existing workflow tab on tool trigger
+        win._on_suite_tool_triggered("pdf_to_word")
+        assert win.tabs.currentIndex() == 1
+        assert win.docx_tab.radio_pdf_to_docx.isChecked()
+
+        win._on_suite_tool_triggered("pdf_to_jpg")
+        assert win.tabs.currentIndex() == 2
+        assert win.rasterize_tab.fmt_combo.currentIndex() == 1
+
+        win._on_suite_tool_triggered("merge_pdf")
+        assert win.tabs.currentIndex() == 4
+        assert win.workbench_tab.op_combo.currentIndex() == 0
 
 
 # ---------------------------------------------------------------------------

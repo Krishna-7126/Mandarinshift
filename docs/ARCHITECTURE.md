@@ -150,4 +150,116 @@ LocalShift is built on three strict non-negotiables:
 | Cancellation | Cooperative | Polled between pages, before OCR, during workbench ops & rendering subprocess |
 | Output Atomicity | Atomic rename | Written to temporary file and renamed atomically |
 
+---
 
+## 5. Application Settings & Global Destination Service (`AppSettings`)
+
+Implemented in `src/localshift/settings.py` via `QSettings("LocalShift", "LocalShift")`.
+
+### Core Capabilities:
+- **Persistence:** Retains preferences across application restarts, including:
+  - `save_to_folder_enabled` (bool, default: `False`)
+  - `save_to_folder_path` (str, default: `""` or user desktop)
+  - `theme` (str, default: `"dark"`)
+  - `radial_gesture_enabled` (bool, default: `True`)
+- **Directory Validation (`validate_destination_directory`):**
+  - Verifies path existence and directory attribute.
+  - Performs active write-accessibility probe by creating, writing, and unlinking a temporary sentinel file (`.localshift_write_test_*`). Detects read-only permissions, disconnected network shares, and ejected removable volumes.
+- **Unified Resolution Policy (`resolve_destination`):**
+  A single, deterministic hierarchy applied across all GUI tabs, radial conversions, and batch conversions:
+  1. **Explicit Per-Job Destination:** User-specified output path or folder passed directly to the operation.
+  2. **Global Custom Destination:** Used if `save_to_folder_enabled` is active and the directory is valid and writable.
+  3. **Workflow Fallback:** The source file's parent directory or standard workflow default.
+
+---
+
+## 6. Windows Drag-and-Drop & Radial Conversion Gesture Architecture
+
+### Windows OLE Drag Lifecycle & Boundary Realities
+A standard Windows desktop application cannot intercept or monitor external File Explorer mouse drag operations when the cursor is outside application window boundaries without intrusive global hooks or privileged DLL injection.
+
+LocalShift implements a native, supported OLE drop target integration:
+- **Active Drop Target (`setAcceptDrops(True)`):** `MainWindow`, `FileConverterTab`, and `RadialConversionMenu` all register as standard Windows OLE drop targets.
+- **Root Cause & In-Window Overlay Architecture:**
+  - *Root Cause of Gesture Failure:* In Windows OLE, spawning a new top-level popup window (`Qt.WindowType.Tool` or `Qt.WindowType.WindowStaysOnTopHint`) during an active OLE drag sequence causes Windows OLE to drop capture or fail `IDropTarget` routing between different top-level HWNDs.
+  - *In-Window Overlay Solution:* `RadialConversionMenu` supports `is_overlay=True`, rendering the radial dial and dimmed backdrop directly as a child widget within `MainWindow`. `MainWindow` remains the single, persistent `IDropTarget` HWND registered with Windows OLE, ensuring that `dragEnterEvent`, `dragMoveEvent`, and `dropEvent` never lose capture or trigger window activation changes.
+- **Physical Shift Key State Detection (`is_shift_pressed()`):**
+  - Uses Win32 `GetAsyncKeyState(VK_SHIFT = 0x10) & 0x8000` with fallback to `QGuiApplication.keyboardModifiers()`.
+  - Accurately detects whether Shift is held even when Qt's event modifier bitmask is temporarily omitted during high-velocity external drags across window boundaries.
+- **In-Flight Petal Hover & Drop:**
+  - `MainWindow` forwards coordinates to `radial_overlay.track_drag_pos(pos)`.
+  - Circular petal hit-testing (`petal_at_pos(pos)`) highlights the hovered format petal with radial outward offset and indigo hover glow.
+  - Releasing/dropping directly onto a format petal triggers conversion immediately (`auto_start=True`) without requiring secondary confirmation modals.
+- **Safety, Cancellation & Fallbacks:**
+  - Pressing `Escape`, dropping on empty backdrop, or dragging out of window boundaries immediately dismisses the overlay cleanly without triggering unwanted conversions or leaving orphaned state.
+  - Keyboard accelerator fallback: Shift + Space invokes the radial dial with Arrow key navigation and Enter confirmation.
+  - Explicit UI fallbacks: "Open Radial Menu" buttons in header and drop cards, plus standard queue conversion controls.
+
+### Background Shift+Drag & Explorer Selection Architecture (Milestone 16C)
+To achieve the Tangerine-style background desktop experience without installing invasive global keyboard hooks or injecting DLLs into Windows Explorer:
+- **`BackgroundGestureController` (Non-Invasive Polling):**
+  - Runs a lightweight 60ms timer polling physical mouse drag state (`GetAsyncKeyState(VK_LBUTTON = 0x01)`) and Shift modifier (`is_shift_pressed()`).
+  - Checks if the active foreground window is Windows File Explorer or the Desktop (`is_explorer_or_desktop_foreground()`), matching HWND classes: `CabinetWClass`, `ExplorerWClass`, `Progman`, and `WorkerW`.
+  - When a drag gesture (movement > 8px) with Shift held is detected in Explorer:
+    - Queries active Explorer window selection via Windows COM interface `Shell.Application` (`IShellWindows`).
+    - Obtains full resolved filesystem paths for all selected items in real-time (~90ms execution).
+    - Summons the floating `RadialConversionMenu` centered directly at cursor position (`is_overlay=False`).
+    - Continuously updates hovered petals via `mapFromGlobal()` and `track_drag_pos()`.
+    - On mouse button release, detects if cursor is over a valid format petal and executes immediate conversion to the configured Save to Folder destination.
+- **Start with Windows & System Tray Operation:**
+  - Registers `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\LocalShift` pointing to the executable with `--minimized` argument (per-user, zero administrator privileges required).
+  - Runs quietly in system tray via `QSystemTrayIcon` with context menu actions ("Open LocalShift", "Shift + Drag Conversion Gesture", "Start with Windows", "Quit").
+  - System tray completion toasts with `messageClicked` navigation revealing output in File Explorer.
+
+## 7. Document Reconstruction & XML 1.0 Sanitization Architecture
+
+### XML 1.0 Strict Compatibility Enforcement
+`python-docx` serializes document content through `lxml.etree`. XML 1.0 strictly prohibits character codes in the ranges:
+- `0x00–0x08` (including NULL byte `\x00`)
+- `0x0B–0x0C` (vertical tab `\x0b`, form feed `\x0c`)
+- `0x0E–0x1F` (ASCII control codes)
+
+PDF text extraction from embedded fonts and OCR decoders frequently outputs vertical tabs, form feeds, and NULL bytes.
+- **Centralized `sanitize_xml_text(text: str) -> tuple[str, int]`:**
+  - Regex `_XML_INVALID_CHAR_RE = re.compile(r"[\x00-\x08\x0e-\x1f\x7f-\x84\x86-\x9f\ud800-\udfff\ufffe\uffff]")`
+  - Replaces `\x0c` (form feed) and `\x0b` (vertical tab) with standard newlines `\n`.
+  - Strips all illegal control characters while preserving valid whitespace (`\t`, `\n`, `\r`), international Unicode (Latin, Cyrillic, Greek, Arabic, Devanagari, CJK), and emojis.
+  - Sanitization is applied unconditionally to paragraph text, run text, heading text, bullet points, OCR text blocks, and table cell contents.
+- **Atomic File Replacement:**
+  - DOCX generation saves first to `.tmp_<filename>.docx` and performs atomic rename via `Path.replace()`, preventing corrupt partial files if process terminates or encounters errors.
+
+---
+
+## 8. Milestone 16D: Gesture Stability, Multi-Source Drag Architecture & Color-Accurate PDF Rendering Pipeline
+
+### A. Non-Focus-Stealing Radial Overlay & Boundary Hysteresis
+To resolve radial menu jitter, cursor feedback loops, and broken drag capture:
+- **Focus Preservation via Native Window Flags:**
+  - Floating radial menu is initialized with `Qt.WindowType.WindowDoesNotAcceptFocus | Qt.WindowType.Tool | Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint`.
+  - Sets `Qt.WidgetAttribute.WA_ShowWithoutActivating` and `FocusPolicy.NoFocus`.
+  - `show_at_cursor()` anchors geometry without calling `activateWindow()` or `setFocus()`, completely preventing Windows from revoking mouse capture from the drag source (File Explorer, Desktop).
+  - Removes premature window destruction in `ActivationChange` event handlers.
+- **Stable Polar Sector Hit-Testing with Hysteresis:**
+  - De-couples rendering geometry from collision testing.
+  - Computes exact polar sector: $\text{angle} = \operatorname{atan2}(-(y - cy), x - cx)$, mapped clockwise from 12 o'clock.
+  - Implements a $\pm 6^\circ$ sticky angular deadband and circular disc proximity check. When the cursor hovers on the boundary between adjacent petals, the currently hovered petal remains active until the cursor crosses the deadband, eliminating boundary oscillation and visual flickering.
+  - Only triggers Qt widget repainting (`self.update()`) when `_hover_index` actually changes, preventing redundant painting cycles during continuous pointer movement.
+
+### B. Discrete Gesture State Machine & Drag Source Adapter Hierarchy
+The gesture lifecycle is strictly governed by `GestureStateMachine` with explicit transitions:
+- `IDLE` -> `DRAG_CANDIDATE` -> `MENU_VISIBLE` -> `TARGET_SELECTED` -> `CONVERTING` -> `COMPLETED` / `FAILED` / `CANCELLED`.
+- Instant cancellation on `VK_ESCAPE` (`0x1B`) and clean dismissal when the user releases the Shift modifier before dropping, allowing native Windows drag-and-drop operations to proceed unhindered.
+- Source Adapter architecture (`DragSourceAdapter`):
+  - `ExplorerDragSourceAdapter`: Windows File Explorer (`CabinetWClass`, `ExplorerWClass`) via COM `IShellWindows`.
+  - `DesktopDragSourceAdapter`: Windows Desktop (`Progman`, `WorkerW`).
+  - `OleDropSourceAdapter`: Direct OLE drag-and-drop into LocalShift UI (`QDragEnterEvent` / `urls`).
+  - `FallbackSourceAdapter`: Explicitly identifies virtual drag items (browsers, archive viewers) lacking filesystem paths and provides user guidance.
+
+### C. Color-Accurate PDF Rendering & Color Pipeline
+- **Byte Order Rectification (`pypdfium2`):**
+  - Native PDFium renders bitmaps in BGR byte order (`[B, G, R]`) by default.
+  - `PdfPageRenderer.render_page()` enforces `rev_byteorder=True`, ensuring native RGB/RGBA byte alignment and eliminating Red/Blue channel swapping.
+  - Added `PdfPageRenderer.render_page_to_image()` using native C-level `bmp.to_pil().copy()` for row-stride and transparent background compositing.
+  - Lossless PNG encoding preserves exact vector and raster color patches.
+  - Background-composited JPEG rendering applies user-defined background color without introducing color shifts.
+  - Validated with automated visual color test suite (`tests/test_pdf_color_fidelity.py`) with Mean Absolute Error (MAE) < 3.0 across pure RGB primaries, neutral grays, and the Team Lemon sample corpus.

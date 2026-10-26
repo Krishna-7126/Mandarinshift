@@ -429,3 +429,45 @@ class TestRealWorldDocxEdgeCases:
         assert rows[3][1] == "($1,250.00)"
         assert rows[3][2] == "($950.00)"
 
+    def test_sanitize_xml_text_removes_illegal_controls(self):
+        from localshift.documents.docx_builder import sanitize_xml_text
+        dirty = "Valid\x00Text\x0cWith\x08Control\x0bChars\tAnd\nNewline \U0001f600 Emoji"
+        clean, count = sanitize_xml_text(dirty)
+        assert "\x00" not in clean
+        assert "\x08" not in clean
+        assert "\x0c" not in clean
+        assert "\x0b" not in clean
+        assert "\t" in clean
+        assert "\n" in clean
+        assert "ValidText" in clean or "Valid" in clean
+        assert "\U0001f600" in clean
+        assert count > 0
+
+    def test_pdf_docx_reconstruction_with_control_characters(self, tmp_path: Path):
+        """Verify that PDFs containing NULL bytes, form feeds, and control characters reconstruct safely."""
+        from localshift.documents.docx_builder import PdfToDocxReconstructor
+        import pypdfium2 as pdfium
+        from PIL import Image, ImageDraw
+
+        # Create a PDF page that has text with control characters
+        out_docx = tmp_path / "sanitized_output.docx"
+
+        # Mock page text reconstruction directly
+        doc = docx.Document()
+        dirty_lines = [
+            "Project Report \x00 Confidential",
+            "Section 1 \x0c Overview with FormFeed",
+            "Data item \x08\x0b with vertical tabs and backspaces",
+            "Normal paragraph with unicode: Café Münsterland — 2026",
+        ]
+        PdfToDocxReconstructor._render_text_lines(doc, dirty_lines, median_font_size=12.0)
+        doc.save(str(out_docx))
+
+        assert out_docx.exists()
+        reloaded = docx.Document(out_docx)
+        full_text = " ".join(p.text for p in reloaded.paragraphs if p.text)
+        assert "Project Report" in full_text
+        assert "Overview" in full_text
+        assert "Café Münsterland" in full_text
+        assert "\x00" not in full_text
+

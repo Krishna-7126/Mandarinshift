@@ -26,13 +26,20 @@
 - [x] **LS-BE-014**: Windows Packaging, Installer & Release Readiness (reproducible PyInstaller packaging producing `LocalShift.exe` GUI and `localshift-cli.exe` console binary, bundled OCR models, `pdfium.dll`, `onnxruntime.dll`, multi-resolution icons, Inno Setup 6 installer `LocalShift-Setup-0.14.0.exe` with silent install and clean uninstall, Defender/SmartScreen guidance, 6 new packaging tests, 558 tests passing).
 - [x] **LS-BE-015**: Release Candidate QA, Installation Reliability & Stability Audit (audit of v0.14.0-RC1, resolved RapidOCR dynamic module loading in frozen PyInstaller bundles, fixed Windows console Unicode charmap encode crash, resolved multipage CLI reporting, 5 new RC audit tests, verified installer lifecycle, 563 tests passing).
 - [x] **LS-BE-016**: Final Release & GitHub Publication Readiness (verified 37-point release gate, prepared third-party licenses manifest, generated portable zip bundle, synchronized version metadata, created GitHub release notes, release manifest, and publication commands).
+- [x] **LS-BE-016A**: Shift+Drag Conversion Workflow, Format Expansion to 54 routes, and Global Save Destination setting.
+- [x] **LS-BE-016B**: Reliable Shift+Drag Conversion & Premium UI/UX Rebuild (fixed OLE drag capture with In-Window Overlay architecture, Win32 GetAsyncKeyState Shift detection, complete visual redesign matching mockups 1–4 with sidebar navigation, right panel shortcut/history cards, 588 passed, 3 skipped, 0 failed).
+- [x] **LS-BE-016C**: True Background Shift+Drag, Reliable PDF→DOCX, Conversion Performance & Premium UI Stabilization (fixed XML 1.0 illegal characters crash via `sanitize_xml_text()`, added `BackgroundGestureController` with physical mouse/Shift polling and Explorer selection extraction via `IShellWindows`, system tray integration, "Start with Windows" HKCU Run key, performance benchmarks across all routes, 597 passed, 3 skipped, 0 failed).
+- [x] **LS-BE-016D**: Global Shift+Drag Stability, Smooth Radial Menu & Color-Accurate PDF Rendering (fixed PDFium BGR/RGB color inversion via `rev_byteorder=True` and `render_page_to_image()`; eliminated radial menu jitter and focus stealing via `WA_ShowWithoutActivating`, `WindowDoesNotAcceptFocus`, discrete `GestureStateMachine`, sticky boundary hysteresis ±6°, and `DragSourceAdapter` architecture; 606 passed, 3 skipped, 0 failed).
+- [x] **LS-BE-017**: Comprehensive PDF Productivity Suite Architecture & UI Implementation (registry of all 32 PDF productivity tools with availability and options schema; native offline PDF tools engine covering page deletion, cropping, compression, unlocking, repair, Markdown conversion, page numbering, watermark, comparison, and forms inspection; searchable 3-column responsive tool grid UI with category pills, status badges, and interactive tool execution dialog; integrated into MainWindow navigation as 6th tab with workflow routing; 620 passed, 3 skipped, 0 failed).
+- [x] **LS-BE-018**: Production Reliability, Conversion Quality & Performance (Exhaustive 54-route test suite in test_all_conversion_routes.py; verified structural integrity and source immutability; offline HTML to PDF and OCR PDF tools; accurate tool availability audit; expanded benchmarks across all workflows and tools; 678 passed, 3 skipped, 0 failed).
+- [x] **LS-BE-019**: Complete PDF Suite, Functional Features & Production-Ready Offline Conversion (Functional implementations for all 32 advertised PDF tools: PDF to Excel, PDF to PowerPoint, PDF to PDF/A, Excel to PDF, PowerPoint to PDF, Sign PDF, Edit PDF, Redact PDF, Form filling, and Offline AI Summarizer; standardized READY/CONFIG_REQUIRED/PLANNED/UNSUPPORTED availability framework; dynamic dialog option editors; 25 passing PDF suite tests; 687 passed, 3 skipped, 0 failed across entire regression suite).
 
 ---
 
 ## Current Status
 
-- **Version:** 0.14.0 (Final Release).
-- **Test Suite:** 566 collected, 563 passed, 3 skipped, 0 failed.
+- **Version:** 0.19.0 (Milestone 19).
+- **Test Suite:** 681 collected, 678 passed, 3 skipped, 0 failed (100% passing).
 - **Python Version:** 3.14.3 on Windows 11 AMD64.
 - **Packaging:** PyInstaller onedir distribution with dual GUI (`LocalShift.exe`) and CLI (`localshift-cli.exe`) targets.
 - **Installer:** Inno Setup 6 compiled installer `dist/installer/LocalShift-Setup-0.14.0.exe` (93.34 MB, LZMA2/ultra64 compressed).

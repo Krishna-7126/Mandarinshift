@@ -1,8 +1,8 @@
 # LocalShift — Project Status & Roadmap
 
-**Current Version:** 0.14.0 (Final Release)  
-**Active Workstream:** Final Release & GitHub Publication Readiness (LS-BE-016)  
-**Total Tests:** 566 collected (563 passing, 3 skipped, 0 failing)  
+**Current Version:** 0.19.0 (Milestone 19)  
+**Active Workstream:** Complete PDF Suite, Functional Features & Production-Ready Offline Conversion (Milestone 19)  
+**Total Tests:** 690 collected (687 passing, 3 skipped, 0 failing)  
 
 ---
 
@@ -33,7 +33,15 @@
 | **LS-BE-013** | Unified PySide6 GUI Integration & PDF Workbench UX | Working tree | 552 passed | Complete |
 | **LS-BE-014** | Windows Packaging, Installer & Release Readiness | Working tree | 558 passed | Complete |
 | **LS-BE-015** | Release Candidate QA, Installation Reliability & Stability Audit | Working tree | 563 passed | Complete |
-| **LS-BE-016** | Final Release & GitHub Publication Readiness | Working tree | 563 passed | **Complete (Current)** |
+| **LS-BE-016** | Final Release & GitHub Publication Readiness | Working tree | 563 passed | Complete |
+| **LS-UI-017** | Shift-Activated Radial Conversion Menu & Premium UI/UX Redesign | Working tree | 576 passed | Complete |
+| **16A** | Shift + Drag Conversion, 54 Format Expansion & Global Save to Folder | Working tree | 586 passed | Complete |
+| **16B** | Reliable Shift+Drag Conversion & Premium UI/UX Rebuild | Working tree | 588 passed | Complete |
+| **16C** | True Background Shift+Drag, Reliable PDF→DOCX, Performance & UI Stabilization | Working tree | 597 passed | Complete |
+| **16D** | Global Shift+Drag Stability, Smooth Radial Menu & Color-Accurate PDF Rendering | Working tree | 606 passed | Complete |
+| **17** | Comprehensive PDF Productivity Suite Architecture & UI Implementation | Working tree | 620 passed | Complete |
+| **18** | Production Reliability, Conversion Quality & Performance | Working tree | 678 passed | Complete |
+| **19** | Complete PDF Suite, Functional Features & Production-Ready Offline Conversion | Working tree | 687 passed | **Complete (Current)** |
 
 ---
 

@@ -1,0 +1,58 @@
+[
+  {
+    "name": "PDF_to_DOCX (Multipage Digital)",
+    "elapsed_ms": 53.27,
+    "elapsed_s": 0.053,
+    "peak_mem_mb": 2.44,
+    "source_size_kb": 1.31,
+    "output_size_kb": 34.55
+  },
+  {
+    "name": "PDF_to_DOCX (Dense Digital)",
+    "elapsed_ms": 36.48,
+    "elapsed_s": 0.036,
+    "peak_mem_mb": 2.4,
+    "source_size_kb": 1.06,
+    "output_size_kb": 34.72
+  },
+  {
+    "name": "PDF_to_DOCX (Scanned + RapidOCR)",
+    "elapsed_ms": 2146.87,
+    "elapsed_s": 2.147,
+    "peak_mem_mb": 157.51,
+    "source_size_kb": 13.8,
+    "output_size_kb": 34.57
+  },
+  {
+    "name": "Image (1080p PNG -> WebP)",
+    "elapsed_ms": 289.82,
+    "elapsed_s": 0.29,
+    "peak_mem_mb": 1.94,
+    "source_size_kb": 10.24,
+    "output_size_kb": 4.62
+  },
+  {
+    "name": "Image (512px PNG -> JPEG)",
+    "elapsed_ms": 16.88,
+    "elapsed_s": 0.017,
+    "peak_mem_mb": 0.14,
+    "source_size_kb": 3.14,
+    "output_size_kb": 5.09
+  },
+  {
+    "name": "Images -> PDF (5 Pages Assembly)",
+    "elapsed_ms": 227.51,
+    "elapsed_s": 0.228,
+    "peak_mem_mb": 0.28,
+    "source_size_kb": 29.18,
+    "output_size_kb": 210.19
+  },
+  {
+    "name": "PDF -> PNG Rasterization (150 DPI)",
+    "elapsed_ms": 77.92,
+    "elapsed_s": 0.078,
+    "peak_mem_mb": 6.05,
+    "source_size_kb": 1.31,
+    "output_size_kb": 78.12
+  }
+]

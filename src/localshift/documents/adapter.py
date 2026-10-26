@@ -165,6 +165,27 @@ class PdfDocumentAdapter:
                     description="Background color used when compositing or rendering PDF pages to JPEG.",
                 ),
             )
+        elif (source_format, target_format) in (("pdf", "webp"), ("pdf", "tiff")):
+            return (
+                OptionSpec(
+                    name="dpi",
+                    type_name="int",
+                    default=200,
+                    description="Resolution in DPI for rasterizing PDF pages (72-400, default 200).",
+                ),
+                OptionSpec(
+                    name="pages",
+                    type_name="str",
+                    default="all",
+                    description="Page selection specification: 'all', single page ('1'), range ('1-3'), or comma list ('1,3,5'). 1-based indexing.",
+                ),
+                OptionSpec(
+                    name="output_pattern",
+                    type_name="str",
+                    default="{stem}_page_{page}.{ext}",
+                    description="Naming pattern for exported page images. Placeholders: {stem}, {page}, {page_count}, {ext}.",
+                ),
+            )
         return ()
 
     def convert(
@@ -172,10 +193,10 @@ class PdfDocumentAdapter:
         request: ConversionRequest,
         context: ConversionContext,
     ) -> ConversionResult:
-        """Convert a PDF document into TXT, DOCX, PNG, or JPEG."""
+        """Convert a PDF document into TXT, DOCX, PNG, JPEG, WebP, or TIFF."""
         context.check_cancelled()
 
-        if context.target_format not in ("txt", "docx", "png", "jpeg"):
+        if context.target_format not in ("txt", "docx", "png", "jpeg", "webp", "tiff"):
             raise ConversionFailedError(f"Unsupported target format for PdfDocumentAdapter: {context.target_format!r}")
 
         source_format = request.source_format or "pdf"
@@ -190,8 +211,8 @@ class PdfDocumentAdapter:
                 f"PDF input size ({input_bytes} bytes) exceeds limit of {context.max_input_bytes} bytes."
             )
 
-        # Route: PDF -> PNG / JPEG raster image export
-        if context.target_format in ("png", "jpeg"):
+        # Route: PDF -> PNG / JPEG / WebP / TIFF raster image export
+        if context.target_format in ("png", "jpeg", "webp", "tiff"):
             folder = request.output_dir if request.output_dir is not None else request.source.parent
             output_paths, output_bytes = PdfToImageExporter.export_pdf_to_images(
                 request.source,

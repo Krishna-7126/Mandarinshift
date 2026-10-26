@@ -1,7 +1,7 @@
 # LocalShift — Format Support Specification
 
-**Version:** 0.14.0-RC1 (Updated: Milestone LS-BE-015)  
-**Status:** Implemented, Packaged, Render-Validated & Release-Candidate Audited  
+**Version:** 0.16.2 (Updated: Milestone LS-BE-016D)  
+**Status:** Implemented, Packaged, Render-Validated, Color-Calibrated & Milestone 16D Verified  
 
 ---
 
@@ -18,30 +18,40 @@ LocalShift conversion capabilities are explicit and directional. A format pair i
 | `webp` | Raster Image | `.webp` | Magic bytes (`RIFF....WEBP`) | Input & Output |
 | `bmp` | Raster Image | `.bmp` | Magic bytes (`BM`) | Input & Output |
 | `tiff` | Raster Image | `.tiff`, `.tif` | Magic bytes (`II*\x00` / `MM\x00*`) | Input & Output |
+| `gif` | Raster Image | `.gif` | Magic bytes (`GIF87a` / `GIF89a`) | Input & Output |
+| `ico` | Icon Image | `.ico` | Magic bytes (`\x00\x00\x01\x00`) | Input & Output |
 | `pdf` | Document | `.pdf` | Magic bytes (`%PDF-`) | Input & Output |
 | `txt` | Plain Text | `.txt` | Plain text / UTF-8 | Output Only |
 | `docx` | Word Document | `.docx` | Magic bytes (`PK\x03\x04` + `word/document.xml`) | Input & Output |
 
 ---
 
-## 2. Directional Conversion Routes (30 Total)
+## 2. Directional Conversion Routes (54 Total)
 
-### Image-to-Image Routes (20 Routes via `PillowImageAdapter`)
-Every distinct pair among `{"png", "jpeg", "webp", "bmp", "tiff"}` is supported in both directions:
-- `png` ⇄ `jpeg`, `png` ⇄ `webp`, `png` ⇄ `bmp`, `png` ⇄ `tiff`
-- `jpeg` ⇄ `webp`, `jpeg` ⇄ `bmp`, `jpeg` ⇄ `tiff`
-- `webp` ⇄ `bmp`, `webp` ⇄ `tiff`
-- `bmp` ⇄ `tiff`
+### Image-to-Image Routes (42 Routes via `PillowImageAdapter`)
+Every distinct pair among `{"png", "jpeg", "webp", "bmp", "tiff", "gif", "ico"}` is supported in both directions (7 × 6 = 42 routes):
+- `png` ⇄ `jpeg`, `png` ⇄ `webp`, `png` ⇄ `bmp`, `png` ⇄ `tiff`, `png` ⇄ `gif`, `png` ⇄ `ico`
+- `jpeg` ⇄ `webp`, `jpeg` ⇄ `bmp`, `jpeg` ⇄ `tiff`, `jpeg` ⇄ `gif`, `jpeg` ⇄ `ico`
+- `webp` ⇄ `bmp`, `webp` ⇄ `tiff`, `webp` ⇄ `gif`, `webp` ⇄ `ico`
+- `bmp` ⇄ `tiff`, `bmp` ⇄ `gif`, `bmp` ⇄ `ico`
+- `tiff` ⇄ `gif`, `tiff` ⇄ `ico`
+- `gif` ⇄ `ico`
+
+*Mode Coercion & Formatting:*
+- **`ico`**: Converted to `RGBA` mode and automatically clamped/downscaled using high-quality Lanczos resampling to Windows icon standard dimensions (maximum 256×256 pixels).
+- **`gif`**: Preserves single-frame transparency; converted to `P` mode with adaptive color palette and transparent color index when source has alpha channels.
+- **`jpeg`**: Composited over solid background (default white `(255, 255, 255)`) when alpha transparency is present.
+- **`bmp`**: Automatically converted from `RGBA`/`P` to `RGB` format.
 
 *Same-format conversion (e.g. `png` → `png`) is intentionally rejected as a no-op.*
 
-### Document Routes (10 Routes)
+### Document Routes (12 Routes)
 - `pdf` → `txt` (via `PdfDocumentAdapter`): Hybrid native text extraction and offline OCR to UTF-8 plain text.
 - `pdf` → `docx` (via `PdfDocumentAdapter`): Structured document reconstruction into editable Microsoft Word (.docx) documents with headings, paragraphs, bordered/borderless tables, bold headers, currency cells, image-caption flow, and page sequences.
 - `pdf` → `png` (via `PdfDocumentAdapter` / `PdfToImageExporter`): High-resolution rasterization of single or multipage PDFs into individual PNG images with configurable DPI, page range selection, and custom file pattern formatting.
 - `pdf` → `jpeg` (via `PdfDocumentAdapter` / `PdfToImageExporter`): Rasterization of PDF pages into JPEG images with configurable DPI, compression quality, custom background color fill, and flexible page selection.
 - `docx` → `pdf` (via `DocxToPdfAdapter`): Offline document rendering translating Microsoft Word documents to PDF via headless LibreOffice or Microsoft Word COM automation, preserving headings, fonts, styles, tables, graphics, headers, footers, margins, and page orientation. Dynamic route discovery advertises the route only when an offline backend is installed.
-- `png` → `pdf`, `jpeg` → `pdf`, `webp` → `pdf`, `bmp` → `pdf`, `tiff` → `pdf` (via `ImageToPdfAdapter` / `ImageToPdfConverter`): Offline conversion of single raster images or ordered assembly of multiple raster images into compliant PDF documents with configurable page size, fitting, orientation, margins, background color, DPI, and quality.
+- `png` → `pdf`, `jpeg` → `pdf`, `webp` → `pdf`, `bmp` → `pdf`, `tiff` → `pdf`, `gif` → `pdf`, `ico` → `pdf` (via `ImageToPdfAdapter` / `ImageToPdfConverter`): Offline conversion of single raster images or ordered assembly of multiple raster images into compliant PDF documents with configurable page size, fitting, orientation, margins, background color, DPI, and quality.
 
 ---
 
@@ -284,3 +294,47 @@ To ensure release quality without masking defects behind aggregate averages, eve
 | **Multi-page Enterprise Bylaws (10+ pages)** | Latency & Peak Memory | $\text{Time} < 500\text{ ms}$, $\text{Mem} < 5\text{ MB}$ | $200.1\text{ ms}$, $2.4\text{ MB}$ | **PASSED** |
 | **Corrupted / Damaged Streams** | Safety & Error Trapping | 0 unhandled crashes | Trapped `InvalidInputError` | **PASSED** |
 | **Visual QA (Word COM Headless Render)** | Page count parity & render | 100% pass across readable fixtures | 100% pass (9/9 readable) | **PASSED** |
+
+---
+
+## 13. PDF Productivity Suite Feature Availability & Verification Matrix
+
+The following matrix documents the real availability status, required dependencies, limitations, and verification state for all 32 tools in the LocalShift PDF Productivity Suite:
+
+| Tool ID | Title | Category | Status | Dependencies | Limitations & Notes | Verified |
+|---|---|---|---|---|---|---|
+| `merge_pdf` | Merge PDF | Organize & Optimize | **READY** | PyPDFium2 | Multipage order preservation, stream optimization. | ✓ Unit & E2E |
+| `split_pdf` | Split PDF | Organize & Optimize | **READY** | PyPDFium2 | Burst single pages or extract page ranges. | ✓ Unit & E2E |
+| `compress_pdf` | Compress PDF | Organize & Optimize | **READY** | PyPDFium2 | Optimizes stream objects, removes unreferenced dicts. | ✓ Unit & E2E |
+| `organize_pdf` | Organize PDF | Organize & Optimize | **READY** | PyPDFium2 | Re-sequence pages according to 1-based index list. | ✓ Unit & E2E |
+| `extract_pages` | Extract Pages | Organize & Optimize | **READY** | PyPDFium2 | Extract subset of pages into standalone PDF. | ✓ Unit & E2E |
+| `delete_pages` | Delete Pages | Organize & Optimize | **READY** | PyPDFium2 | Remove specified 1-based page indices safely. | ✓ Unit & E2E |
+| `rotate_pdf` | Rotate PDF | Organize & Optimize | **READY** | PyPDFium2 | 90°, 180°, 270° clockwise vector page rotation. | ✓ Unit & E2E |
+| `crop_pdf` | Crop PDF | Organize & Optimize | **READY** | PyPDFium2 | Lossless vector cropbox margin adjustment. | ✓ Unit & E2E |
+| `repair_pdf` | Repair PDF | Organize & Optimize | **READY** | PyPDFium2 | Reconstruct readable pages from truncated PDFs. | ✓ Unit & E2E |
+| `pdf_to_word` | PDF to Word | Convert from PDF | **READY** | PyPDFium2, python-docx | Preserves headings, tables, formatting, and OCR. | ✓ Unit & E2E |
+| `pdf_to_jpg` | PDF to JPG | Convert from PDF | **READY** | PyPDFium2, Pillow | Configurable DPI (72-400) and JPEG quality. | ✓ Unit & E2E |
+| `pdf_to_png` | PDF to PNG | Convert from PDF | **READY** | PyPDFium2, Pillow | Lossless PNG rasterization with exact color fidelity. | ✓ Unit & E2E |
+| `pdf_to_markdown` | PDF to Markdown | Convert from PDF | **READY** | Native Text Extractor | Extracts headers, lists, tables into clean Markdown. | ✓ Unit & E2E |
+| `pdf_to_powerpoint`| PDF to PowerPoint | Convert from PDF | **READY** | PowerPoint COM / OpenXML | Converts PDF pages into editable OpenXML PPTX slides. | ✓ Unit & E2E |
+| `pdf_to_excel` | PDF to Excel | Convert from PDF | **READY** | Native OpenXML Builder | Extracts structured tabular lines into OpenXML XLSX. | ✓ Unit & E2E |
+| `pdf_to_pdfa` | PDF to PDF/A | Convert from PDF | **READY** | Word COM / PDFium | ISO 19005-1 compliant PDF/A archival generation. | ✓ Unit & E2E |
+| `word_to_pdf` | Word to PDF | Convert to PDF | **READY** | Word COM / LibreOffice | Converts DOC/DOCX to PDF offline. | ✓ Unit & E2E |
+| `jpg_to_pdf` | JPG to PDF | Convert to PDF | **READY** | Pillow, PyPDFium2 | Converts single or multi-images with margin/fit control. | ✓ Unit & E2E |
+| `powerpoint_to_pdf`| PowerPoint to PDF | Convert to PDF | **READY** | PowerPoint COM / LibreOffice | Converts PPT/PPTX slideshows to PDF offline. | ✓ Unit & E2E |
+| `excel_to_pdf` | Excel to PDF | Convert to PDF | **READY** | Excel COM / LibreOffice | Converts XLSX/XLS/CSV workbooks to PDF offline. | ✓ Unit & E2E |
+| `html_to_pdf` | HTML to PDF | Convert to PDF | **READY** | PySide6 QTextDocument/QPdfWriter | Offline HTML rendering to vector PDF. | ✓ Unit & E2E |
+| `scan_to_pdf` | Scan to PDF | Convert to PDF | **READY** | Pillow, PyPDFium2 | Multi-image assembly into ordered scanned PDF. | ✓ Unit & E2E |
+| `page_numbers` | Page Numbers | Security & Pages | **READY** | PyPDFium2, Pillow | Configurable format ("Page {n} of {total}") and position. | ✓ Unit & E2E |
+| `watermark` | Watermark | Security & Pages | **READY** | PyPDFium2, Pillow | Customizable angle, text, and opacity overlay. | ✓ Unit & E2E |
+| `protect_pdf` | Protect PDF | Security & Pages | **CONFIG_REQUIRED** | QPDF or LibreOffice | Encryption authoring requires local QPDF/LibreOffice. Decrypt/unlock is fully available locally. | ✓ Unit |
+| `unlock_pdf` | Unlock PDF | Security & Pages | **READY** | PyPDFium2 | Decrypts and removes password security handler. | ✓ Unit & E2E |
+| `ocr_pdf` | OCR PDF | Security & Pages | **READY** | RapidOCR ONNX | Offline OCR on scanned pages to TXT or DOCX. | ✓ Unit & E2E |
+| `edit_pdf` | Edit PDF | Advanced & AI | **READY** | PyPDFium2, Pillow | Adds text annotations, approval stamps, and highlights. | ✓ Unit & E2E |
+| `sign_pdf` | Sign PDF | Advanced & AI | **READY** | PyPDFium2, Pillow | Digital verification seal with timestamp and SHA-256. | ✓ Unit & E2E |
+| `compare_pdf` | Compare PDF | Advanced & AI | **READY** | Native Text Extractor | Side-by-side page count and text diff Markdown report. | ✓ Unit & E2E |
+| `redact_pdf` | Redact PDF | Advanced & AI | **READY** | PyPDFium2, Pillow | Permanently purges text and flattens to raster. | ✓ Unit & E2E |
+| `pdf_forms` | PDF Forms | Advanced & AI | **READY** | PyPDFium2 | Inspects form fields and exports form data to JSON. | ✓ Unit & E2E |
+| `ai_summarizer` | AI Summarizer | Advanced & AI | **READY** | Local TextRank Engine | Deterministic, offline graph sentence ranking to MD. | ✓ Unit & E2E |
+| `translate_pdf` | Translate PDF | Advanced & AI | **CONFIG_REQUIRED** | MarianMT ONNX Model | Requires local translation model placed in model dir. | ✓ Unit |
+

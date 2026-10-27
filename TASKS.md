@@ -33,20 +33,28 @@
 - [x] **LS-BE-017**: Comprehensive PDF Productivity Suite Architecture & UI Implementation (registry of all 32 PDF productivity tools with availability and options schema; native offline PDF tools engine covering page deletion, cropping, compression, unlocking, repair, Markdown conversion, page numbering, watermark, comparison, and forms inspection; searchable 3-column responsive tool grid UI with category pills, status badges, and interactive tool execution dialog; integrated into MainWindow navigation as 6th tab with workflow routing; 620 passed, 3 skipped, 0 failed).
 - [x] **LS-BE-018**: Production Reliability, Conversion Quality & Performance (Exhaustive 54-route test suite in test_all_conversion_routes.py; verified structural integrity and source immutability; offline HTML to PDF and OCR PDF tools; accurate tool availability audit; expanded benchmarks across all workflows and tools; 678 passed, 3 skipped, 0 failed).
 - [x] **LS-BE-019**: Complete PDF Suite, Functional Features & Production-Ready Offline Conversion (Functional implementations for all 32 advertised PDF tools: PDF to Excel, PDF to PowerPoint, PDF to PDF/A, Excel to PDF, PowerPoint to PDF, Sign PDF, Edit PDF, Redact PDF, Form filling, and Offline AI Summarizer; standardized READY/CONFIG_REQUIRED/PLANNED/UNSUPPORTED availability framework; dynamic dialog option editors; 25 passing PDF suite tests; 687 passed, 3 skipped, 0 failed across entire regression suite).
+- [ ] **LS-BE-020**: Environment Recovery & Verified Global Drag (Python 3.11 Windows test runner and dependency compatibility; payload-only OLE gesture with local-path, size, and route validation; privacy-conscious diagnostics and manual compatibility matrix. Automated implementation is complete; physical Windows source testing remains open.)
+- [ ] **LS-BE-021**: Global Gesture Reliability, Physical Verification & Production Readiness (exact-payload-only conversion, stale-hover clearing, single-dispatch and state cleanup, OFF-state exit/persistence hardening, operator-entered JSON manual results. Automated fixes are tested; physical compatibility and production performance gates remain open.)
+- [x] **LS-BE-022A**: Radial Wheel & Overlay Reliability (shared visible-petal draw/hit geometry, current-pointer click selection, centered file/destination pills, synchronous resize mapping, one active in-app menu, standalone close cleanup; **718 passed, 3 skipped**. Physical display/DPI behavior remains unverified.)
+- [ ] **LS-BE-023**: Release Readiness & Regression Stabilization (source-checkout startup fixed; UI accessible names added; latest full-suite totals and package verification recorded in the release report. Physical drag sources, mixed-DPI, assistive technology, and a current-source packaging build remain release blockers.)
 
 ---
 
 ## Current Status
 
-- **Version:** 0.19.0 (Milestone 19).
-- **Test Suite:** 681 collected, 678 passed, 3 skipped, 0 failed (100% passing).
-- **Python Version:** 3.14.3 on Windows 11 AMD64.
+- **Milestone:** LS-BE-023 release-readiness work is in progress; physical Windows interaction, display/DPI, accessibility, and current-source packaging gates remain open.
+- **Version:** 0.19.0 release notes; package metadata remains 0.14.0.
+- **Test Suite:** Final Milestone 20 result recorded in `docs/reports/LS-BE-020B-gesture-report.md`.
+- **Milestone 21:** Current automated result and physical compatibility matrix are in `docs/reports/LS-BE-021-reliability-report.md`. Do not claim release readiness before its physical test and performance gates are closed.
+- **Milestone 22A:** Findings and exact verification are in `docs/reports/LS-BE-022A-radial-wheel-report.md`. Operator testing at real Windows display scales and drag sources is still required.
+- **Milestone 23:** Current release assessment and operator checklist are in `docs/reports/LS-BE-023-release-readiness.md`. Do not describe the current source as release-ready until the physical and packaging gates are closed.
+- **Python Version:** Project venv Python 3.11.9 on Windows; `requires-python = ">=3.10"`.
 - **Packaging:** PyInstaller onedir distribution with dual GUI (`LocalShift.exe`) and CLI (`localshift-cli.exe`) targets.
 - **Installer:** Inno Setup 6 compiled installer `dist/installer/LocalShift-Setup-0.14.0.exe` (93.34 MB, LZMA2/ultra64 compressed).
 - **Portable Bundle:** `dist/LocalShift-v0.14.0-windows-x64.zip` (146.26 MB, SHA-256: `de04a9b9f5000a05324760a2355703a06f4f50a15a8070ced464d92a630412d2`).
 - **GUI Framework:** PySide6 v6.12.0 (LGPL-3.0) with zero backend dependency linkage.
 - **DOCX Engine:** `python-docx` v1.2.0 (MIT) + `lxml` v6.1.3 (BSD-3).
-- **OCR Engine:** RapidOCR v1.2.3 with ONNX Runtime v1.26.0 (CPUExecutionProvider).
+- **OCR Engine:** RapidOCR 1.2.x (bounded below 1.3 to match tested model/API) with ONNX Runtime from the project venv.
 - **Rendering Backends:** LibreOffice headless (`soffice.exe`) and Microsoft Word COM automation (`winword.exe`).
 - **Language Support:** Bundled Latin + Simplified Chinese; clean offline `LanguagePackConfig` registration interface for Hindi/Devanagari and non-Latin scripts.
 - **Visual QA Harness:** Microsoft Word COM automation rendering DOCX to PDF/images with 100% visual QA pass across 54 fixtures (18 synthetic + 10 unseen + 10 real-world + 10 holdout + 6 DOCX-to-PDF).
@@ -62,6 +70,3 @@
 
 - [ ] **LS-FEAT-001**: Office Document Text Extraction & Batch DOCX Ingestion (`docx` -> `txt`).
 - [ ] **LS-FEAT-002**: Automatic Telemetry-Free GitHub Release Update Checking.
-
-
-

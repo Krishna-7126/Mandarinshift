@@ -198,7 +198,7 @@ class TestOutputCollisionPrevention:
     def test_path_reservation_lock_is_exported(self):
         """The _path_reservation_lock must be importable for testing."""
         import threading
-        assert isinstance(_path_reservation_lock, threading.Lock)
+        assert isinstance(_path_reservation_lock, type(threading.Lock()))
 
     def test_direct_convert_image_concurrent_distinct_outputs(self, tmp_path):
         """Direct convert_image() calls from multiple threads must not collide."""
@@ -791,4 +791,4 @@ class TestCompatibility:
         """_path_reservation_lock must exist in converter module."""
         from localshift.converter import _path_reservation_lock
         import threading
-        assert isinstance(_path_reservation_lock, threading.Lock)
+        assert isinstance(_path_reservation_lock, type(threading.Lock()))

@@ -504,6 +504,8 @@ def validate_preflight(
             )
         elif not reg.can_convert(src_key, target_key):
             raw_adapter = reg.get_adapter(src_key, target_key)
+            if raw_adapter is not None:
+                applicable_options = reg.get_supported_options(src_key, target_key)
             if raw_adapter is not None and hasattr(raw_adapter, "is_available") and not raw_adapter.is_available():
                 findings.append(
                     ValidationFinding(

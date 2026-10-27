@@ -188,26 +188,29 @@ LocalShift implements a native, supported OLE drop target integration:
   - Accurately detects whether Shift is held even when Qt's event modifier bitmask is temporarily omitted during high-velocity external drags across window boundaries.
 - **In-Flight Petal Hover & Drop:**
   - `MainWindow` forwards coordinates to `radial_overlay.track_drag_pos(pos)`.
-  - Circular petal hit-testing (`petal_at_pos(pos)`) highlights the hovered format petal with radial outward offset and indigo hover glow.
+  - One shared petal-center calculation drives both rendering and hit-testing; only visible petal discs are targets, with a distance buffer on the current petal to keep boundary movement stable.
+  - Filename and destination pills are positioned relative to the wheel center, and geometry is recalculated synchronously on resize before drag coordinates are tested.
   - Releasing/dropping directly onto a format petal triggers conversion immediately (`auto_start=True`) without requiring secondary confirmation modals.
+- **Menu ownership & mouse input:** In-app entry points share a visible-menu guard, and the background controller does not open while an in-app menu is active. Popup close and cancel paths clear ownership and delete standalone menu widgets; clicks are hit-tested at the current pointer position and accepted so they cannot activate underlying controls.
 - **Safety, Cancellation & Fallbacks:**
   - Pressing `Escape`, dropping on empty backdrop, or dragging out of window boundaries immediately dismisses the overlay cleanly without triggering unwanted conversions or leaving orphaned state.
   - Keyboard accelerator fallback: Shift + Space invokes the radial dial with Arrow key navigation and Enter confirmation.
   - Explicit UI fallbacks: "Open Radial Menu" buttons in header and drop cards, plus standard queue conversion controls.
 
-### Background Shift+Drag & Explorer Selection Architecture (Milestone 16C)
-To achieve the Tangerine-style background desktop experience without installing invasive global keyboard hooks or injecting DLLs into Windows Explorer:
+### Background Shift+Drag & OLE Drop Architecture (Milestone 20; replaces selection-based behavior)
+The earlier Milestone 16C selection-query approach was not reliable evidence of the current drag payload. The active implementation does not query Explorer selections and does not convert based on selected files.
 - **`BackgroundGestureController` (Non-Invasive Polling):**
-  - Runs a lightweight 60ms timer polling physical mouse drag state (`GetAsyncKeyState(VK_LBUTTON = 0x01)`) and Shift modifier (`is_shift_pressed()`).
-  - Checks if the active foreground window is Windows File Explorer or the Desktop (`is_explorer_or_desktop_foreground()`), matching HWND classes: `CabinetWClass`, `ExplorerWClass`, `Progman`, and `WorkerW`.
-  - When a drag gesture (movement > 8px) with Shift held is detected in Explorer:
-    - Queries active Explorer window selection via Windows COM interface `Shell.Application` (`IShellWindows`).
-    - Obtains full resolved filesystem paths for all selected items in real-time (~90ms execution).
-    - Summons the floating `RadialConversionMenu` centered directly at cursor position (`is_overlay=False`).
-    - Continuously updates hovered petals via `mapFromGlobal()` and `track_drag_pos()`.
-    - On mouse button release, detects if cursor is over a valid format petal and executes immediate conversion to the configured Save to Folder destination.
+  - Uses a 50ms timer to detect physical mouse/Shift state and opens a non-activating floating target after the gesture threshold.
+  - Starts with no candidate paths. It accepts only a Qt OLE local-file payload actually dropped on a supported format sector.
+  - Validates the full payload before dispatch; mixed remote/local, non-file, symlink, oversized, inaccessible, and unsupported items are rejected rather than partially processed.
+  - Mouse release alone, stale sector hover, Escape, Shift release, monitoring-off, timeout, and unsupported drops do not dispatch conversion.
+  - External-source delivery to the non-activating target has not been physically verified. Explorer, Desktop, and third-party support must not be claimed until the manual matrix is run.
+- **Gesture lifecycle:** `IDLE -> DRAG_CANDIDATE -> MENU_VISIBLE -> TARGET_SELECTED -> CONVERTING -> COMPLETED|FAILED -> IDLE`. Escape, Shift release, monitoring-off, unsupported drops, out-of-sector drops, and timeout return to `IDLE` without dispatch. The 500ms fallback timeout applies only when no accepted OLE drag is active and is deferred while the physical mouse button is held; drag-leave restarts the fallback. A drop is accepted once only while the current menu is active. Completion and failure callbacks clear gesture state.
+- **Conversion ownership:** The accepted OLE URL list is revalidated by the menu, then passed unchanged to the converter tab. Radial conversion starts jobs for only those paths; existing queue entries are not included. Ordinary queue conversion continues to process the queue.
+- **Hover updates:** Drag movement sets the visible petal under the pointer or clears hover in the gaps; `set_hover_index` requests a repaint only when the index changes.
+- **Monitoring and shutdown:** Monitoring remains opt-in and off by default. Closing while monitoring is active hides to a visible tray icon; closing while monitoring is off stops the controller and exits, even when a tray icon exists.
 - **Start with Windows & System Tray Operation:**
-  - Registers `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\LocalShift` pointing to the executable with `--minimized` argument (per-user, zero administrator privileges required).
+  - Registers `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\LocalShift` per-user without administrator privileges. Frozen builds launch the executable with `--minimized`; source checkouts invoke the current Python interpreter with `-m localshift.gui --minimized` so package-relative imports work.
   - Runs quietly in system tray via `QSystemTrayIcon` with context menu actions ("Open LocalShift", "Shift + Drag Conversion Gesture", "Start with Windows", "Quit").
   - System tray completion toasts with `messageClicked` navigation revealing output in File Explorer.
 
@@ -239,13 +242,12 @@ To resolve radial menu jitter, cursor feedback loops, and broken drag capture:
   - Sets `Qt.WidgetAttribute.WA_ShowWithoutActivating` and `FocusPolicy.NoFocus`.
   - `show_at_cursor()` anchors geometry without calling `activateWindow()` or `setFocus()`, completely preventing Windows from revoking mouse capture from the drag source (File Explorer, Desktop).
   - Removes premature window destruction in `ActivationChange` event handlers.
-- **Stable Polar Sector Hit-Testing with Hysteresis:**
-  - De-couples rendering geometry from collision testing.
-  - Computes exact polar sector: $\text{angle} = \operatorname{atan2}(-(y - cy), x - cx)$, mapped clockwise from 12 o'clock.
-  - Implements a $\pm 6^\circ$ sticky angular deadband and circular disc proximity check. When the cursor hovers on the boundary between adjacent petals, the currently hovered petal remains active until the cursor crosses the deadband, eliminating boundary oscillation and visual flickering.
+- **Stable Petal Hit-Testing with Hysteresis:**
+  - Uses the same petal centers for rendering and pointer hit-testing; visible circular petals are the only direct hit targets.
+  - The current petal receives a small radial distance buffer, keeping hover stable near its edge without accepting clicks in unrelated sectors or gaps.
   - Only triggers Qt widget repainting (`self.update()`) when `_hover_index` actually changes, preventing redundant painting cycles during continuous pointer movement.
 
-### B. Discrete Gesture State Machine & Drag Source Adapter Hierarchy
+### B. Historical Gesture State Machine & Drag Source Adapters (Milestone 16D)
 The gesture lifecycle is strictly governed by `GestureStateMachine` with explicit transitions:
 - `IDLE` -> `DRAG_CANDIDATE` -> `MENU_VISIBLE` -> `TARGET_SELECTED` -> `CONVERTING` -> `COMPLETED` / `FAILED` / `CANCELLED`.
 - Instant cancellation on `VK_ESCAPE` (`0x1B`) and clean dismissal when the user releases the Shift modifier before dropping, allowing native Windows drag-and-drop operations to proceed unhindered.
@@ -254,6 +256,7 @@ The gesture lifecycle is strictly governed by `GestureStateMachine` with explici
   - `DesktopDragSourceAdapter`: Windows Desktop (`Progman`, `WorkerW`).
   - `OleDropSourceAdapter`: Direct OLE drag-and-drop into LocalShift UI (`QDragEnterEvent` / `urls`).
   - `FallbackSourceAdapter`: Explicitly identifies virtual drag items (browsers, archive viewers) lacking filesystem paths and provides user guidance.
+- These adapters are retained as legacy code only; the active Milestone 20 controller does not invoke them.
 
 ### C. Color-Accurate PDF Rendering & Color Pipeline
 - **Byte Order Rectification (`pypdfium2`):**

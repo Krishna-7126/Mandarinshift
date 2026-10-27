@@ -9,8 +9,6 @@ from PySide6.QtWidgets import QApplication
 
 from localshift.shell_integration import (
     BackgroundGestureController,
-    get_explorer_selected_paths,
-    is_explorer_or_desktop_foreground,
     is_start_with_windows_enabled,
     set_start_with_windows_enabled,
 )
@@ -46,104 +44,226 @@ def test_start_with_windows_lifecycle():
     set_start_with_windows_enabled(initial)
 
 
-def test_explorer_foreground_detection():
-    """Verify foreground window class inspection."""
-    if sys.platform != "win32":
-        pytest.skip("Windows-only test")
+def test_source_startup_uses_importable_module_entrypoint(monkeypatch):
+    import localshift.shell_integration as shell_integration
 
-    res = is_explorer_or_desktop_foreground()
-    assert isinstance(res, bool)
+    registry = MagicMock()
+    key = MagicMock()
+    registry.OpenKey.return_value.__enter__.return_value = key
+    registry.HKEY_CURRENT_USER = 1
+    registry.KEY_SET_VALUE = 2
+    registry.REG_SZ = 3
+    monkeypatch.setattr(shell_integration, "winreg", registry)
+    monkeypatch.setattr(shell_integration.sys, "platform", "win32")
+    monkeypatch.setattr(shell_integration.sys, "executable", r"C:\LocalShift\.venv\Scripts\python.exe")
+    monkeypatch.setattr(shell_integration.sys, "frozen", False, raising=False)
 
+    assert set_start_with_windows_enabled(True)
 
-def test_get_explorer_selected_paths_returns_paths():
-    """Verify IShellWindows querying returns a valid list of Path objects."""
-    if sys.platform != "win32":
-        pytest.skip("Windows-only test")
-
-    paths = get_explorer_selected_paths()
-    assert isinstance(paths, list)
-    for p in paths:
-        assert isinstance(p, Path)
+    command = registry.SetValueEx.call_args.args[4]
+    assert command == '"C:\\LocalShift\\.venv\\Scripts\\python.exe" -m localshift.gui --minimized'
 
 
 def test_background_gesture_controller_lifecycle(qapp):
     """Verify BackgroundGestureController lifecycle, timers, and signals."""
+    from localshift.settings import get_settings
+
+    settings = get_settings()
+    previous_enabled = settings.radial_gesture_enabled
+    settings.radial_gesture_enabled = True
+    try:
+        controller = BackgroundGestureController(main_window=None)
+        assert controller._is_monitoring is False
+
+        controller.start_monitoring()
+        assert controller._is_monitoring is True
+        assert controller._poll_timer.isActive() is True
+
+        controller.show_notification("Test Title", "Test Message")
+
+        controller.stop_monitoring()
+        assert controller._is_monitoring is False
+        assert controller._poll_timer.isActive() is False
+    finally:
+        settings.radial_gesture_enabled = previous_enabled
+
+
+def test_background_monitoring_requires_explicit_enable(qapp):
+    from localshift.settings import get_settings
+
+    settings = get_settings()
+    previous_enabled = settings.radial_gesture_enabled
+    settings.radial_gesture_enabled = False
     controller = BackgroundGestureController(main_window=None)
-    assert controller._is_monitoring is False
 
     controller.start_monitoring()
-    assert controller._is_monitoring is True
-    assert controller._poll_timer.isActive() is True
-
-    # Notification toast call
-    controller.show_notification("Test Title", "Test Message")
-
-    controller.stop_monitoring()
     assert controller._is_monitoring is False
     assert controller._poll_timer.isActive() is False
 
+    settings.radial_gesture_enabled = previous_enabled
 
-def test_background_gesture_controller_drag_tracking(qapp, tmp_path):
-    """Verify drag tracking updates hover index and release triggers format."""
-    f1 = tmp_path / "doc.pdf"
-    f1.write_text("dummy")
+
+def test_global_gesture_waits_for_actual_ole_drop(qapp):
+    controller = BackgroundGestureController(main_window=None)
+    controller._trigger_background_radial(QPoint(500, 500))
+
+    assert controller._active_menu is not None
+    assert controller._active_menu.awaiting_drop is True
+    assert controller._active_menu.paths == []
+    assert controller._active_menu.available_formats == []
+    assert controller._active_menu.hover_index == -1
+    controller.stop_monitoring()
+
+
+def test_global_ole_drop_dispatches_its_exact_payload(qapp, tmp_path):
+    from PIL import Image
+    from PySide6.QtCore import QMimeData, QPointF, QUrl
+    from PySide6.QtGui import QDropEvent
+
+    paths = [tmp_path / "one.png", tmp_path / "two.png"]
+    for path in paths:
+        Image.new("RGB", (12, 12), "blue").save(path)
 
     controller = BackgroundGestureController(main_window=None)
-
-    # Mock get_explorer_selected_paths to return f1
-    with patch("localshift.shell_integration.get_explorer_selected_paths", return_value=[f1]):
-        with patch("localshift.shell_integration.is_explorer_or_desktop_foreground", return_value=True):
-            controller._trigger_background_radial(QPoint(500, 500))
-
-            assert controller._active_menu is not None
-            assert controller._active_menu.paths == [f1]
-            assert "docx" in controller._active_menu.available_formats
-
-            # Emit selection through mock signal
-            signal_emitted = []
-            controller.conversion_requested.connect(lambda fmt, pths: signal_emitted.append((fmt, pths)))
-
-            controller._on_format_selected("docx", [f1])
-            assert len(signal_emitted) == 1
-            assert signal_emitted[0] == ("docx", [f1])
-            assert controller._active_menu is None
-            assert controller.state == "CONVERTING"
-
-
-def test_drag_source_adapters():
-    """Verify source adapter classification and path extraction logic."""
-    from localshift.shell_integration import (
-        DesktopDragSourceAdapter,
-        ExplorerDragSourceAdapter,
-        FallbackSourceAdapter,
-        OleDropSourceAdapter,
-    )
-    from PySide6.QtCore import QMimeData, QUrl
-
-    # 1. Fallback adapter
-    fb = FallbackSourceAdapter()
-    assert fb.can_retrieve_paths() is False
-    assert fb.get_dragged_paths() == []
-    assert fb.name == "Unsupported / Virtual Source"
-
-    # 2. OLE Drop Target adapter with valid file url
+    controller._trigger_background_radial(QPoint(100, 100))
+    menu = controller._active_menu
+    assert menu is not None
     mime = QMimeData()
-    p = Path(__file__).resolve()
-    mime.setUrls([QUrl.fromLocalFile(str(p))])
-    ole = OleDropSourceAdapter(mime)
-    assert ole.is_source_active() is True
-    assert ole.can_retrieve_paths() is True
-    paths = ole.get_dragged_paths()
-    assert paths == [p]
+    mime.setUrls([QUrl.fromLocalFile(str(path)) for path in paths])
+    results = []
+    controller.conversion_requested.connect(lambda fmt, dropped: results.append((fmt, dropped)))
 
-    # 3. OLE Drop Target without URLs
-    empty_mime = QMimeData()
-    empty_ole = OleDropSourceAdapter(empty_mime)
-    assert empty_ole.is_source_active() is False
-    assert empty_ole.get_dragged_paths() == []
+    pos = QPointF(menu._cx, menu._cy - 100)
+    event = QDropEvent(pos, Qt.DropAction.CopyAction, mime, Qt.MouseButton.NoButton, Qt.KeyboardModifier.NoModifier)
+    menu.dropEvent(event)
+
+    assert len(results) == 1
+    assert results[0][0] in menu.available_formats
+    assert results[0][1] == paths
+    assert controller.state == "CONVERTING"
+    assert not controller._drop_timeout.isActive()
+    controller.stop_monitoring()
 
 
-def test_gesture_state_machine_transitions(qapp, tmp_path):
+def test_global_dispatch_is_single_use_and_conversion_failure_resets_state(qapp, tmp_path):
+    from localshift.radial_menu import GestureState
+
+    controller = BackgroundGestureController(main_window=None)
+    controller._trigger_background_radial(QPoint(100, 100))
+    emitted = []
+    states = []
+    controller.conversion_requested.connect(lambda *args: emitted.append(args))
+    controller.state_changed.connect(states.append)
+
+    controller._on_format_selected("jpeg", [tmp_path / "payload.png"])
+    controller._on_format_selected("png", [tmp_path / "stale.png"])
+
+    assert len(emitted) == 1
+    assert controller.state == GestureState.CONVERTING
+
+    controller._drag_triggered = True
+    controller._lbutton_was_down = True
+    controller.on_conversion_failed()
+
+    assert controller.state == GestureState.IDLE
+    assert not controller._drag_triggered
+    assert not controller._lbutton_was_down
+    assert states[-2:] == [GestureState.FAILED.value, GestureState.IDLE.value]
+    controller.stop_monitoring()
+
+
+def test_global_timeout_cleans_up_and_allows_next_gesture(qapp):
+    from localshift.radial_menu import GestureState
+
+    controller = BackgroundGestureController(main_window=None)
+    controller._trigger_background_radial(QPoint(100, 100))
+    controller._cancel_unaccepted_drop()
+
+    assert controller._active_menu is None
+    assert controller.state == GestureState.IDLE
+
+    controller._trigger_background_radial(QPoint(100, 100))
+    assert controller.state == GestureState.MENU_VISIBLE
+    controller.stop_monitoring()
+
+
+def test_global_mouse_release_does_not_select_and_waits_for_drop(qapp):
+    controller = BackgroundGestureController(main_window=None)
+    controller._trigger_background_radial(QPoint(100, 100))
+    emitted = []
+    controller.conversion_requested.connect(lambda *args: emitted.append(args))
+    controller._lbutton_was_down = True
+    mock_user32 = MagicMock()
+    mock_user32.GetAsyncKeyState.return_value = 0
+
+    with patch("ctypes.windll.user32", mock_user32, create=True), patch(
+        "localshift.shell_integration.is_shift_pressed", return_value=False
+    ):
+        controller._check_gesture_state()
+
+    assert emitted == []
+    assert controller._active_menu is not None
+    assert controller._drop_timeout.isActive()
+    controller.stop_monitoring()
+
+
+def test_release_while_ole_drag_is_inside_target_waits_for_drop(qapp):
+    controller = BackgroundGestureController(main_window=None)
+    controller._trigger_background_radial(QPoint(100, 100))
+    menu = controller._active_menu
+    assert menu is not None
+    menu._ole_drag_active = True
+    controller._lbutton_was_down = True
+    mock_user32 = MagicMock()
+    mock_user32.GetAsyncKeyState.return_value = 0
+
+    with patch("ctypes.windll.user32", mock_user32, create=True), patch(
+        "localshift.shell_integration.is_shift_pressed", return_value=True
+    ):
+        controller._check_gesture_state()
+
+    assert not controller._drop_timeout.isActive()
+    menu.ole_drag_left.emit()
+    assert controller._drop_timeout.isActive()
+    controller.stop_monitoring()
+
+
+def test_timeout_does_not_dismiss_active_ole_drag(qapp):
+    from localshift.radial_menu import GestureState
+
+    controller = BackgroundGestureController(main_window=None)
+    controller._trigger_background_radial(QPoint(100, 100))
+    menu = controller._active_menu
+    assert menu is not None
+    menu._ole_drag_active = True
+
+    controller._cancel_unaccepted_drop()
+
+    assert controller._active_menu is menu
+    assert controller.state == GestureState.MENU_VISIBLE
+    controller.stop_monitoring()
+
+
+def test_shift_release_cancels_global_gesture(qapp):
+    from localshift.radial_menu import GestureState
+
+    controller = BackgroundGestureController(main_window=None)
+    controller._trigger_background_radial(QPoint(100, 100))
+    controller._lbutton_was_down = True
+    mock_user32 = MagicMock()
+    mock_user32.GetAsyncKeyState.side_effect = lambda vk: 0x8000 if vk == 0x01 else 0
+
+    with patch("ctypes.windll.user32", mock_user32, create=True), patch(
+        "localshift.shell_integration.is_shift_pressed", return_value=False
+    ):
+        controller._check_gesture_state()
+
+    assert controller._active_menu is None
+    assert controller.state == GestureState.IDLE
+    controller.stop_monitoring()
+
+
+def test_gesture_state_machine_transitions(qapp):
     """Verify full state machine transitions and state_changed signals."""
     from localshift.radial_menu import GestureState
 
@@ -157,55 +277,41 @@ def test_gesture_state_machine_transitions(qapp, tmp_path):
     controller._set_state(GestureState.DRAG_CANDIDATE)
     assert controller.state == GestureState.DRAG_CANDIDATE
 
-    f = tmp_path / "test.png"
-    f.write_text("x")
+    controller._trigger_background_radial(QPoint(100, 100))
+    assert controller.state == GestureState.MENU_VISIBLE
+    assert controller._active_menu is not None
 
-    with patch("localshift.shell_integration.get_explorer_selected_paths", return_value=[f]):
-        controller._trigger_background_radial(QPoint(100, 100), paths=[f])
-        assert controller.state == GestureState.MENU_VISIBLE
-        assert controller._active_menu is not None
-
-        # Verify window flags for non-activation and non-stealing focus
-        flags = controller._active_menu.windowFlags()
-        assert bool(flags & Qt.WindowType.WindowDoesNotAcceptFocus)
-        assert bool(flags & Qt.WindowType.WindowStaysOnTopHint)
-        assert controller._active_menu.testAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
-
-        # Select target
-        controller._on_format_selected("jpeg", [f])
-        assert controller.state == GestureState.CONVERTING
-
-        # Completed
-        controller.on_conversion_completed()
-        assert controller.state == GestureState.IDLE
+    # Verify window flags for non-activation and non-stealing focus.
+    flags = controller._active_menu.windowFlags()
+    assert bool(flags & Qt.WindowType.WindowDoesNotAcceptFocus)
+    assert bool(flags & Qt.WindowType.WindowStaysOnTopHint)
+    assert controller._active_menu.testAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
 
     # Verify history of state transitions
     assert "DRAG_CANDIDATE" in states
     assert "MENU_VISIBLE" in states
-    assert "CONVERTING" in states
-    assert "COMPLETED" in states
-    assert "IDLE" in states
+    assert "CONVERTING" not in states
+    controller.stop_monitoring()
 
 
-def test_escape_key_cancels_drag_gesture(qapp, tmp_path):
+def test_escape_key_cancels_drag_gesture(qapp):
     """Verify VK_ESCAPE instantly cancels active background radial menu."""
     from localshift.radial_menu import GestureState
 
+    if sys.platform != "win32":
+        pytest.skip("Windows-only test")
+
     controller = BackgroundGestureController(main_window=None)
-    f = tmp_path / "test.png"
-    f.write_text("x")
+    controller._trigger_background_radial(QPoint(100, 100))
+    assert controller._active_menu is not None
+    assert controller.state == GestureState.MENU_VISIBLE
 
-    with patch("localshift.shell_integration.get_explorer_selected_paths", return_value=[f]):
-        controller._trigger_background_radial(QPoint(100, 100), paths=[f])
-        assert controller._active_menu is not None
-        assert controller.state == GestureState.MENU_VISIBLE
+    # Simulate Escape pressed: VK_ESCAPE = 0x1B.
+    mock_user32 = MagicMock()
+    mock_user32.GetAsyncKeyState.side_effect = lambda vk: 0x8000 if vk == 0x1B else 0
 
-        # Simulate Escape pressed: user32.GetAsyncKeyState(0x1B) & 0x8000
-        mock_user32 = MagicMock()
-        mock_user32.GetAsyncKeyState.side_effect = lambda vk: 0x8000 if vk == 0x1B else 0
-
-        with patch("ctypes.windll.user32", mock_user32, create=True):
-            controller._check_gesture_state()
-            assert controller._active_menu is None
-            assert controller.state == GestureState.IDLE
-
+    with patch("ctypes.windll.user32", mock_user32, create=True):
+        controller._check_gesture_state()
+        assert controller._active_menu is None
+        assert controller.state == GestureState.IDLE
+    controller.stop_monitoring()

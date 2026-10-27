@@ -108,7 +108,11 @@ class AppSettings(QObject):
             self._save_to_folder_path = get_default_save_folder()
 
         self._theme: str = str(self._qsettings.value("theme", "dark"))
-        self._radial_gesture_enabled: bool = bool(self._qsettings.value("radial_gesture_enabled", True))
+        raw_gesture_enabled = self._qsettings.value("radial_gesture_enabled", False)
+        if isinstance(raw_gesture_enabled, str):
+            self._radial_gesture_enabled = raw_gesture_enabled.lower() in ("true", "1", "yes")
+        else:
+            self._radial_gesture_enabled = bool(raw_gesture_enabled)
 
     @property
     def save_to_folder_enabled(self) -> bool:

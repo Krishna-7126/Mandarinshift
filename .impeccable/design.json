@@ -1,0 +1,290 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-27T18:05:25Z",
+  "title": "Design System: LocalShift",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Proof-room Rust",
+        "canonical": "#a64c38",
+        "tonalRamp": ["#32140e", "#542319", "#783528", "#a64c38", "#c56a51", "#dc927e", "#edbdb0", "#f7e5df"]
+      },
+      "primary-hover": {
+        "role": "primary",
+        "displayName": "Rust Hover",
+        "canonical": "#8f3f2e",
+        "tonalRamp": ["#2b120d", "#481f17", "#672d21", "#8f3f2e", "#b45c47", "#d08470", "#e7b1a3", "#f4dfd8"]
+      },
+      "primary-pressed": {
+        "role": "primary",
+        "displayName": "Pressed Rust",
+        "canonical": "#783528",
+        "tonalRamp": ["#24100c", "#3b1a14", "#55251c", "#783528", "#9d503f", "#c17a68", "#dca99c", "#f0d9d3"]
+      },
+      "dark-focus": {
+        "role": "primary",
+        "displayName": "Dark Focus Rose",
+        "canonical": "#e49a82",
+        "tonalRamp": ["#32170e", "#572619", "#813a28", "#b85a40", "#d47b61", "#e49a82", "#efc1b2", "#f8e7e1"]
+      },
+      "dark-canvas": {
+        "role": "neutral",
+        "displayName": "Ink Canvas",
+        "canonical": "#191b19",
+        "tonalRamp": ["#101210", "#191b19", "#252824", "#393c37", "#555950", "#777b71", "#a3a59c", "#d0d1cb"]
+      },
+      "dark-sidebar": {
+        "role": "neutral",
+        "displayName": "Ink Sidebar",
+        "canonical": "#202320",
+        "tonalRamp": ["#111311", "#202320", "#2c302c", "#41453f", "#5d6259", "#80847b", "#aaada6", "#d4d5d0"]
+      },
+      "dark-control": {
+        "role": "neutral",
+        "displayName": "Ink Secondary Control",
+        "canonical": "#272a26",
+        "tonalRamp": ["#121411", "#272a26", "#333631", "#484b45", "#64675f", "#868981", "#afb1aa", "#d8d9d4"]
+      },
+      "dark-surface": {
+        "role": "neutral",
+        "displayName": "Ink Surface",
+        "canonical": "#222522",
+        "tonalRamp": ["#121412", "#222522", "#2e312d", "#434641", "#60635b", "#82867d", "#abaea7", "#d5d7d2"]
+      },
+      "dark-field": {
+        "role": "neutral",
+        "displayName": "Ink Field",
+        "canonical": "#1b1d1b",
+        "tonalRamp": ["#101210", "#1b1d1b", "#272a26", "#3b3e39", "#575b53", "#797d74", "#a4a79f", "#d1d2cd"]
+      },
+      "dark-ink": {
+        "role": "neutral",
+        "displayName": "Paper-white Ink",
+        "canonical": "#f1efe7",
+        "tonalRamp": ["#191a18", "#333430", "#53544e", "#777871", "#9d9e97", "#c1c1ba", "#deddd6", "#f1efe7"]
+      },
+      "dark-muted": {
+        "role": "neutral",
+        "displayName": "Muted Ash",
+        "canonical": "#b6b8af",
+        "tonalRamp": ["#171815", "#30312c", "#4d4f48", "#6f7169", "#92948c", "#b6b8af", "#d4d5ce", "#eeefe9"]
+      },
+      "dark-divider": {
+        "role": "neutral",
+        "displayName": "Charcoal Divider",
+        "canonical": "#3b3e39",
+        "tonalRamp": ["#111310", "#252824", "#3b3e39", "#555950", "#73776e", "#95988f", "#b9bbb3", "#dedfd9"]
+      },
+      "dark-selection": {
+        "role": "neutral",
+        "displayName": "Dark Selection",
+        "canonical": "#71483d",
+        "tonalRamp": ["#23140f", "#3c241d", "#563329", "#71483d", "#956b5f", "#b79387", "#d3b9b0", "#ebdcd7"]
+      },
+      "light-canvas": {
+        "role": "neutral",
+        "displayName": "Warm Paper Canvas",
+        "canonical": "#f2f0e9",
+        "tonalRamp": ["#1a1914", "#35332b", "#555248", "#77746a", "#9c9a90", "#c0beb5", "#dedcd4", "#f2f0e9"]
+      },
+      "light-sidebar": {
+        "role": "neutral",
+        "displayName": "Paper Sidebar",
+        "canonical": "#e8e5dc",
+        "tonalRamp": ["#191812", "#333127", "#514f43", "#747166", "#98968a", "#bbb9ae", "#d8d6cd", "#e8e5dc"]
+      },
+      "light-control": {
+        "role": "neutral",
+        "displayName": "Paper Utility Strip",
+        "canonical": "#eeece5",
+        "tonalRamp": ["#1a1914", "#35332b", "#555248", "#77746a", "#9c9a90", "#c0beb5", "#dedcd4", "#eeece5"]
+      },
+      "light-surface": {
+        "role": "neutral",
+        "displayName": "Quiet Paper Surface",
+        "canonical": "#fbfaf6",
+        "tonalRamp": ["#1b1913", "#35332a", "#555248", "#77746a", "#9c9a90", "#c2c0b7", "#e0ded6", "#fbfaf6"]
+      },
+      "light-field": {
+        "role": "neutral",
+        "displayName": "Bright Paper Field",
+        "canonical": "#fffdf7",
+        "tonalRamp": ["#1c1910", "#363228", "#565246", "#797568", "#9f9b8e", "#c5c1b5", "#e4e1d7", "#fffdf7"]
+      },
+      "light-ink": {
+        "role": "neutral",
+        "displayName": "Warm Black Ink",
+        "canonical": "#272825",
+        "tonalRamp": ["#111210", "#272825", "#3d3f3b", "#585a55", "#777973", "#9b9d97", "#c2c3bd", "#e7e8e3"]
+      },
+      "light-muted": {
+        "role": "neutral",
+        "displayName": "Muted Graphite",
+        "canonical": "#545650",
+        "tonalRamp": ["#151612", "#30312c", "#545650", "#71736d", "#90928b", "#b1b2ac", "#d0d1ca", "#eeeeea"]
+      },
+      "light-divider": {
+        "role": "neutral",
+        "displayName": "Pale Divider",
+        "canonical": "#d5d1c7",
+        "tonalRamp": ["#171610", "#302e26", "#504d43", "#716e63", "#949187", "#b5b2a9", "#d5d1c7", "#f1efe9"]
+      },
+      "light-control-divider": {
+        "role": "neutral",
+        "displayName": "Paper Control Divider",
+        "canonical": "#c5c2b9",
+        "tonalRamp": ["#16150f", "#2e2c25", "#4d4a41", "#6d6a60", "#908d83", "#b2afa6", "#c5c2b9", "#efede6"]
+      },
+      "light-selection": {
+        "role": "neutral",
+        "displayName": "Paper Selection",
+        "canonical": "#ead8d0",
+        "tonalRamp": ["#261713", "#472d25", "#694338", "#926457", "#b58b7e", "#cfaaa0", "#e3c9c1", "#f5e9e5"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Task Heading",
+        "purpose": "Primary view heading in the native window."
+      },
+      "title": {
+        "displayName": "Brand and Dialog Title",
+        "purpose": "Brand mark and task dialog heading."
+      },
+      "body": {
+        "displayName": "Control and Body",
+        "purpose": "Default native widget text and supporting copy."
+      },
+      "label": {
+        "displayName": "Compact Emphasis",
+        "purpose": "Queue, catalog, and drop-zone headings."
+      }
+    },
+    "shadows": [],
+    "motion": [],
+    "breakpoints": [
+      {
+        "name": "pdf-single-column",
+        "value": "600px",
+        "purpose": "PDF tool catalog viewport uses one column below this width."
+      },
+      {
+        "name": "converter-hide-recent",
+        "value": "700px",
+        "purpose": "Converter hides its recent-work panel below this widget width."
+      },
+      {
+        "name": "pdf-two-column",
+        "value": "900px",
+        "purpose": "PDF catalog changes from three columns to two below this viewport width; converter also hides its size column."
+      },
+      {
+        "name": "converter-hide-output-detail",
+        "value": "1020px",
+        "purpose": "Converter hides its output-detail column below this widget width."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Rust-filled, clearly labeled primary action such as Convert.",
+      "html": "<button class=\"ds-primary\">Convert</button>",
+      "css": ".ds-primary { background: #a64c38; color: #fff; padding: 7px 13px; border: 1px solid #a64c38; border-radius: 5px; font: 600 13px 'Segoe UI', sans-serif; } .ds-primary:hover { background: #8f3f2e; border-color: #8f3f2e; } .ds-primary:active { background: #783528; border-color: #783528; } .ds-primary:focus-visible { border: 2px solid #e49a82; }"
+    },
+    {
+      "name": "Secondary Action",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Outlined theme-surface action for supporting and reversible tasks.",
+      "html": "<button class=\"ds-secondary\">Change…</button>",
+      "css": ".ds-secondary { background: #272a26; color: #eeece4; padding: 7px 13px; border: 1px solid #4a4d47; border-radius: 5px; font: 600 13px 'Segoe UI', sans-serif; } .ds-secondary:hover { background: #30332e; border-color: #6a6d65; } .ds-secondary:focus-visible { border: 2px solid #e49a82; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Compact editable or searchable field with a quiet outline.",
+      "html": "<input class=\"ds-input\" aria-label=\"Search PDF tools\" placeholder=\"Search by task…\">",
+      "css": ".ds-input { background: #1b1d1b; color: #f1efe7; padding: 6px 9px; border: 1px solid #4a4d47; border-radius: 5px; min-height: 22px; font: 400 13px 'Segoe UI', sans-serif; } .ds-input::placeholder { color: #b6b8af; } .ds-input:focus-visible { border: 2px solid #e49a82; }"
+    },
+    {
+      "name": "Work Surface Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Flat outlined container for queue or tool details.",
+      "html": "<section class=\"ds-card\"><strong>Files · 1</strong><p>Choose an output format.</p></section>",
+      "css": ".ds-card { background: #222522; color: #f1efe7; padding: 10px; border: 1px solid #3b3e39; border-radius: 7px; font: 400 13px 'Segoe UI', sans-serif; } .ds-card strong { font-weight: 700; } .ds-card p { color: #b6b8af; }"
+    },
+    {
+      "name": "Active Navigation",
+      "kind": "nav",
+      "refersTo": "button-secondary",
+      "description": "Left-rail destination with a quiet rust-tinted active state.",
+      "html": "<nav><button class=\"ds-nav\">Convert files</button><button class=\"ds-nav\" aria-current=\"page\">PDF tools</button></nav>",
+      "css": ".ds-nav { display: block; width: 100%; background: transparent; color: #c0c1b9; padding: 9px 10px; border: 1px solid transparent; border-radius: 5px; text-align: left; font: 500 13px 'Segoe UI', sans-serif; } .ds-nav:hover { background: #2a2d29; color: #fff; } .ds-nav[aria-current='page'] { background: #37302c; color: #f0ad97; border-color: #51403a; font-weight: 600; } .ds-nav:focus-visible { border: 2px solid #e49a82; }"
+    },
+    {
+      "name": "Drop Target",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "Dashed file-entry surface with concise instruction and a browse action.",
+      "html": "<section class=\"ds-drop\"><strong>Add files to convert</strong><span>Drop files here or choose them.</span><button>Browse files</button></section>",
+      "css": ".ds-drop { display: flex; align-items: center; gap: 12px; background: #202320; color: #f1efe7; padding: 10px 14px; border: 1px dashed #66675f; border-radius: 7px; font: 400 13px 'Segoe UI', sans-serif; } .ds-drop strong { font-size: 15px; font-weight: 700; } .ds-drop span { color: #b6b8af; } .ds-drop button { margin-left: auto; background: #a64c38; color: #fff; padding: 7px 13px; border: 1px solid #a64c38; border-radius: 5px; font: 600 13px 'Segoe UI', sans-serif; } .ds-drop button:hover { background: #8f3f2e; } .ds-drop button:focus-visible { outline: 2px solid #e49a82; outline-offset: 1px; }"
+    },
+    {
+      "name": "Radial Format Wheel",
+      "kind": "custom",
+      "description": "Contextual format chooser made from a file hub and selectable circular petals.",
+      "html": "<div class=\"ds-wheel\" role=\"group\" aria-label=\"Choose an output format\"><span class=\"ds-file\">preview.png</span><button class=\"ds-petal ds-petal-top\">BMP</button><button class=\"ds-petal ds-petal-left\">WEBP</button><button class=\"ds-petal ds-petal-right\">GIF</button><div class=\"ds-hub\"></div><span class=\"ds-hint\">Convert to BMP · Enter or click</span></div>",
+      "css": ".ds-wheel { position: relative; width: 400px; height: 460px; margin: auto; color: #f1efe7; font: 400 13px 'Segoe UI', sans-serif; } .ds-file, .ds-hint { position: absolute; left: 50%; width: max-content; padding: 7px 14px; transform: translateX(-50%); overflow: hidden; border: 1px solid #53564e; background: #1b1d1b; text-align: center; white-space: nowrap; } .ds-file { top: 38px; max-width: 240px; border-radius: 14px; font-weight: 600; } .ds-hint { bottom: 37px; max-width: 280px; border-radius: 15px; color: #f0ad97; } .ds-hub { position: absolute; left: 50%; top: 50%; width: 116px; height: 116px; transform: translate(-50%, -50%); border: 1px solid #53564e; border-radius: 50%; background: #1d201d; } .ds-petal { position: absolute; z-index: 1; width: 80px; height: 80px; border: 1px solid #53564e; border-radius: 50%; background: #252824; color: #f1efe7; font: 600 12px 'Segoe UI', sans-serif; } .ds-petal-top { left: 160px; top: 86px; } .ds-petal-left { left: 56px; top: 190px; } .ds-petal-right { right: 56px; top: 190px; } .ds-petal:hover, .ds-petal:focus-visible { background: #59372d; border: 2px solid #e49a82; transform: translateY(-8px); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Print-room proof sheet",
+    "overview": "LocalShift's native interface treats conversion as a practical, inspectable job: source files, target formats, destination, and outcome remain legible as a compact work surface. Its ink-dark and paper-light themes use a single rust accent, crisp dividers, and compact Segoe UI controls. The same palette and surface logic carry from the converter into PDF tasks, settings, and the custom format wheel.\n\nThe interface is flat and workmanlike rather than ornamental. The circular radial chooser is a functional signature, not a decorative motif: its format petals, file hub, and hint pills directly communicate a contextual conversion choice. Local processing and source-preservation copy appear as small utility information rather than brand decoration.",
+    "keyCharacteristics": [
+      "Ink-dark or quiet paper-light surfaces, with a consistent rust action color.",
+      "Compact native controls organized by clear strokes and tonal steps, not shadow.",
+      "Source-to-output choices stay central; secondary details recede or reflow.",
+      "A custom radial format chooser provides a direct, contextual alternative to the queue."
+    ],
+    "rules": [
+      {
+        "name": "The Two-Ink Rule",
+        "body": "Keep each surface, its text, and its separators within one theme pairing; do not mix the dark and light neutral families on a single screen.",
+        "section": "colors"
+      },
+      {
+        "name": "The One-Family Rule",
+        "body": "Use Segoe UI throughout; distinguish task labels from supporting text through weight and observed size steps, not a second typeface.",
+        "section": "typography"
+      },
+      {
+        "name": "The Reflow-By-Width Rule",
+        "body": "Keep the task actionable as space narrows: remove secondary converter details first, then the recent panel; make PDF catalog cards single-column at the narrowest observed viewport.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat Surface Rule",
+        "body": "Let tonal contrast and fine borders define the work surface; do not add drop shadows as a substitute for its existing dividers.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use the rust primary consistently for the most important action and its active states.",
+      "Do keep dark and light surfaces internally paired with their own ink and divider colors.",
+      "Do use borders and tonal layering instead of shadows to separate work groups.",
+      "Do preserve the queue-first workflow and the wheel as distinct, purposeful ways to choose a conversion.",
+      "Do keep secondary converter columns and PDF catalog cards responsive at the code-defined width thresholds."
+    ],
+    "donts": [
+      "Don't introduce gradients or decorative glyphs as ornament; this system uses flat surfaces and labeled controls.",
+      "Don't flatten the PDF catalog into an ungrouped wall of equally styled actions.",
+      "Don't treat an observed window-size capture as proof of physical-display, mixed-DPI, or assistive-technology validation."
+    ]
+  }
+}

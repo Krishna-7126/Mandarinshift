@@ -1,0 +1,1274 @@
+2026-10-27 01:20:20,254 INFO localshift.shell_integration: Background Shift+Drag gesture controller started.
+2026-10-27 01:20:38,990 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:20:39,055 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:20:41,832 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:20:41,895 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:21:13,821 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:21:13,943 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:21:22,569 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:21:22,632 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:21:47,005 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:21:47,068 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:22:05,162 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:22:05,285 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:22:09,656 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:22:09,962 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:22:10,660 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:22:11,175 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:22:12,438 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:22:15,557 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:22:16,995 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:22:17,117 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:22:21,349 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:22:29,040 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:22:34,242 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:22:36,835 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:22:37,976 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:22:38,040 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:22:38,911 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:22:39,039 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:22:39,973 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:22:40,051 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:22:41,990 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:22:42,126 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:22:43,954 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:22:44,010 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:22:45,713 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:22:45,772 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:22:47,114 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:22:47,269 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:22:50,395 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:22:50,525 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:22:51,531 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:22:51,644 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:22:52,210 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:22:52,345 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:22:53,224 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:22:53,293 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:22:55,356 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:22:55,422 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:23:03,557 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:23:03,619 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:23:04,320 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:23:04,384 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:23:11,138 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:23:11,194 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:23:13,568 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:23:13,728 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:23:22,732 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:23:22,793 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:23:24,185 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:23:24,299 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:23:25,823 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:23:25,974 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:23:28,955 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:23:29,148 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:23:32,394 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:23:32,579 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:23:37,804 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:23:37,917 INFO localshift.shell_integration: Registered LocalShift startup entry.
+2026-10-27 01:23:37,933 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:23:40,758 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:01,789 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:04,570 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:04,635 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:05,074 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:05,140 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:05,575 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:05,641 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:05,837 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:05,903 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:06,817 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:06,948 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:07,472 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:07,590 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:07,962 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:08,025 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:08,599 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:08,665 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:08,795 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:08,859 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:08,988 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:09,054 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:09,185 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:09,250 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:09,316 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:09,449 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:09,515 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:09,580 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:09,708 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:09,773 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:09,903 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:09,961 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:10,285 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:10,356 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:12,079 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:12,237 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:14,486 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:14,681 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:27,457 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:27,587 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:28,406 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:28,571 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:29,609 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:29,749 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:32,160 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:32,229 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:33,724 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:33,893 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:39,224 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:39,294 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:39,919 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:40,111 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:40,852 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:40,978 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:44,463 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:44,592 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:48,299 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:48,410 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:50,559 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:50,617 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:51,691 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:51,803 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:51,867 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:51,994 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:24:57,023 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:24:58,405 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:25:09,510 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:25:09,634 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:25:10,943 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:25:11,007 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:25:32,244 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:25:32,335 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:25:38,575 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:25:38,629 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:25:40,192 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:25:40,320 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:25:47,059 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:25:47,177 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:25:56,027 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:25:56,135 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:26:00,217 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:26:01,152 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:26:01,847 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:26:01,973 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:26:19,552 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:26:19,677 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:26:28,957 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:26:29,088 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:26:30,875 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:26:30,941 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:26:31,650 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:26:31,801 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:26:36,427 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:26:36,550 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:26:37,000 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:26:37,146 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:26:38,377 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:26:38,427 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:26:39,886 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:26:39,953 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:26:40,837 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:26:40,965 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:26:41,029 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:26:41,155 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:26:49,494 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:26:49,551 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:26:57,943 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:26:58,064 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:26:59,450 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:26:59,562 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:27:03,441 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:27:03,570 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:27:04,336 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:27:04,528 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:27:06,363 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:27:06,412 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:27:48,458 INFO localshift.shell_integration: Background Shift+Drag gesture controller started.
+2026-10-27 01:27:54,642 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:27:54,754 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:27:56,510 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:27:57,321 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> MENU_VISIBLE
+2026-10-27 01:27:57,321 INFO localshift.shell_integration: Global radial drop target opened; awaiting local file URLs.
+2026-10-27 01:27:57,395 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:27:59,153 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:27:59,192 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:27:59,224 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:27:59,261 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:27:59,293 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:27:59,327 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:27:59,361 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:27:59,534 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:27:59,602 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:27:59,632 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:27:59,675 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:27:59,709 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:27:59,744 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:27:59,774 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:27:59,809 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:27:59,844 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:00,365 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:00,399 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:00,426 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:00,477 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:00,512 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:00,549 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:00,585 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:00,711 INFO localshift.shell_integration: Background gesture state: MENU_VISIBLE -> CANCELLED
+2026-10-27 01:28:00,711 INFO localshift.shell_integration: Background gesture state: CANCELLED -> IDLE
+2026-10-27 01:28:01,300 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:01,340 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:01,373 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:01,402 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:01,435 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:04,197 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:04,612 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:04,653 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:04,771 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:05,672 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:06,017 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:06,070 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:06,173 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:06,206 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:06,239 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:06,271 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:11,195 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:12,541 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:18,898 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:28:19,681 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> MENU_VISIBLE
+2026-10-27 01:28:19,681 INFO localshift.shell_integration: Global radial drop target opened; awaiting local file URLs.
+2026-10-27 01:28:19,716 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:20,638 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:20,657 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:21,949 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:21,975 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:22,011 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:22,061 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:22,092 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:22,122 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:22,155 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:24,028 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:24,257 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:24,686 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:24,714 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:24,757 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:24,777 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:24,820 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:24,853 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:24,888 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:24,920 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:24,955 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:25,397 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:25,432 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:25,463 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:25,594 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:25,626 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:25,657 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:25,694 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:26,098 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:26,133 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:26,161 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:26,186 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:26,254 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:26,291 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:30,651 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:30,747 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:31,173 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:31,202 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:31,242 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:31,275 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:31,308 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:31,339 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:31,370 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:31,408 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:31,953 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:31,988 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:32,025 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:32,057 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:32,089 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:32,117 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:32,157 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:32,685 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:33,430 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:33,469 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:33,507 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:33,545 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:33,580 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:33,613 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:33,640 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:34,091 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:34,138 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:34,613 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:34,656 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:34,694 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:35,070 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:36,666 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:36,715 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:36,745 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:36,793 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:36,809 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:36,857 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:36,998 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:37,009 INFO localshift.shell_integration: Background gesture state: MENU_VISIBLE -> CANCELLED
+2026-10-27 01:28:37,009 INFO localshift.shell_integration: Background gesture state: CANCELLED -> IDLE
+2026-10-27 01:28:39,069 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 01:28:42,463 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:28:45,069 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:28:49,833 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:28:49,897 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:28:50,346 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:28:50,408 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:28:51,280 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:28:51,342 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:28:58,368 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:28:58,428 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:29:08,685 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:29:08,801 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:29:08,864 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:29:08,996 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:29:30,060 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:29:31,741 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:29:35,317 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:29:35,443 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:29:37,756 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:29:39,447 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:29:45,395 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:29:45,525 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:29:51,286 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:29:51,416 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:29:57,235 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:29:59,884 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:30:13,304 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:30:13,442 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:30:14,669 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:30:14,737 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:30:24,379 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:30:46,266 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:30:55,089 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:30:56,439 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:30:58,340 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:30:58,467 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:30:59,218 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:30:59,333 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:31:02,048 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:31:02,098 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:31:03,742 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:31:03,865 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:31:11,198 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:31:11,272 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:31:14,593 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:31:16,184 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:31:18,086 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:31:18,144 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:31:20,342 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:31:20,403 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:31:29,335 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:31:29,398 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:35:02,336 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:35:02,463 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:35:04,185 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:35:04,238 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:35:08,066 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:35:08,192 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:35:15,773 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:35:18,541 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:35:20,494 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:35:20,619 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:35:24,989 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:35:27,759 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:35:29,884 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:35:30,011 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:39:33,876 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:39:34,004 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:39:49,593 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:39:49,657 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:39:51,772 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:39:51,904 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:40:03,726 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:40:03,850 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:40:04,601 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:40:04,661 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:40:06,303 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:40:06,365 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:40:07,186 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:40:07,249 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:40:08,405 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:40:08,470 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:40:14,172 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:40:14,289 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:40:17,502 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:40:17,559 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:40:35,134 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:40:35,201 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:41:19,224 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:41:19,354 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:41:27,604 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:41:27,663 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:41:29,465 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:41:29,583 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:41:30,840 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:41:30,904 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:41:37,471 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:41:37,592 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:41:39,288 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:41:39,418 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:41:54,460 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:41:54,652 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:41:56,656 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:41:56,799 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:41:57,677 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:41:57,806 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:42:02,957 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:42:03,082 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:42:13,990 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:42:14,127 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:42:46,073 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:42:46,135 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:42:46,573 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:42:46,639 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:42:48,134 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:42:48,269 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:42:50,221 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:42:50,271 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:42:59,487 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:42:59,538 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:43:01,289 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:43:01,421 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:43:16,210 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:43:16,336 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:43:17,337 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:43:17,458 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:43:20,243 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:43:20,306 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:43:23,005 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:43:23,073 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:43:24,527 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:43:24,588 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:43:28,374 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:43:28,435 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:43:32,307 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:43:32,374 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:43:33,739 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:43:33,872 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:43:40,406 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:43:40,463 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:45:03,337 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:45:03,472 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:45:06,306 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:45:06,429 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:45:13,840 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:45:13,957 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:45:27,089 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:45:27,222 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:45:30,624 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:45:30,676 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:45:32,372 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:45:32,426 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:45:34,489 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:45:34,557 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:45:35,570 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:45:35,638 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:45:36,758 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:45:37,192 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 01:45:38,321 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 01:45:38,390 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:14:40,782 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:14:40,844 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:17:52,331 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:17:52,396 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:17:53,218 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:17:53,342 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:18:04,400 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:18:04,522 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:18:08,411 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:18:10,169 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:18:13,599 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:18:13,669 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:18:21,602 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:18:21,728 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:18:22,978 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:18:23,103 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:18:28,193 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:18:28,380 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:21:36,998 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:21:37,184 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:23:26,465 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:23:27,216 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:34:24,209 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:34:24,335 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:34:25,959 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:34:26,085 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:34:31,503 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:34:33,252 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:34:38,365 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:34:38,490 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:34:40,307 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:34:40,433 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:35:00,521 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:35:01,212 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:35:10,408 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:35:10,525 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:35:11,775 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:35:11,908 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:35:15,108 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:35:15,224 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:35:19,340 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:35:20,976 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:35:27,110 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:35:27,162 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:35:27,987 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:35:28,173 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:35:30,745 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:35:30,868 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:35:33,253 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:35:33,315 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:35:36,140 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:35:36,204 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:35:37,756 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:35:37,879 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:35:42,732 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:35:42,853 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:35:45,419 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:35:45,482 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:35:50,413 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:35:50,535 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:35:52,045 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:35:52,164 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:35:53,540 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:35:53,661 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:36:08,907 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:36:11,174 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:36:16,441 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:36:16,551 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:36:17,306 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:36:17,369 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:36:21,553 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:36:21,678 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:36:22,553 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:36:22,615 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:36:23,884 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:36:24,009 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:36:27,642 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:36:29,859 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:36:34,275 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:36:34,333 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:36:35,094 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:36:35,283 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:36:39,098 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:36:39,226 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:36:40,039 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:36:40,174 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:36:41,492 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:36:41,625 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:36:45,944 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:36:48,441 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:36:53,661 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:36:53,787 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:36:54,661 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:36:54,722 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:37:01,247 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:37:01,373 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:37:10,509 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:37:10,636 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:37:21,198 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:37:21,322 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:37:24,593 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:37:24,718 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:37:28,111 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:37:28,298 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:37:28,986 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:37:29,111 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:37:32,906 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:37:33,032 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:37:35,153 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:37:35,775 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:37:36,025 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:37:36,150 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:37:36,274 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:37:36,337 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:37:36,398 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:37:37,272 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:37:37,646 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:37:37,709 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:37:39,272 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:37:40,335 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:37:43,896 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:37:44,021 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:37:45,281 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:37:45,343 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:37:46,775 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:37:46,842 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:37:47,094 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:37:47,147 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:37:48,093 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:37:48,151 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:37:55,026 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:37:55,149 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:37:55,897 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:37:56,027 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:37:57,209 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:37:57,276 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:38:07,120 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:38:07,243 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:38:10,058 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:38:10,183 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:38:15,415 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:38:15,540 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:38:16,724 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:38:17,614 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:38:21,371 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:38:21,432 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:38:22,190 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:38:22,238 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:38:23,561 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:38:23,678 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 02:38:30,310 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 02:38:30,377 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 21:57:30,050 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 21:57:31,243 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 21:57:56,707 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 21:57:58,149 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 21:58:04,521 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 21:58:04,651 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 21:58:31,226 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 21:58:31,286 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:02:50,769 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:02:50,901 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:03:05,679 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:03:05,805 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:03:08,688 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:03:08,875 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:06:24,000 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:06:24,186 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:08:36,815 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:08:36,941 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:08:38,695 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:08:38,819 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:08:42,948 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:08:43,003 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:08:57,830 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:08:57,955 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:08:58,894 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:08:59,027 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:13:41,271 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:13:41,396 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:13:50,304 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:13:50,428 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:14:38,789 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:14:38,977 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:14:39,599 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:14:39,724 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:15:40,746 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:15:40,928 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:15:46,664 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:15:46,795 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:17:05,212 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:17:05,340 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:17:08,363 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:17:08,497 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:17:09,630 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:17:09,762 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:17:11,216 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:17:11,347 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:17:13,098 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:17:13,229 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:17:16,891 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:17:17,012 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:17:31,346 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:17:31,481 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:17:54,248 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:17:54,430 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:18:02,848 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:18:04,098 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:24:07,020 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:24:07,152 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:24:10,967 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:24:11,085 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:24:12,066 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:24:12,136 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:24:13,752 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:24:13,883 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:24:14,264 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:24:14,392 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:24:14,512 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:24:14,635 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:24:14,703 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:24:14,760 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:24:15,319 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:24:15,886 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:24:23,668 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:24:25,920 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:24:29,705 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:24:29,836 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:24:59,580 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:24:59,652 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:25:00,521 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:25:00,583 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:25:44,485 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:25:44,605 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:26:02,304 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:26:02,368 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:26:04,320 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:26:04,440 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:26:06,253 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:26:06,385 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:26:07,154 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:26:07,280 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:26:15,402 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:26:15,520 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:26:32,308 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:26:32,436 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:26:37,190 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:26:37,322 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:26:38,454 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:26:38,588 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:26:44,617 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:26:44,751 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:27:41,111 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:27:41,181 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:27:50,636 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:27:50,754 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:27:52,155 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:27:52,276 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:28:23,021 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:28:23,088 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:28:46,920 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:28:47,042 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:28:52,788 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:28:52,924 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:29:13,436 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:29:13,550 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:29:48,589 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:29:48,722 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:29:50,972 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:29:51,107 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:30:46,633 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:30:46,691 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:31:05,173 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:31:05,223 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:31:07,494 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:31:07,621 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:31:22,176 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:31:22,243 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:31:25,788 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:31:25,849 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:31:59,911 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:31:59,979 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:32:01,986 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:32:02,057 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:32:07,275 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:32:07,409 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:32:19,377 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:32:19,510 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:32:26,757 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:32:27,140 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 22:54:41,359 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 22:54:41,416 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:12:36,245 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:12:36,305 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:12:42,181 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:12:42,305 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:13:17,612 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:13:17,738 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:13:24,278 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:13:28,523 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:16:48,708 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:16:48,771 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:16:49,915 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:16:50,040 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:16:50,413 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:16:50,537 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:16:54,184 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:16:54,308 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:16:54,995 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:16:55,120 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:17:34,424 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:17:34,549 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:17:39,328 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:17:39,452 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:17:40,263 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:17:40,388 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:17:44,714 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:17:44,777 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:17:45,712 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:17:45,838 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:17:51,903 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:17:52,028 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:18:21,768 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:18:23,594 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:18:25,497 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:18:25,549 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:18:25,871 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:18:25,994 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:18:27,925 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:18:27,995 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:18:40,894 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:18:41,031 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:18:50,783 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:18:51,852 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:18:53,415 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:18:53,479 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:19:33,368 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:19:33,564 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:20:07,657 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:20:07,719 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:20:09,175 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:20:09,251 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:20:09,907 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:20:09,969 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:20:13,717 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:20:13,842 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:20:36,722 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:20:36,855 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:21:21,382 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:21:21,507 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:21:31,998 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:21:32,051 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:21:34,968 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:21:35,083 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:21:36,668 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:21:36,785 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:21:51,001 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:21:51,115 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:21:52,934 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:21:53,115 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:22:04,668 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:22:12,249 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:22:18,301 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:22:19,869 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:22:22,049 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:22:22,113 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:22:22,553 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:22:22,678 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:22:24,240 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:22:24,303 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:22:41,286 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:22:41,412 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:22:44,051 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:22:44,122 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:22:46,116 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:22:46,239 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:22:47,943 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:22:48,069 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:22:50,138 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:22:50,201 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:22:52,627 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:22:52,695 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:22:53,879 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:22:54,004 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:22:54,316 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:22:54,379 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:22:56,214 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:22:56,275 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:22:58,396 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:22:58,519 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:22:59,770 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:22:59,892 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:23:01,917 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:23:01,985 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:23:06,434 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:23:06,549 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:23:17,206 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:23:17,331 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:23:44,351 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:23:45,877 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:23:47,768 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:23:47,841 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:23:49,459 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:23:49,587 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:24:10,920 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:24:11,037 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:24:21,112 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:24:21,237 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:24:25,865 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:24:25,987 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:24:27,452 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:24:27,953 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:24:30,505 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:24:30,632 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:24:31,942 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:24:32,005 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:24:32,379 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:24:32,505 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:27:44,739 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:27:45,925 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:27:47,117 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:27:47,249 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:27:50,646 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:27:51,968 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:27:53,089 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:27:53,151 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:27:54,337 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:27:54,460 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:28:45,472 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:28:45,596 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:31:49,501 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:31:49,640 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:31:56,450 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:31:56,575 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:31:58,819 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:31:58,944 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:32:02,010 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:32:02,072 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:38:27,393 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:38:27,521 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:38:28,799 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:38:28,955 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:41:17,753 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:41:17,817 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:41:18,878 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:41:19,335 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:41:19,769 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:41:19,894 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:41:20,673 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:41:21,121 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:41:21,486 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:41:21,620 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:41:22,994 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:41:23,056 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:44:45,827 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:44:45,890 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:44:46,664 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:44:46,727 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:44:47,473 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:44:47,535 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:44:52,252 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:44:54,071 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:44:55,324 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:44:55,447 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:44:59,315 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:45:01,138 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:45:02,593 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:45:02,656 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:45:47,280 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:45:47,406 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:45:48,958 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:45:49,090 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:45:57,773 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:45:57,897 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:47:16,112 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:47:16,177 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:48:55,884 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:48:56,009 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:49:15,139 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:49:15,264 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:49:27,471 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:49:27,596 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:49:28,537 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:49:28,598 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:49:29,353 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:49:29,482 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:50:30,018 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:50:30,146 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:51:14,908 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:51:15,033 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:51:19,426 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:51:19,493 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:51:20,754 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:51:20,814 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:51:22,066 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:51:22,210 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:51:24,042 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:51:24,107 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:51:27,926 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:51:28,058 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:51:30,129 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:51:32,441 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:51:37,526 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:51:37,592 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:51:50,763 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:51:50,879 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:52:00,491 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:52:00,613 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:52:03,373 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:52:03,499 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:52:05,016 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:52:05,074 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:52:06,017 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:52:06,081 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:52:09,680 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:52:09,738 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:52:10,679 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:52:10,743 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:52:13,946 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:52:14,285 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> MENU_VISIBLE
+2026-10-27 23:52:14,285 INFO localshift.shell_integration: Global radial drop target opened; awaiting local file URLs.
+2026-10-27 23:52:14,392 INFO localshift.radial_menu: OLE drag rejected: The drop contains an invalid or unsupported file path.
+2026-10-27 23:52:15,453 INFO localshift.shell_integration: Background gesture state: MENU_VISIBLE -> CANCELLED
+2026-10-27 23:52:15,453 INFO localshift.shell_integration: Background gesture state: CANCELLED -> IDLE
+2026-10-27 23:52:20,791 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:52:20,909 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:52:22,723 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:52:22,910 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:52:24,908 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:52:25,039 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:52:26,541 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:52:26,667 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:52:28,976 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:52:29,043 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:52:31,050 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:52:31,550 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> MENU_VISIBLE
+2026-10-27 23:52:31,550 INFO localshift.shell_integration: Global radial drop target opened; awaiting local file URLs.
+2026-10-27 23:52:31,785 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 7 target(s).
+2026-10-27 23:52:33,551 INFO localshift.shell_integration: Background gesture state: MENU_VISIBLE -> CANCELLED
+2026-10-27 23:52:33,551 INFO localshift.shell_integration: Background gesture state: CANCELLED -> IDLE
+2026-10-27 23:52:42,519 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:52:43,596 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> MENU_VISIBLE
+2026-10-27 23:52:43,596 INFO localshift.shell_integration: Global radial drop target opened; awaiting local file URLs.
+2026-10-27 23:52:43,650 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 23:52:44,048 INFO localshift.shell_integration: Background gesture state: MENU_VISIBLE -> CANCELLED
+2026-10-27 23:52:44,048 INFO localshift.shell_integration: Background gesture state: CANCELLED -> IDLE
+2026-10-27 23:52:51,207 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:52:52,612 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:52:54,225 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:52:54,360 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:52:56,306 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:52:57,879 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> MENU_VISIBLE
+2026-10-27 23:52:57,879 INFO localshift.shell_integration: Global radial drop target opened; awaiting local file URLs.
+2026-10-27 23:52:57,898 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 23:53:00,225 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 23:53:00,804 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 23:53:01,600 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 23:53:02,183 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 23:53:03,128 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 23:53:03,564 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 23:53:05,428 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 23:53:05,928 INFO localshift.shell_integration: Background gesture state: MENU_VISIBLE -> CANCELLED
+2026-10-27 23:53:05,928 INFO localshift.shell_integration: Background gesture state: CANCELLED -> IDLE
+2026-10-27 23:53:13,017 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:53:14,096 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:53:18,963 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:53:19,029 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:53:21,164 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:53:21,284 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:53:21,596 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:53:21,728 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:53:23,612 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:53:25,496 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:53:26,497 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:53:26,562 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:53:30,050 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:53:30,747 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> MENU_VISIBLE
+2026-10-27 23:53:30,747 INFO localshift.shell_integration: Global radial drop target opened; awaiting local file URLs.
+2026-10-27 23:53:30,788 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 23:53:31,487 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 23:53:31,619 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 23:53:32,167 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 23:53:34,067 INFO localshift.shell_integration: Background gesture state: MENU_VISIBLE -> CANCELLED
+2026-10-27 23:53:34,067 INFO localshift.shell_integration: Background gesture state: CANCELLED -> IDLE
+2026-10-27 23:53:36,445 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:53:37,200 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> MENU_VISIBLE
+2026-10-27 23:53:37,200 INFO localshift.shell_integration: Global radial drop target opened; awaiting local file URLs.
+2026-10-27 23:53:37,290 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 23:53:37,768 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 23:53:38,481 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 23:53:39,555 INFO localshift.radial_menu: OLE drag accepted for preview: 1 local file(s), 4 target(s).
+2026-10-27 23:53:40,012 INFO localshift.shell_integration: Background gesture state: MENU_VISIBLE -> CANCELLED
+2026-10-27 23:53:40,015 INFO localshift.shell_integration: Background gesture state: CANCELLED -> IDLE
+2026-10-27 23:53:42,016 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:53:42,129 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> MENU_VISIBLE
+2026-10-27 23:53:42,131 INFO localshift.shell_integration: Global radial drop target opened; awaiting local file URLs.
+2026-10-27 23:53:42,225 INFO localshift.radial_menu: OLE drag accepted for preview: 3 local file(s), 4 target(s).
+2026-10-27 23:53:42,756 INFO localshift.radial_menu: OLE drag accepted for preview: 3 local file(s), 4 target(s).
+2026-10-27 23:53:44,321 INFO localshift.shell_integration: Background gesture state: MENU_VISIBLE -> CANCELLED
+2026-10-27 23:53:44,321 INFO localshift.shell_integration: Background gesture state: CANCELLED -> IDLE
+2026-10-27 23:53:47,252 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:53:47,392 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:53:50,594 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:53:50,646 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:53:52,551 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:53:52,599 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:53:54,291 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:53:54,412 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:53:55,946 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:53:56,007 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:55:12,331 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:55:12,393 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:55:13,467 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:55:13,517 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:55:45,529 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:55:45,581 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:55:54,393 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:55:54,527 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:56:21,132 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:56:21,194 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:56:23,018 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:56:23,135 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:56:27,905 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:56:28,030 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:56:30,395 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:56:30,519 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:56:33,618 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:56:33,741 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:56:34,551 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:56:34,678 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:56:45,181 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:56:45,304 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:56:59,631 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:56:59,754 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:57:05,098 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:57:05,225 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:57:07,883 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:57:07,942 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:57:09,897 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:57:10,019 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:57:11,294 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:57:11,348 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:57:12,596 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:57:12,658 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:57:35,066 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:57:35,196 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:57:42,417 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:57:42,536 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:58:02,808 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:58:02,931 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:58:14,242 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:58:14,369 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:58:49,565 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:58:49,697 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:58:54,215 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:58:54,397 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:58:57,350 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:58:57,482 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:58:59,101 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:58:59,165 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:59:08,283 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:59:08,415 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:59:10,416 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:59:10,535 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:59:14,813 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:59:14,866 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:59:15,382 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:59:15,509 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:59:19,598 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:59:19,732 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:59:27,610 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:59:27,669 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:59:28,800 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:59:28,927 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:59:31,183 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:59:31,315 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:59:34,634 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:59:34,699 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:59:37,970 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:59:42,814 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-27 23:59:45,947 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-27 23:59:46,003 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:00:38,349 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:00:38,416 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:00:39,720 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:00:39,785 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:00:41,035 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:00:41,103 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:00:49,784 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:00:49,847 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:00:51,296 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:00:51,410 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:00:51,917 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:00:51,984 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:00:53,721 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:00:53,783 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:00:55,417 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:00:55,471 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:00:55,913 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:00:55,975 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:00:56,599 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:00:56,721 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:00:57,293 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:00:57,348 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:01:13,334 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:01:13,467 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:01:13,894 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:01:13,960 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:01:15,090 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:01:15,153 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:01:15,901 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:01:16,025 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:01:20,793 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:01:20,916 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:01:31,596 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:01:31,724 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:01:35,474 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:01:35,536 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:01:43,625 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:01:43,748 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:01:53,930 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:01:54,053 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:02:04,988 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:02:05,115 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:02:12,837 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:02:12,964 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:02:18,775 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:02:18,899 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:03:13,409 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:03:13,536 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:05:41,063 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:05:41,935 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:05:43,680 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:05:43,742 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:06:12,565 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:06:12,696 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:06:43,554 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:06:43,683 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:09:20,159 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:09:20,355 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:09:22,789 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:09:22,908 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:09:24,356 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:09:24,413 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:09:26,422 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:09:26,539 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:09:28,973 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:09:29,042 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:09:36,789 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:09:36,847 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:09:37,357 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:09:37,418 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:09:41,473 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:09:41,596 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:09:43,659 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:09:43,790 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:09:44,307 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:09:44,367 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:09:45,506 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:09:45,573 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:09:46,256 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:09:46,314 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:09:48,315 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:09:48,442 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:09:50,074 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:09:50,189 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:09:50,757 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:09:50,890 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:09:58,290 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:09:58,409 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:10:11,138 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:10:11,253 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:10:18,988 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:10:19,052 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:10:20,133 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:10:20,201 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:10:21,256 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:10:21,318 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:10:21,690 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:10:21,753 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:10:45,378 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:10:45,441 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:11:00,235 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:11:00,285 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:11:37,321 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:11:39,171 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:11:41,210 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:11:41,275 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:11:42,153 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:11:42,219 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:11:48,893 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:11:50,096 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:11:52,371 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:11:54,181 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:11:57,684 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:11:57,747 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:12:02,865 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:12:02,987 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE
+2026-10-28 00:12:04,588 INFO localshift.shell_integration: Background gesture state: IDLE -> DRAG_CANDIDATE
+2026-10-28 00:12:04,710 INFO localshift.shell_integration: Background gesture state: DRAG_CANDIDATE -> IDLE

@@ -20,8 +20,18 @@ import sys
 from pathlib import Path
 from typing import Any, Callable, Optional, Sequence
 
-from PySide6.QtCore import QPoint, Qt, QThread, Signal
-from PySide6.QtGui import QColor, QCursor, QDragEnterEvent, QDragLeaveEvent, QDragMoveEvent, QDropEvent, QFont, QIcon
+from PySide6.QtCore import QPoint, QTimer, Qt, QThread, Signal
+from PySide6.QtGui import (
+    QColor,
+    QCursor,
+    QDragEnterEvent,
+    QDragLeaveEvent,
+    QDragMoveEvent,
+    QDropEvent,
+    QFont,
+    QFontDatabase,
+    QIcon,
+)
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -79,362 +89,178 @@ from .pdf_suite_ui import PdfToolExecutionDialog, PdfToolsSuiteTab
 
 log = logging.getLogger(__name__)
 
-# Primary LocalShift theme colors
-COLOR_PRIMARY = "#6366f1"
-COLOR_PRIMARY_HOVER = "#4f46e5"
-COLOR_PRIMARY_ACTIVE = "#4338ca"
-COLOR_BG = "#0b0f19"
-COLOR_CARD = "#131d2e"
-COLOR_BORDER = "#1e293b"
-COLOR_TEXT = "#f8fafc"
-COLOR_MUTED = "#94a3b8"
-
 DARK_THEME_STYLESHEET = """
-QMainWindow {
-    background-color: #0b0f19;
-}
+QMainWindow, QDialog { background: #191b19; }
 QWidget {
-    font-family: "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    font-family: "Segoe UI";
     font-size: 13px;
-    color: #f8fafc;
-}
-#sidebar {
-    background-color: #0f172a;
-    border-right: 1px solid #1e293b;
-    border-top-left-radius: 12px;
-    border-bottom-left-radius: 12px;
-}
-#sidebar QLabel#brandTitle {
-    font-size: 17px;
-    font-weight: 700;
-    color: #f8fafc;
-}
-QPushButton.sidebar-nav {
-    background: transparent;
-    color: #94a3b8;
-    border: none;
-    text-align: left;
-    font-size: 13px;
-    font-weight: 500;
-    padding: 10px 14px;
-    border-radius: 8px;
-    margin-bottom: 3px;
-}
-QPushButton.sidebar-nav:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: #f8fafc;
-}
-QPushButton.sidebar-nav[active="true"] {
-    background: #1e293b;
-    color: #818cf8;
-    font-weight: 600;
-    border-left: 3px solid #6366f1;
-}
-#bottomStatusCard {
-    background-color: rgba(30, 41, 59, 0.5);
-    border: 1px solid #1e293b;
-    border-radius: 10px;
-    padding: 10px;
-}
-#dropLandingCard {
-    border: 2px dashed #334155;
-    border-radius: 14px;
-    background-color: rgba(30, 41, 59, 0.35);
-    padding: 20px;
-}
-#queueCard, #historyCard, #optCard {
-    background-color: #161f30;
-    border: 1px solid #1e293b;
-    border-radius: 14px;
-}
-#shortcutCard {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #4f46e5, stop:1 #0284c7);
-    border-radius: 14px;
-    padding: 16px;
-    color: #ffffff;
-}
-QTabWidget::pane {
-    border: none;
-    background-color: transparent;
-}
-QTableWidget {
-    background-color: #131d2e;
-    border: 1px solid #1e293b;
-    border-radius: 8px;
-    gridline-color: #1e293b;
-    selection-background-color: #312e81;
+    color: #f1efe7;
+    selection-background-color: #71483d;
     selection-color: #ffffff;
 }
+#sidebar { background: #202320; border-right: 1px solid #393c37; }
+#brandTitle { font-size: 17px; font-weight: 700; }
+#bottomStatusCard { background: #252824; border: 1px solid #3b3e39; border-radius: 7px; }
+#dropLandingCard { background: #202320; border: 1px dashed #66675f; border-radius: 7px; }
+#queueCard, #historyCard, #optCard, #resultBanner {
+    background: #222522; border: 1px solid #3b3e39; border-radius: 7px;
+}
+QPushButton#toolCard {
+    background: #222522; color: #f1efe7; border: 1px solid #3b3e39;
+    border-radius: 6px; text-align: left;
+}
+QPushButton#toolCard:hover { background: #292c28; border-color: #9c5844; }
+QPushButton#toolCard:focus { border: 2px solid #e49a82; }
+QLabel#catalogHeading { color: #f1efe7; font-size: 15px; font-weight: 700; }
+QLabel#warningText { color: #e4c07b; font-weight: 600; }
+QTabWidget::pane { border: none; background: transparent; }
+QTabBar::tab {
+    background: #272a26; color: #b6b8af; padding: 7px 12px;
+    border: 1px solid #3b3e39; border-bottom: none; margin-right: 4px;
+}
+QTabBar::tab:selected { background: #222522; color: #f1efe7; border-color: #4a4d47; }
+QTabBar::tab:hover { color: #ffffff; }
+QTableWidget {
+    background: #1d201d; alternate-background-color: #222522;
+    border: 1px solid #3b3e39; gridline-color: #333631;
+    selection-background-color: #50352d; selection-color: #ffffff;
+}
+QTableWidget::item { padding: 5px; }
 QHeaderView::section {
-    background-color: #0f172a;
-    color: #94a3b8;
-    padding: 8px;
-    font-weight: 600;
-    border: none;
-    border-bottom: 1px solid #1e293b;
+    background: #272a26; color: #c1c1b8; padding: 7px 8px;
+    font-weight: 600; border: none; border-bottom: 1px solid #454840;
 }
 QPushButton {
-    background-color: #6366f1;
-    color: #ffffff;
-    padding: 8px 16px;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
+    background: #a64c38; color: #ffffff; padding: 7px 13px;
+    border: 1px solid #a64c38; border-radius: 5px; font-weight: 600;
 }
-QPushButton:hover {
-    background-color: #4f46e5;
-}
-QPushButton:pressed {
-    background-color: #4338ca;
-}
-QPushButton:disabled {
-    background-color: #334155;
-    color: #64748b;
-}
+QPushButton:hover { background: #8f3f2e; border-color: #8f3f2e; }
+QPushButton:pressed { background: #783528; border-color: #783528; }
+QPushButton:disabled { background: #383b36; border-color: #383b36; color: #8c8f86; }
+QPushButton:focus, QLineEdit:focus, QSpinBox:focus, QComboBox:focus,
+QCheckBox:focus, QRadioButton:focus { border: 2px solid #e49a82; }
 QPushButton.secondary {
-    background-color: #1e293b;
-    color: #f8fafc;
-    border: 1px solid #334155;
+    background: #272a26; color: #eeece4; border: 1px solid #4a4d47;
 }
-QPushButton.secondary:hover {
-    background-color: #334155;
-    border-color: #475569;
+QPushButton.secondary:hover { background: #30332e; border-color: #6a6d65; }
+QPushButton.sidebar-nav {
+    background: transparent; color: #c0c1b9; border-color: transparent;
+    text-align: left; padding: 9px 10px; font-weight: 500;
 }
-QPushButton.accent {
-    background-color: #4f46e5;
-    color: #ffffff;
-    border: 1px solid #818cf8;
-    font-weight: 700;
-    border-radius: 20px;
+QPushButton.sidebar-nav:hover { background: #2a2d29; color: #ffffff; }
+QPushButton.sidebar-nav[active="true"] {
+    background: #37302c; color: #f0ad97; border-color: #51403a; font-weight: 600;
 }
-QPushButton.accent:hover {
-    background-color: #4338ca;
-}
-QPushButton.pill-cta {
-    background-color: #4f46e5;
-    color: #ffffff;
-    border-radius: 20px;
-    padding: 9px 20px;
-    font-weight: 700;
-    font-size: 14px;
-}
-QPushButton.pill-cta:hover {
-    background-color: #4338ca;
-}
+QPushButton.accent, QPushButton.pill-cta { padding: 8px 14px; }
 QLineEdit, QSpinBox, QComboBox {
-    background-color: #0b101b;
-    border: 1px solid #334155;
-    border-radius: 6px;
-    padding: 6px 10px;
-    min-height: 22px;
-    color: #f8fafc;
-}
-QLineEdit:focus, QSpinBox:focus, QComboBox:focus {
-    border: 1.5px solid #6366f1;
+    background: #1b1d1b; border: 1px solid #4a4d47; border-radius: 5px;
+    padding: 6px 9px; min-height: 22px; color: #f1efe7;
 }
 QComboBox QAbstractItemView {
-    background-color: #131d2e;
-    color: #f8fafc;
-    selection-background-color: #4f46e5;
-    border: 1px solid #334155;
+    background: #222522; color: #f1efe7; selection-background-color: #71483d;
+    border: 1px solid #4a4d47;
 }
 QGroupBox {
-    font-weight: 600;
-    border: 1px solid #1e293b;
-    border-radius: 8px;
-    margin-top: 10px;
-    padding-top: 14px;
-    background-color: rgba(19, 29, 46, 0.4);
+    font-weight: 600; border: 1px solid #3b3e39; border-radius: 6px;
+    margin-top: 10px; padding: 12px 8px 8px; background: #202320;
 }
-QGroupBox::title {
-    subcontrol-origin: margin;
-    subcontrol-position: top left;
-    left: 12px;
-    padding: 0 5px;
-    color: #cbd5e1;
-}
+QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 4px; color: #d1cfc7; }
 QProgressBar {
-    border: 1px solid #1e293b;
-    border-radius: 6px;
-    text-align: center;
-    background-color: #0f172a;
-    min-height: 18px;
-    color: #f8fafc;
+    border: 1px solid #3b3e39; border-radius: 4px; text-align: center;
+    background: #202320; min-height: 16px; color: #f1efe7;
 }
-QProgressBar::chunk {
-    background-color: #6366f1;
-    border-radius: 5px;
-}
+QProgressBar::chunk { background: #a64c38; border-radius: 3px; }
+QScrollArea { border: none; background: transparent; }
+QLabel#mutedText { color: #b6b8af; }
+QLabel#successText { color: #a8c9a9; font-weight: 600; }
+QLabel#errorText { color: #f0a08e; font-weight: 600; }
 """
 
 LIGHT_THEME_STYLESHEET = """
-QMainWindow {
-    background-color: #f1f5f9;
-}
+QMainWindow, QDialog { background: #f2f0e9; }
 QWidget {
-    font-family: "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    font-family: "Segoe UI";
     font-size: 13px;
-    color: #0f172a;
+    color: #272825;
+    selection-background-color: #ead8d0;
+    selection-color: #272825;
 }
-#sidebar {
-    background-color: #ffffff;
-    border-right: 1px solid #e2e8f0;
-    border-top-left-radius: 12px;
-    border-bottom-left-radius: 12px;
+#sidebar { background: #e8e5dc; border-right: 1px solid #d5d1c7; }
+#brandTitle { font-size: 17px; font-weight: 700; }
+#bottomStatusCard { background: #f5f3ed; border: 1px solid #d5d1c7; border-radius: 7px; }
+#dropLandingCard { background: #fbfaf6; border: 1px dashed #9b988e; border-radius: 7px; }
+#queueCard, #historyCard, #optCard, #resultBanner {
+    background: #fbfaf6; border: 1px solid #d5d1c7; border-radius: 7px;
 }
-#sidebar QLabel#brandTitle {
-    font-size: 17px;
-    font-weight: 700;
-    color: #0f172a;
+QPushButton#toolCard {
+    background: #fbfaf6; color: #272825; border: 1px solid #d5d1c7;
+    border-radius: 6px; text-align: left;
 }
-QPushButton.sidebar-nav {
-    background: transparent;
-    color: #64748b;
-    border: none;
-    text-align: left;
-    font-size: 13px;
-    font-weight: 500;
-    padding: 10px 14px;
-    border-radius: 8px;
-    margin-bottom: 3px;
+QPushButton#toolCard:hover { background: #f5f1e8; border-color: #a64c38; }
+QPushButton#toolCard:focus { border: 2px solid #8f3f2e; }
+QLabel#catalogHeading { color: #272825; font-size: 15px; font-weight: 700; }
+QLabel#warningText { color: #755316; font-weight: 600; }
+QTabWidget::pane { border: none; background: transparent; }
+QTabBar::tab {
+    background: #eeece5; color: #545650; padding: 7px 12px;
+    border: 1px solid #d5d1c7; border-bottom: none; margin-right: 4px;
 }
-QPushButton.sidebar-nav:hover {
-    background: #f8fafc;
-    color: #0f172a;
-}
-QPushButton.sidebar-nav[active="true"] {
-    background: #e0e7ff;
-    color: #4f46e5;
-    font-weight: 600;
-    border-left: 3px solid #4f46e5;
-}
-#bottomStatusCard {
-    background-color: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 10px;
-}
-#dropLandingCard {
-    border: 2px dashed #cbd5e1;
-    border-radius: 14px;
-    background-color: #ffffff;
-    padding: 20px;
-}
-#queueCard, #historyCard, #optCard {
-    background-color: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 14px;
-}
-#shortcutCard {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #4f46e5, stop:1 #0284c7);
-    border-radius: 14px;
-    padding: 16px;
-    color: #ffffff;
-}
-QTabWidget::pane {
-    border: none;
-    background-color: transparent;
-}
+QTabBar::tab:selected { background: #fbfaf6; color: #272825; border-color: #c5c2b9; }
+QTabBar::tab:hover { color: #272825; }
 QTableWidget {
-    background-color: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    gridline-color: #f1f5f9;
-    selection-background-color: #e0e7ff;
-    selection-color: #1e1b4b;
+    background: #fffdf7; alternate-background-color: #f7f5ef;
+    border: 1px solid #d5d1c7; gridline-color: #e7e4dc;
+    selection-background-color: #ead8d0; selection-color: #272825;
 }
+QTableWidget::item { padding: 5px; }
 QHeaderView::section {
-    background-color: #f8fafc;
-    color: #64748b;
-    padding: 8px;
-    font-weight: 600;
-    border: none;
-    border-bottom: 1px solid #e2e8f0;
+    background: #eeece5; color: #545650; padding: 7px 8px;
+    font-weight: 600; border: none; border-bottom: 1px solid #d5d1c7;
 }
 QPushButton {
-    background-color: #4f46e5;
-    color: #ffffff;
-    padding: 8px 16px;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
+    background: #a64c38; color: #ffffff; padding: 7px 13px;
+    border: 1px solid #a64c38; border-radius: 5px; font-weight: 600;
 }
-QPushButton:hover {
-    background-color: #4338ca;
-}
-QPushButton:pressed {
-    background-color: #3730a3;
-}
-QPushButton:disabled {
-    background-color: #cbd5e1;
-    color: #64748b;
-}
+QPushButton:hover { background: #8f3f2e; border-color: #8f3f2e; }
+QPushButton:pressed { background: #783528; border-color: #783528; }
+QPushButton:disabled { background: #e0ddd4; border-color: #e0ddd4; color: #797a74; }
+QPushButton:focus, QLineEdit:focus, QSpinBox:focus, QComboBox:focus,
+QCheckBox:focus, QRadioButton:focus { border: 2px solid #8f3f2e; }
 QPushButton.secondary {
-    background-color: #ffffff;
-    color: #0f172a;
-    border: 1px solid #cbd5e1;
+    background: #fbfaf6; color: #272825; border: 1px solid #c5c2b9;
 }
-QPushButton.secondary:hover {
-    background-color: #f8fafc;
+QPushButton.secondary:hover { background: #eeece5; border-color: #9b988e; }
+QPushButton.sidebar-nav {
+    background: transparent; color: #4f514c; border-color: transparent;
+    text-align: left; padding: 9px 10px; font-weight: 500;
 }
-QPushButton.accent {
-    background-color: #4f46e5;
-    color: #ffffff;
-    font-weight: 700;
-    border-radius: 20px;
+QPushButton.sidebar-nav:hover { background: #f2f0e9; color: #272825; }
+QPushButton.sidebar-nav[active="true"] {
+    background: #f7eee9; color: #873e2d; border-color: #ddc5ba; font-weight: 600;
 }
-QPushButton.accent:hover {
-    background-color: #4338ca;
-}
-QPushButton.pill-cta {
-    background-color: #4f46e5;
-    color: #ffffff;
-    border-radius: 20px;
-    padding: 9px 20px;
-    font-weight: 700;
-    font-size: 14px;
-}
-QPushButton.pill-cta:hover {
-    background-color: #4338ca;
-}
+QPushButton.accent, QPushButton.pill-cta { padding: 8px 14px; }
 QLineEdit, QSpinBox, QComboBox {
-    background-color: #ffffff;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    padding: 6px 10px;
-    min-height: 22px;
-    color: #0f172a;
+    background: #fffdf7; border: 1px solid #c5c2b9; border-radius: 5px;
+    padding: 6px 9px; min-height: 22px; color: #272825;
 }
-QLineEdit:focus, QSpinBox:focus, QComboBox:focus {
-    border: 1.5px solid #4f46e5;
+QComboBox QAbstractItemView {
+    background: #fffdf7; color: #272825; selection-background-color: #ead8d0;
+    border: 1px solid #c5c2b9;
 }
 QGroupBox {
-    font-weight: 600;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    margin-top: 10px;
-    padding-top: 14px;
-    background-color: #ffffff;
+    font-weight: 600; border: 1px solid #d5d1c7; border-radius: 6px;
+    margin-top: 10px; padding: 12px 8px 8px; background: #fbfaf6;
 }
-QGroupBox::title {
-    subcontrol-origin: margin;
-    subcontrol-position: top left;
-    left: 12px;
-    padding: 0 5px;
-    color: #0f172a;
-}
+QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 4px; color: #3c3e39; }
 QProgressBar {
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    text-align: center;
-    background-color: #f1f5f9;
-    min-height: 18px;
-    color: #0f172a;
+    border: 1px solid #d5d1c7; border-radius: 4px; text-align: center;
+    background: #eeece5; min-height: 16px; color: #272825;
 }
-QProgressBar::chunk {
-    background-color: #4f46e5;
-    border-radius: 5px;
-}
+QProgressBar::chunk { background: #a64c38; border-radius: 3px; }
+QScrollArea { border: none; background: transparent; }
+QLabel#mutedText { color: #545650; }
+QLabel#successText { color: #236239; font-weight: 600; }
+QLabel#errorText { color: #8a3026; font-weight: 600; }
 """
 
 STYLE_SHEET = DARK_THEME_STYLESHEET
@@ -596,8 +422,8 @@ class FileConverterTab(QWidget):
 
     def _init_ui(self) -> None:
         main_layout = QHBoxLayout(self)
-        main_layout.setContentsMargins(10, 10, 10, 10)
-        main_layout.setSpacing(14)
+        main_layout.setContentsMargins(8, 8, 8, 8)
+        main_layout.setSpacing(10)
 
         # -------------------------------------------------------------------
         # Left / Center Area: Drop Area, Queue Card, Options, Result Banner
@@ -605,45 +431,28 @@ class FileConverterTab(QWidget):
         center_widget = QWidget()
         center_layout = QVBoxLayout(center_widget)
         center_layout.setContentsMargins(0, 0, 0, 0)
-        center_layout.setSpacing(12)
+        center_layout.setSpacing(10)
 
-        # 1. Drop Zone Landing Card (Mockup 1 & 2)
+        # 1. Compact file entry
         self.landing_frame = QFrame()
         self.landing_frame.setObjectName("dropLandingCard")
-        landing_box = QVBoxLayout(self.landing_frame)
-        landing_box.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        landing_box.setSpacing(6)
-        landing_box.setContentsMargins(16, 20, 16, 20)
-
-        upload_icon = QLabel("☁")
-        upload_icon.setStyleSheet("font-size: 28px; color: #818cf8;")
-        upload_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        landing_box.addWidget(upload_icon)
-
-        drop_title = QLabel("Drop files here, or browse")
+        self.landing_frame.setMaximumHeight(96)
+        landing_box = QHBoxLayout(self.landing_frame)
+        landing_box.setContentsMargins(14, 10, 14, 10)
+        text_layout = QVBoxLayout()
+        text_layout.setSpacing(3)
+        drop_title = QLabel("Add files to convert")
         drop_title.setStyleSheet("font-size: 15px; font-weight: 700;")
-        drop_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        landing_box.addWidget(drop_title)
-
-        drop_sub = QLabel("PDF, DOCX, PNG, JPG, WebP, BMP, TIFF, GIF, ICO")
-        drop_sub.setStyleSheet("font-size: 12px; color: #94a3b8;")
-        drop_sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        landing_box.addWidget(drop_sub)
-
-        btn_row = QHBoxLayout()
-        btn_row.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        btn_row.setSpacing(10)
+        text_layout.addWidget(drop_title)
+        drop_sub = QLabel("Drop files here or choose them. Originals stay unchanged.")
+        drop_sub.setObjectName("mutedText")
+        drop_sub.setWordWrap(True)
+        text_layout.addWidget(drop_sub)
+        landing_box.addLayout(text_layout, stretch=1)
         self.browse_cta = QPushButton("Browse files")
         self.browse_cta.setProperty("class", "accent")
         self.browse_cta.clicked.connect(self.pick_files)
-        btn_row.addWidget(self.browse_cta)
-
-        self.radial_btn = QPushButton("Open Radial Menu")
-        self.radial_btn.setProperty("class", "secondary")
-        self.radial_btn.setToolTip("Open circular radial conversion menu (or press Shift)")
-        self.radial_btn.clicked.connect(lambda: self.trigger_radial_menu())
-        btn_row.addWidget(self.radial_btn)
-        landing_box.addLayout(btn_row)
+        landing_box.addWidget(self.browse_cta)
 
         center_layout.addWidget(self.landing_frame)
 
@@ -651,28 +460,28 @@ class FileConverterTab(QWidget):
         self.queue_card = QFrame()
         self.queue_card.setObjectName("queueCard")
         qc_layout = QVBoxLayout(self.queue_card)
-        qc_layout.setContentsMargins(14, 12, 14, 12)
-        qc_layout.setSpacing(8)
+        qc_layout.setContentsMargins(10, 10, 10, 10)
+        qc_layout.setSpacing(7)
 
         # Queue Card Header
         qc_header = QHBoxLayout()
-        self.queue_count_lbl = QLabel("Queue · 0 files")
+        self.queue_count_lbl = QLabel("Files · 0")
         self.queue_count_lbl.setStyleSheet("font-size: 14px; font-weight: 700;")
         qc_header.addWidget(self.queue_count_lbl)
 
         qc_header.addStretch()
 
-        self.add_btn = QPushButton("Add Files…")
+        self.add_btn = QPushButton("Add files")
         self.add_btn.setProperty("class", "secondary")
         self.add_btn.clicked.connect(self.pick_files)
         qc_header.addWidget(self.add_btn)
 
-        self.remove_btn = QPushButton("Remove Selected")
+        self.remove_btn = QPushButton("Remove")
         self.remove_btn.setProperty("class", "secondary")
         self.remove_btn.clicked.connect(self.remove_selected)
         qc_header.addWidget(self.remove_btn)
 
-        self.clear_btn = QPushButton("Clear all")
+        self.clear_btn = QPushButton("Clear")
         self.clear_btn.setProperty("class", "secondary")
         self.clear_btn.clicked.connect(self.clear_queue)
         qc_header.addWidget(self.clear_btn)
@@ -680,14 +489,19 @@ class FileConverterTab(QWidget):
 
         # Queue Table
         self.table = QTableWidget(0, 5)
-        self.table.setHorizontalHeaderLabels(["File", "Size", "Convert to", "Status", "Details"])
+        self.table.setAccessibleName("Conversion queue")
+        self.table.setHorizontalHeaderLabels(["File", "Size", "Format", "Status", "Output"])
         header = self.table.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Interactive)
         header.setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
-        self.table.setColumnWidth(0, 220)
+        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Interactive)
+        self.table.setColumnWidth(2, 170)
+        self.table.setColumnWidth(4, 150)
+        self.table.verticalHeader().setDefaultSectionSize(36)
+        self.table.verticalHeader().setVisible(False)
+        self.table.setWordWrap(False)
         self.table.setAcceptDrops(True)
         self.table.dragEnterEvent = self.dragEnterEvent
         self.table.dropEvent = self.dropEvent
@@ -697,8 +511,9 @@ class FileConverterTab(QWidget):
         # Queue Card Bottom Bar: Destination status + Convert queue button
         qc_bottom = QHBoxLayout()
         qc_bottom.setContentsMargins(0, 4, 0, 0)
-        self.dest_status_lbl = QLabel("Saved next to the originals")
-        self.dest_status_lbl.setStyleSheet("color: #94a3b8; font-size: 12px;")
+        self.dest_status_lbl = QLabel("Next to source files")
+        self.dest_status_lbl.setObjectName("mutedText")
+        self.dest_status_lbl.setWordWrap(True)
         qc_bottom.addWidget(self.dest_status_lbl)
 
         self.output_btn = QPushButton("Change…")
@@ -707,70 +522,72 @@ class FileConverterTab(QWidget):
         self.output_btn.clicked.connect(self.pick_output)
         qc_bottom.addWidget(self.output_btn)
 
+        self.options_btn = QPushButton("PDF options")
+        self.options_btn.setProperty("class", "secondary")
+        self.options_btn.setCheckable(True)
+        self.options_btn.setToolTip("Show OCR, page range, and image export settings when relevant")
+        self.options_btn.toggled.connect(self._set_options_expanded)
+        qc_bottom.addWidget(self.options_btn)
+
         qc_bottom.addStretch()
 
-        self.convert_btn = QPushButton("Convert queue")
+        self.convert_btn = QPushButton("Convert")
         self.convert_btn.setProperty("class", "pill-cta")
-        self.convert_btn.clicked.connect(self.start_conversion)
+        self.convert_btn.clicked.connect(lambda: self.start_conversion())
         qc_bottom.addWidget(self.convert_btn)
         qc_layout.addLayout(qc_bottom)
 
         center_layout.addWidget(self.queue_card)
 
         # 3. Batch Options Box
-        self.opt_box = QGroupBox("Batch Options (Applied when relevant)")
+        self.opt_box = QGroupBox("PDF conversion options")
         opt_layout = QHBoxLayout(self.opt_box)
         opt_layout.setContentsMargins(10, 6, 10, 8)
 
-        opt_layout.addWidget(QLabel("PDF OCR Mode:"))
+        self.ocr_label = QLabel("OCR")
+        opt_layout.addWidget(self.ocr_label)
         self.ocr_combo = QComboBox()
-        self.ocr_combo.addItem("Auto (detect scanned)", "auto")
-        self.ocr_combo.addItem("Native (text only)", "native")
-        self.ocr_combo.addItem("Force OCR (all pages)", "force")
+        self.ocr_combo.addItem("Automatic", "auto")
+        self.ocr_combo.addItem("Text only", "native")
+        self.ocr_combo.addItem("Always OCR", "force")
         opt_layout.addWidget(self.ocr_combo)
 
-        opt_layout.addSpacing(16)
-
-        opt_layout.addWidget(QLabel("DPI:"))
+        self.dpi_label = QLabel("Resolution")
+        opt_layout.addWidget(self.dpi_label)
         self.dpi_spin = QSpinBox()
         self.dpi_spin.setRange(72, 400)
         self.dpi_spin.setValue(150)
+        self.dpi_spin.setSuffix(" dpi")
         opt_layout.addWidget(self.dpi_spin)
 
-        opt_layout.addSpacing(16)
-
-        opt_layout.addWidget(QLabel("JPEG Quality:"))
+        self.quality_label = QLabel("JPEG quality")
+        opt_layout.addWidget(self.quality_label)
         self.quality_spin = QSpinBox()
         self.quality_spin.setRange(1, 100)
         self.quality_spin.setValue(85)
+        self.quality_spin.setSuffix("%")
         opt_layout.addWidget(self.quality_spin)
 
-        opt_layout.addSpacing(16)
-
-        opt_layout.addWidget(QLabel("Pages (PDF):"))
+        self.pages_label = QLabel("Pages")
+        opt_layout.addWidget(self.pages_label)
         self.pages_edit = QLineEdit("all")
-        self.pages_edit.setPlaceholderText("e.g. all, 1-3, 5")
-        self.pages_edit.setMaximumWidth(120)
+        self.pages_edit.setPlaceholderText("All or 1-3, 5")
+        self.pages_edit.setMaximumWidth(140)
         opt_layout.addWidget(self.pages_edit)
 
         opt_layout.addStretch()
+        self.opt_box.setVisible(False)
         center_layout.addWidget(self.opt_box)
+        self._refresh_option_visibility()
 
         # 4. Result Action Banner
         self.result_banner = QFrame()
-        self.result_banner.setStyleSheet("""
-            QFrame {
-                background-color: rgba(16, 185, 129, 0.15);
-                border: 1px solid #059669;
-                border-radius: 8px;
-                padding: 4px 10px;
-            }
-        """)
+        self.result_banner.setObjectName("resultBanner")
         rb_layout = QHBoxLayout(self.result_banner)
         rb_layout.setContentsMargins(8, 4, 8, 4)
 
-        self.result_label = QLabel("✔ Conversion completed successfully.")
-        self.result_label.setStyleSheet("color: #34d399; font-weight: 600;")
+        self.result_label = QLabel("Conversion complete.")
+        self.result_label.setObjectName("successText")
         rb_layout.addWidget(self.result_label, stretch=1)
 
         self.open_file_btn = QPushButton("Open File")
@@ -783,8 +600,8 @@ class FileConverterTab(QWidget):
         self.open_folder_btn.clicked.connect(self._on_open_output_folder)
         rb_layout.addWidget(self.open_folder_btn)
 
-        close_rb_btn = QPushButton("✕")
-        close_rb_btn.setStyleSheet("background: transparent; color: #94a3b8; font-weight: bold; border: none; padding: 2px 6px;")
+        close_rb_btn = QPushButton("Dismiss")
+        close_rb_btn.setProperty("class", "secondary")
         close_rb_btn.clicked.connect(lambda: self.result_banner.setVisible(False))
         rb_layout.addWidget(close_rb_btn)
         self.result_banner.setVisible(False)
@@ -806,62 +623,21 @@ class FileConverterTab(QWidget):
         main_layout.addWidget(center_widget, stretch=1)
 
         # -------------------------------------------------------------------
-        # Right Panel: Shortcut Card & History Card (Mockup 1 & 2)
+        # Recent conversion history
         # -------------------------------------------------------------------
         self.right_panel = QWidget()
-        self.right_panel.setFixedWidth(245)
+        self.right_panel.setMinimumWidth(170)
+        self.right_panel.setMaximumWidth(228)
         rp_layout = QVBoxLayout(self.right_panel)
         rp_layout.setContentsMargins(0, 0, 0, 0)
-        rp_layout.setSpacing(12)
-
-        # Shortcut Card
-        self.shortcut_card = QFrame()
-        self.shortcut_card.setObjectName("shortcutCard")
-        sc_layout = QVBoxLayout(self.shortcut_card)
-        sc_layout.setContentsMargins(14, 14, 14, 14)
-        sc_layout.setSpacing(8)
-
-        sc_badge = QLabel("Shortcut")
-        sc_badge.setStyleSheet("background: rgba(255, 255, 255, 0.22); color: #ffffff; font-weight: 700; font-size: 11px; border-radius: 10px; padding: 3px 8px;")
-        sc_badge.setFixedWidth(64)
-        sc_badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        sc_layout.addWidget(sc_badge)
-
-        sc_title = QLabel("Radial Menu")
-        sc_title.setStyleSheet("font-size: 18px; font-weight: 700; color: #ffffff;")
-        sc_layout.addWidget(sc_title)
-
-        sc_desc = QLabel("Hold Shift anywhere to pick a conversion without leaving your work.")
-        sc_desc.setStyleSheet("font-size: 12px; color: rgba(255, 255, 255, 0.9); line-height: 1.3;")
-        sc_desc.setWordWrap(True)
-        sc_layout.addWidget(sc_desc)
-
-        sc_layout.addSpacing(4)
-        self.try_radial_btn = QPushButton("Try it now")
-        self.try_radial_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #ffffff;
-                color: #0f172a;
-                font-weight: 700;
-                border-radius: 18px;
-                padding: 7px 16px;
-            }
-            QPushButton:hover {
-                background-color: #f1f5f9;
-            }
-        """)
-        self.try_radial_btn.clicked.connect(lambda: self.trigger_radial_menu())
-        sc_layout.addWidget(self.try_radial_btn)
-        rp_layout.addWidget(self.shortcut_card)
-
-        # History Card
+        rp_layout.setSpacing(0)
         self.history_card = QFrame()
         self.history_card.setObjectName("historyCard")
         hc_layout = QVBoxLayout(self.history_card)
-        hc_layout.setContentsMargins(12, 12, 12, 12)
-        hc_layout.setSpacing(6)
+        hc_layout.setContentsMargins(10, 10, 10, 10)
+        hc_layout.setSpacing(8)
 
-        hc_title = QLabel("History")
+        hc_title = QLabel("Recent")
         hc_title.setStyleSheet("font-size: 14px; font-weight: 700;")
         hc_layout.addWidget(hc_title)
 
@@ -882,23 +658,26 @@ class FileConverterTab(QWidget):
         """Update the destination indicator according to settings and per-job state."""
         st = get_settings()
         if self.output_dir:
-            self.dest_status_lbl.setText(f"Saving to: {self.output_dir.name}")
+            self.dest_status_lbl.setText(f"Destination · {self.output_dir.name}")
+            self.dest_status_lbl.setToolTip(str(self.output_dir))
         elif st.save_to_folder_enabled:
-            self.dest_status_lbl.setText(f"Saving to: {st.save_to_folder_path}")
+            self.dest_status_lbl.setText(f"Destination · {st.save_to_folder_path.name}")
+            self.dest_status_lbl.setToolTip(str(st.save_to_folder_path))
         else:
-            self.dest_status_lbl.setText("Saved next to the originals")
+            self.dest_status_lbl.setText("Destination · beside each source")
+            self.dest_status_lbl.setToolTip("Converted files are saved beside their source files.")
 
     def _refresh_history(self) -> None:
-        """Refresh the recent conversion history list in the right panel."""
+        """Refresh the recent conversion history list."""
         while self.history_layout.count():
             item = self.history_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
         entries = get_settings().history
         if not entries:
-            empty_lbl = QLabel("No conversions yet")
-            empty_lbl.setStyleSheet("color: #94a3b8; font-size: 11px; padding: 10px 0;")
-            empty_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            empty_lbl = QLabel("Converted files will appear here.")
+            empty_lbl.setObjectName("mutedText")
+            empty_lbl.setWordWrap(True)
             self.history_layout.addWidget(empty_lbl)
             return
 
@@ -909,32 +688,24 @@ class FileConverterTab(QWidget):
             row_layout.setSpacing(6)
 
             route = str(entry.get("route", "")).upper()
-            target_ext = route.split("→")[-1].strip() if "→" in route else "DOC"
-            badge = QLabel(target_ext[:4])
-            badge.setStyleSheet("background-color: #312e81; color: #a5b4fc; font-weight: 700; font-size: 9px; border-radius: 5px; padding: 3px 5px;")
-            badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            badge.setFixedWidth(34)
-            row_layout.addWidget(badge)
-
             info_layout = QVBoxLayout()
-            info_layout.setSpacing(1)
+            info_layout.setSpacing(3)
             name_lbl = QLabel(str(entry.get("name", "Converted file")))
-            name_lbl.setStyleSheet("font-weight: 600; font-size: 11px;")
-            elided = name_lbl.fontMetrics().elidedText(name_lbl.text(), Qt.TextElideMode.ElideMiddle, 130)
+            name_lbl.setStyleSheet("font-weight: 600;")
+            elided = name_lbl.fontMetrics().elidedText(name_lbl.text(), Qt.TextElideMode.ElideMiddle, 180)
             name_lbl.setText(elided)
             info_layout.addWidget(name_lbl)
 
-            sub_lbl = QLabel(f"{entry.get('route', '')} • {entry.get('size', '')}")
-            sub_lbl.setStyleSheet("color: #94a3b8; font-size: 10px;")
+            sub_lbl = QLabel(f"{route} · {entry.get('size', '')}")
+            sub_lbl.setObjectName("mutedText")
             info_layout.addWidget(sub_lbl)
             row_layout.addLayout(info_layout, stretch=1)
 
             p = entry.get("path", "")
             if p:
-                open_btn = QPushButton("↗")
+                open_btn = QPushButton("Open")
+                open_btn.setProperty("class", "secondary")
                 open_btn.setToolTip("Open converted file")
-                open_btn.setFixedSize(22, 22)
-                open_btn.setStyleSheet("background: transparent; color: #818cf8; border: none; font-size: 13px; font-weight: bold;")
                 open_btn.clicked.connect(lambda _, path_str=p: _open_file_externally(Path(path_str)))
                 row_layout.addWidget(open_btn)
 
@@ -944,9 +715,48 @@ class FileConverterTab(QWidget):
         """Update queue count label and destination display."""
         n = len(self.paths)
         if hasattr(self, "queue_count_lbl"):
-            self.queue_count_lbl.setText(f"Queue · {n} file{'s' if n != 1 else ''}")
+            self.queue_count_lbl.setText(f"Files · {n}")
         if hasattr(self, "dest_status_lbl"):
             self._refresh_dest_label()
+        if hasattr(self, "options_btn"):
+            self._refresh_option_visibility()
+
+    def _set_options_expanded(self, expanded: bool) -> None:
+        self.opt_box.setVisible(expanded)
+
+    def _refresh_option_visibility(self) -> None:
+        targets = [
+            (path.suffix.lower(), self.table.cellWidget(index, 2).currentData())
+            for index, path in enumerate(self.paths)
+            if self.table.cellWidget(index, 2) is not None
+        ]
+        show_ocr = any(source == ".pdf" and target == "docx" for source, target in targets)
+        show_raster = any(source == ".pdf" and target in ("png", "jpeg") for source, target in targets)
+        show_quality = any(source == ".pdf" and target == "jpeg" for source, target in targets)
+
+        self.ocr_label.setVisible(show_ocr)
+        self.ocr_combo.setVisible(show_ocr)
+        self.dpi_label.setVisible(show_raster)
+        self.dpi_spin.setVisible(show_raster)
+        self.quality_label.setVisible(show_quality)
+        self.quality_spin.setVisible(show_quality)
+        self.pages_label.setVisible(show_raster)
+        self.pages_edit.setVisible(show_raster)
+        self.options_btn.setVisible(show_ocr or show_raster)
+        self.opt_box.setVisible(self.options_btn.isChecked() and (show_ocr or show_raster))
+
+    def resizeEvent(self, event: Any) -> None:
+        super().resizeEvent(event)
+        if not hasattr(self, "table") or not hasattr(self, "right_panel"):
+            return
+        width = self.width()
+        self.table.setColumnHidden(1, width < 900)
+        self.table.setColumnHidden(4, width < 1020)
+        self.right_panel.setVisible(width >= 700)
+        if width < 900:
+            self.right_panel.setMaximumWidth(185)
+        else:
+            self.right_panel.setMaximumWidth(228)
 
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:
         if event.mimeData().hasUrls():
@@ -1031,9 +841,20 @@ class FileConverterTab(QWidget):
 
             # Col 2: Target Format ComboBox
             combo = QComboBox()
+            combo.setMinimumContentsLength(8)
+            combo.setMinimumWidth(112)
+            combo.setMaximumWidth(170)
             for fmt in available_targets:
                 label = FORMAT_LABELS.get(fmt, fmt.upper())
-                combo.addItem(f"{label} (.{fmt})", fmt)
+                combo.addItem(f"{fmt.upper()} (.{fmt})", fmt)
+                combo.setItemData(
+                    combo.count() - 1,
+                    f"{label} (.{fmt})",
+                    Qt.ItemDataRole.ToolTipRole,
+                )
+            combo.setAccessibleName("Output format")
+            combo.setToolTip("Choose an output format. The file extension is shown.")
+            combo.currentIndexChanged.connect(self._refresh_option_visibility)
             self.table.setCellWidget(row, 2, combo)
 
             # Col 3: Status
@@ -1083,6 +904,14 @@ class FileConverterTab(QWidget):
         if not target_paths:
             return
 
+        main_window = self.window()
+        if RadialConversionMenu.active_menu_in(main_window, exclude=self._radial_menu):
+            return
+        controller = getattr(main_window, "bg_controller", None)
+        background_menu = getattr(controller, "_active_menu", None)
+        if background_menu and background_menu.isVisible():
+            return
+
         if self._radial_menu and self._radial_menu.isVisible():
             if paths and list(paths) != self._radial_menu.paths:
                 self._radial_menu.set_paths(paths)
@@ -1105,8 +934,16 @@ class FileConverterTab(QWidget):
         self._radial_menu = menu
         menu.show_at_cursor(pos)
 
-    def apply_radial_format(self, target_format: str, paths: list[Path], auto_start: bool = True) -> None:
+    def apply_radial_format(self, target_format: str, paths: list[Path], auto_start: bool = True) -> bool:
         """Apply chosen target format from radial menu to queue rows and optionally execute conversion."""
+        if self.worker and self.worker.isRunning():
+            QMessageBox.information(
+                self,
+                "Conversion in progress",
+                "Wait for the current conversion to finish before starting a radial conversion.",
+            )
+            return False
+
         for p in paths:
             if p not in self.paths:
                 self.add_paths([p])
@@ -1118,19 +955,27 @@ class FileConverterTab(QWidget):
                     if item_idx >= 0:
                         combo.setCurrentIndex(item_idx)
 
-        if auto_start and self.paths:
-            self.start_conversion()
+        if auto_start:
+            return self.start_conversion(paths)
+        return True
 
-    def start_conversion(self) -> None:
+    def start_conversion(self, paths: Optional[Sequence[Path]] = None) -> bool:
+        if self.worker and self.worker.isRunning():
+            QMessageBox.information(self, "Conversion in progress", "Wait for the current conversion to finish.")
+            return False
         if not self.paths:
             QMessageBox.information(self, "No files", "Add supported files to the queue first.")
-            return
+            return False
 
         self._last_converted_paths.clear()
         self.result_banner.setVisible(False)
 
         jobs: list[tuple[int, Path, str, Optional[Path], dict[str, Any]]] = []
-        for i, p in enumerate(self.paths):
+        requested_paths = list(dict.fromkeys(self.paths if paths is None else paths))
+        for p in requested_paths:
+            if p not in self.paths:
+                continue
+            i = self.paths.index(p)
             combo = self.table.cellWidget(i, 2)
             target_fmt = combo.currentData() if combo else None
             if not target_fmt:
@@ -1152,9 +997,12 @@ class FileConverterTab(QWidget):
             jobs.append((i, p, target_fmt, resolved_out, opts))
             self.table.setItem(i, 3, QTableWidgetItem("Waiting…"))
 
+        if not jobs:
+            QMessageBox.information(self, "No files", "No queued files are available for this conversion.")
+            return False
+
         self.convert_btn.setEnabled(False)
         self.add_btn.setEnabled(False)
-        self.radial_btn.setEnabled(False)
         self.cancel_btn.setEnabled(True)
         self.bar.setValue(0)
 
@@ -1163,6 +1011,7 @@ class FileConverterTab(QWidget):
         self.worker.progress.connect(self._on_progress)
         self.worker.finished.connect(self._on_finished)
         self.worker.start()
+        return True
 
     def cancel_conversion(self) -> None:
         if self.worker and self.worker.isRunning():
@@ -1194,13 +1043,16 @@ class FileConverterTab(QWidget):
     def _on_finished(self, succeeded: int, failed: int, errors: list[str]) -> None:
         self.convert_btn.setEnabled(True)
         self.add_btn.setEnabled(True)
-        self.radial_btn.setEnabled(True)
         self.cancel_btn.setEnabled(False)
 
         total = succeeded + failed
         win = self.window()
         last_out = self._last_converted_paths[0] if self._last_converted_paths else None
         if hasattr(win, "bg_controller") and win.bg_controller:
+            if failed == 0:
+                win.bg_controller.on_conversion_completed()
+            else:
+                win.bg_controller.on_conversion_failed()
             if failed == 0:
                 win.bg_controller.show_notification(
                     "LocalShift — Conversion Complete",
@@ -1215,7 +1067,8 @@ class FileConverterTab(QWidget):
                 )
 
         if failed == 0:
-            self.result_label.setText(f"✔ Successfully converted all {succeeded} file(s).")
+            self.result_label.setObjectName("successText")
+            self.result_label.setText(f"Conversion complete · {succeeded} file(s).")
             self.result_banner.setVisible(True)
             QMessageBox.information(
                 self,
@@ -1223,7 +1076,8 @@ class FileConverterTab(QWidget):
                 f"Successfully converted all {succeeded} file(s).",
             )
         else:
-            self.result_label.setText(f"⚠ Completed with issues: {succeeded}/{total} succeeded, {failed} failed.")
+            self.result_label.setObjectName("errorText")
+            self.result_label.setText(f"Completed with issues · {succeeded}/{total} succeeded, {failed} failed.")
             self.result_banner.setVisible(True)
             err_summary = "\n".join(errors[:5])
             if len(errors) > 5:
@@ -1362,16 +1216,18 @@ class DocxInterchangeTab(QWidget):
     def _refresh_backend_status(self) -> None:
         backend = DocxToPdfRenderer.find_available_backend()
         if backend == "word_com":
-            self.backend_status_label.setText("✔ Active Rendering Backend: Microsoft Word COM Automation")
-            self.backend_status_label.setStyleSheet("color: #15803d; font-weight: 500;")
+            self.backend_status_label.setText("Active rendering backend: Microsoft Word")
+            self.backend_status_label.setObjectName("successText")
         elif backend == "libreoffice":
-            self.backend_status_label.setText("✔ Active Rendering Backend: LibreOffice Headless")
-            self.backend_status_label.setStyleSheet("color: #15803d; font-weight: 500;")
+            self.backend_status_label.setText("Active rendering backend: LibreOffice")
+            self.backend_status_label.setObjectName("successText")
         else:
             self.backend_status_label.setText(
-                "⚠ No rendering backend available. Install LibreOffice or Microsoft Word to enable DOCX → PDF."
+                "No rendering backend available. Install LibreOffice or Microsoft Word to enable DOCX to PDF."
             )
-            self.backend_status_label.setStyleSheet("color: #b91c1c; font-weight: 500;")
+            self.backend_status_label.setObjectName("errorText")
+        self.backend_status_label.style().unpolish(self.backend_status_label)
+        self.backend_status_label.style().polish(self.backend_status_label)
 
     def _on_direction_changed(self) -> None:
         is_pdf_to_docx = self.radio_pdf_to_docx.isChecked()
@@ -1470,6 +1326,7 @@ class PdfRasterizeTab(QWidget):
         src_box = QGroupBox("Source PDF Document")
         src_layout = QHBoxLayout(src_box)
         self.src_edit = QLineEdit()
+        self.src_edit.setAccessibleName("Source PDF")
         self.src_edit.setPlaceholderText("Select PDF to export as images…")
         src_layout.addWidget(self.src_edit)
 
@@ -1486,6 +1343,7 @@ class PdfRasterizeTab(QWidget):
         row1 = QHBoxLayout()
         row1.addWidget(QLabel("Output Format:"))
         self.fmt_combo = QComboBox()
+        self.fmt_combo.setAccessibleName("Output format")
         self.fmt_combo.addItem("PNG (Lossless)", "png")
         self.fmt_combo.addItem("JPEG (Compressed)", "jpeg")
         self.fmt_combo.currentIndexChanged.connect(self._on_format_changed)
@@ -1494,6 +1352,8 @@ class PdfRasterizeTab(QWidget):
         row1.addSpacing(20)
         row1.addWidget(QLabel("Resolution (DPI):"))
         self.dpi_spin = QSpinBox()
+        self.dpi_spin.setAccessibleName("Resolution in DPI")
+        self.dpi_spin.lineEdit().setAccessibleName("Resolution in DPI")
         self.dpi_spin.setRange(72, 400)
         self.dpi_spin.setValue(150)
         row1.addWidget(self.dpi_spin)
@@ -1502,6 +1362,8 @@ class PdfRasterizeTab(QWidget):
         self.quality_label = QLabel("JPEG Quality:")
         row1.addWidget(self.quality_label)
         self.quality_spin = QSpinBox()
+        self.quality_spin.setAccessibleName("JPEG quality")
+        self.quality_spin.lineEdit().setAccessibleName("JPEG quality")
         self.quality_spin.setRange(1, 100)
         self.quality_spin.setValue(85)
         self.quality_spin.setEnabled(False)  # initially PNG
@@ -1512,6 +1374,7 @@ class PdfRasterizeTab(QWidget):
         row2 = QHBoxLayout()
         row2.addWidget(QLabel("Page Range:"))
         self.pages_edit = QLineEdit("all")
+        self.pages_edit.setAccessibleName("Page range")
         self.pages_edit.setPlaceholderText("e.g. all, 1-3, 5")
         self.pages_edit.setMaximumWidth(140)
         row2.addWidget(self.pages_edit)
@@ -1519,6 +1382,7 @@ class PdfRasterizeTab(QWidget):
         row2.addSpacing(20)
         row2.addWidget(QLabel("Naming Pattern:"))
         self.pattern_edit = QLineEdit("{stem}_page_{page:02d}.{ext}")
+        self.pattern_edit.setAccessibleName("Output naming pattern")
         row2.addWidget(self.pattern_edit)
         set_layout.addLayout(row2)
 
@@ -1528,6 +1392,7 @@ class PdfRasterizeTab(QWidget):
         dest_box = QGroupBox("Output Directory")
         dest_layout = QHBoxLayout(dest_box)
         self.dest_edit = QLineEdit()
+        self.dest_edit.setAccessibleName("Output directory")
         self.dest_edit.setPlaceholderText("Defaults to source PDF folder…")
         dest_layout.addWidget(self.dest_edit)
 
@@ -1693,6 +1558,7 @@ class ImagesToPdfTab(QWidget):
 
         # Image List Table
         self.table = QTableWidget(0, 3)
+        self.table.setAccessibleName("Images to assemble")
         self.table.setHorizontalHeaderLabels(["Order", "Filename", "Size"])
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
@@ -1708,6 +1574,7 @@ class ImagesToPdfTab(QWidget):
 
         opts_layout.addWidget(QLabel("Page Size:"))
         self.page_size_combo = QComboBox()
+        self.page_size_combo.setAccessibleName("PDF page size")
         self.page_size_combo.addItem("Original Dimensions", "original")
         self.page_size_combo.addItem("A4", "a4")
         self.page_size_combo.addItem("Letter", "letter")
@@ -1716,6 +1583,7 @@ class ImagesToPdfTab(QWidget):
         opts_layout.addSpacing(16)
         opts_layout.addWidget(QLabel("Fit Mode:"))
         self.fit_combo = QComboBox()
+        self.fit_combo.setAccessibleName("Image fit mode")
         self.fit_combo.addItem("Contain (no cropping)", "contain")
         self.fit_combo.addItem("Cover (fill page)", "cover")
         opts_layout.addWidget(self.fit_combo)
@@ -1723,6 +1591,7 @@ class ImagesToPdfTab(QWidget):
         opts_layout.addSpacing(16)
         opts_layout.addWidget(QLabel("Orientation:"))
         self.orient_combo = QComboBox()
+        self.orient_combo.setAccessibleName("PDF page orientation")
         self.orient_combo.addItem("Auto", "auto")
         self.orient_combo.addItem("Portrait", "portrait")
         self.orient_combo.addItem("Landscape", "landscape")
@@ -1731,6 +1600,8 @@ class ImagesToPdfTab(QWidget):
         opts_layout.addSpacing(16)
         opts_layout.addWidget(QLabel("Margin (pt):"))
         self.margin_spin = QSpinBox()
+        self.margin_spin.setAccessibleName("Page margin in points")
+        self.margin_spin.lineEdit().setAccessibleName("Page margin in points")
         self.margin_spin.setRange(0, 144)
         self.margin_spin.setValue(0)
         opts_layout.addWidget(self.margin_spin)
@@ -1742,6 +1613,7 @@ class ImagesToPdfTab(QWidget):
         out_bar = QHBoxLayout()
         out_bar.addWidget(QLabel("Save PDF to:"))
         self.out_edit = QLineEdit()
+        self.out_edit.setAccessibleName("Output PDF path")
         self.out_edit.setPlaceholderText("Defaults to combined.pdf in first image's folder…")
         out_bar.addWidget(self.out_edit, stretch=1)
 
@@ -1933,6 +1805,7 @@ class PdfWorkbenchTab(QWidget):
         top_layout = QHBoxLayout(top_box)
         top_layout.addWidget(QLabel("Operation:"))
         self.op_combo = QComboBox()
+        self.op_combo.setAccessibleName("PDF workbench operation")
         self.op_combo.addItem("Merge (combine multiple PDFs in order)", "merge")
         self.op_combo.addItem("Split (burst PDF into individual pages)", "split")
         self.op_combo.addItem("Extract (extract specific pages to a new PDF)", "extract")
@@ -1972,6 +1845,7 @@ class PdfWorkbenchTab(QWidget):
         mw_layout.addLayout(mw_bar)
 
         self.merge_table = QTableWidget(0, 2)
+        self.merge_table.setAccessibleName("PDF merge order")
         self.merge_table.setHorizontalHeaderLabels(["Order", "PDF File"])
         self.merge_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.merge_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
@@ -1987,6 +1861,7 @@ class PdfWorkbenchTab(QWidget):
         in_bar = QHBoxLayout()
         in_bar.addWidget(QLabel("Input PDF:"))
         self.single_input_edit = QLineEdit()
+        self.single_input_edit.setAccessibleName("Input PDF")
         self.single_input_edit.setPlaceholderText("Select input PDF file…")
         in_bar.addWidget(self.single_input_edit, stretch=1)
         browse_in_btn = QPushButton("Browse…")
@@ -2000,11 +1875,13 @@ class PdfWorkbenchTab(QWidget):
         sb_layout = QHBoxLayout(self.split_box)
         sb_layout.addWidget(QLabel("Pages to Split:"))
         self.split_pages_edit = QLineEdit("all")
+        self.split_pages_edit.setAccessibleName("Pages to split")
         self.split_pages_edit.setPlaceholderText("all, 1-3, 5")
         sb_layout.addWidget(self.split_pages_edit)
         sb_layout.addSpacing(16)
         sb_layout.addWidget(QLabel("Naming Pattern:"))
         self.split_pattern_edit = QLineEdit("{stem}_page_{page:02d}.pdf")
+        self.split_pattern_edit.setAccessibleName("Split output naming pattern")
         sb_layout.addWidget(self.split_pattern_edit)
         sw_layout.addWidget(self.split_box)
 
@@ -2013,6 +1890,7 @@ class PdfWorkbenchTab(QWidget):
         eb_layout = QHBoxLayout(self.extract_box)
         eb_layout.addWidget(QLabel("Pages to Extract:"))
         self.extract_pages_edit = QLineEdit()
+        self.extract_pages_edit.setAccessibleName("Pages to extract")
         self.extract_pages_edit.setPlaceholderText("e.g. 1-3, 5")
         eb_layout.addWidget(self.extract_pages_edit)
         sw_layout.addWidget(self.extract_box)
@@ -2022,6 +1900,7 @@ class PdfWorkbenchTab(QWidget):
         rb_layout = QHBoxLayout(self.reorder_box)
         rb_layout.addWidget(QLabel("Page Sequence:"))
         self.reorder_edit = QLineEdit()
+        self.reorder_edit.setAccessibleName("Page sequence")
         self.reorder_edit.setPlaceholderText("e.g. 3, 1, 2")
         rb_layout.addWidget(self.reorder_edit)
         sw_layout.addWidget(self.reorder_box)
@@ -2031,6 +1910,7 @@ class PdfWorkbenchTab(QWidget):
         rot_layout = QHBoxLayout(self.rotate_box)
         rot_layout.addWidget(QLabel("Angle:"))
         self.rotate_angle_combo = QComboBox()
+        self.rotate_angle_combo.setAccessibleName("Rotation angle")
         self.rotate_angle_combo.addItem("90° Clockwise", 90)
         self.rotate_angle_combo.addItem("180° Flip", 180)
         self.rotate_angle_combo.addItem("270° (90° Counter-Clockwise)", 270)
@@ -2038,6 +1918,7 @@ class PdfWorkbenchTab(QWidget):
         rot_layout.addSpacing(16)
         rot_layout.addWidget(QLabel("Pages:"))
         self.rotate_pages_edit = QLineEdit("all")
+        self.rotate_pages_edit.setAccessibleName("Pages to rotate")
         self.rotate_pages_edit.setPlaceholderText("all, 1, 3")
         rot_layout.addWidget(self.rotate_pages_edit)
         self.rotate_relative_check = QCheckBox("Relative to existing")
@@ -2052,6 +1933,7 @@ class PdfWorkbenchTab(QWidget):
         self.dest_label = QLabel("Output PDF:")
         out_bar.addWidget(self.dest_label)
         self.workbench_dest_edit = QLineEdit()
+        self.workbench_dest_edit.setAccessibleName("Output path")
         self.workbench_dest_edit.setPlaceholderText("Defaults to auto-named file in source folder…")
         out_bar.addWidget(self.workbench_dest_edit, stretch=1)
         dest_browse_btn = QPushButton("Choose…")
@@ -2277,29 +2159,32 @@ class PdfWorkbenchTab(QWidget):
 class SettingsDialog(QDialog):
     """Centralized persistent settings dialog following the LocalSend design model."""
 
+    test_gesture_requested = Signal()
+
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self.setWindowTitle("Settings — LocalShift")
-        self.setMinimumWidth(560)
+        self.setMinimumWidth(520)
         self.settings = get_settings()
         self._init_ui()
 
     def _init_ui(self) -> None:
         layout = QVBoxLayout(self)
-        layout.setSpacing(16)
-        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(12)
+        layout.setContentsMargins(16, 16, 16, 16)
 
-        # 1. Save to Folder Section
-        save_box = QGroupBox("Save to Folder")
+        self.settings_tabs = QTabWidget()
+        self.settings_tabs.setAccessibleName("Settings pages")
+        general_page = QWidget()
+        general_layout = QVBoxLayout(general_page)
+        general_layout.setContentsMargins(8, 10, 8, 8)
+        general_layout.setSpacing(12)
+
+        save_box = QGroupBox("Destination")
         save_layout = QVBoxLayout(save_box)
-        save_layout.setSpacing(10)
-
-        desc = QLabel(
-            "Automatically route all converted files, batch jobs, and radial conversions "
-            "to a central directory instead of the source file folder."
-        )
+        desc = QLabel("Choose where converted files are saved. The original files are never replaced.")
         desc.setWordWrap(True)
-        desc.setStyleSheet("color: #94a3b8; font-size: 12px;")
+        desc.setObjectName("mutedText")
         save_layout.addWidget(desc)
 
         self.enable_dest_cb = QCheckBox("Enable custom destination folder")
@@ -2309,6 +2194,7 @@ class SettingsDialog(QDialog):
 
         row = QHBoxLayout()
         self.dest_edit = QLineEdit(str(self.settings.save_to_folder_path))
+        self.dest_edit.setAccessibleName("Default destination folder")
         self.dest_edit.setReadOnly(True)
         row.addWidget(self.dest_edit, stretch=1)
 
@@ -2324,60 +2210,99 @@ class SettingsDialog(QDialog):
         save_layout.addLayout(row)
 
         self.status_label = QLabel()
+        self.status_label.setWordWrap(True)
         save_layout.addWidget(self.status_label)
         self._refresh_dest_status()
-        layout.addWidget(save_box)
+        general_layout.addWidget(save_box)
 
-        # 2. Appearance Section
         app_box = QGroupBox("Appearance")
         app_layout = QHBoxLayout(app_box)
-        app_layout.addWidget(QLabel("Interface Theme:"))
+        app_layout.addWidget(QLabel("Theme"))
         self.theme_combo = QComboBox()
-        self.theme_combo.addItem("Dark Slate (Default)", "dark")
-        self.theme_combo.addItem("Light Neutral", "light")
+        self.theme_combo.setAccessibleName("Appearance theme")
+        self.theme_combo.addItem("Dark", "dark")
+        self.theme_combo.addItem("Light", "light")
         idx = self.theme_combo.findData(self.settings.theme)
         if idx >= 0:
             self.theme_combo.setCurrentIndex(idx)
         self.theme_combo.currentIndexChanged.connect(self._on_theme_changed)
         app_layout.addWidget(self.theme_combo)
         app_layout.addStretch()
-        layout.addWidget(app_box)
+        general_layout.addWidget(app_box)
 
-        # 3. Radial Menu & Gestures Section
-        gesture_box = QGroupBox("Radial Conversion Menu & Gestures")
+        startup_box = QGroupBox("Windows startup")
+        startup_layout = QVBoxLayout(startup_box)
+        self.startup_cb = QCheckBox("Start LocalShift with Windows")
+        self.startup_cb.setChecked(is_start_with_windows_enabled())
+        self.startup_cb.toggled.connect(self._on_toggle_startup)
+        startup_layout.addWidget(self.startup_cb)
+        startup_hint = QLabel("Starts quietly in the system tray.")
+        startup_hint.setObjectName("mutedText")
+        startup_layout.addWidget(startup_hint)
+        general_layout.addWidget(startup_box)
+        general_layout.addStretch()
+        self.settings_tabs.addTab(general_page, "General")
+
+        gesture_page = QWidget()
+        gesture_page_layout = QVBoxLayout(gesture_page)
+        gesture_page_layout.setContentsMargins(8, 10, 8, 8)
+        gesture_page_layout.setSpacing(10)
+        gesture_title = QLabel("Convert from a desktop drag")
+        gesture_title.setStyleSheet("font-size: 16px; font-weight: 700;")
+        gesture_page_layout.addWidget(gesture_title)
+
+        gesture_box = QGroupBox("Global Shift+Drag")
         gesture_layout = QVBoxLayout(gesture_box)
-        self.gesture_cb = QCheckBox("Enable Shift gesture and drag-and-drop activation (in-app & background)")
+        self.gesture_cb = QCheckBox("Enable global Shift+Drag conversion")
         self.gesture_cb.setChecked(self.settings.radial_gesture_enabled)
         self.gesture_cb.toggled.connect(self._on_toggle_gesture)
         gesture_layout.addWidget(self.gesture_cb)
 
-        self.startup_cb = QCheckBox("Start LocalShift with Windows (runs quietly in system tray)")
-        self.startup_cb.setChecked(is_start_with_windows_enabled())
-        self.startup_cb.toggled.connect(self._on_toggle_startup)
-        gesture_layout.addWidget(self.startup_cb)
+        self.gesture_status_label = QLabel()
+        self.gesture_status_label.setWordWrap(True)
+        gesture_layout.addWidget(self.gesture_status_label)
+        self._refresh_gesture_status()
 
-        hint = QLabel(
-            "• Hold Shift while dragging files in Windows Explorer or Desktop to summon the wheel.\n"
-            "• Release mouse over any format petal to convert instantly into your destination folder.\n"
-            "• Tap Shift or press Shift + Space when files are queued in the window.\n"
-            "• Use keys 1–9 or Tab/Enter for rapid zero-click conversions."
-        )
-        hint.setStyleSheet("color: #94a3b8; font-size: 11px;")
-        gesture_layout.addWidget(hint)
-        layout.addWidget(gesture_box)
+        source_hint = QLabel("When enabled, LocalShift watches for Shift+Drag and accepts only a genuine local-file drop payload. Windows and each file manager expose different drag data, so some sources are not supported.")
+        source_hint.setWordWrap(True)
+        source_hint.setObjectName("mutedText")
+        gesture_layout.addWidget(source_hint)
 
-        # 4. About Section
-        about_box = QGroupBox("About LocalShift")
-        about_layout = QVBoxLayout(about_box)
-        about_lbl = QLabel(
-            "LocalShift v0.14.0 — 100% Offline, Zero Telemetry Windows File Converter.\n"
-            "Licensed under the MIT License."
-        )
-        about_lbl.setStyleSheet("color: #94a3b8; font-size: 11px;")
-        about_layout.addWidget(about_lbl)
-        layout.addWidget(about_box)
+        privacy_hint = QLabel("Files are processed locally, never executed, and never sent to a service. Virtual or unsupported drags are rejected; use Add files when a source cannot provide local file URLs.")
+        privacy_hint.setWordWrap(True)
+        privacy_hint.setObjectName("mutedText")
+        gesture_layout.addWidget(privacy_hint)
 
-        layout.addStretch()
+        test_row = QHBoxLayout()
+        test_gesture_btn = QPushButton("Test gesture")
+        test_gesture_btn.setProperty("class", "secondary")
+        test_gesture_btn.clicked.connect(self._test_gesture)
+        test_row.addWidget(test_gesture_btn)
+        test_hint = QLabel("Opens the in-app wheel; it does not verify Explorer dragging.")
+        test_hint.setObjectName("mutedText")
+        test_hint.setWordWrap(True)
+        test_row.addWidget(test_hint, stretch=1)
+        gesture_layout.addLayout(test_row)
+        gesture_page_layout.addWidget(gesture_box)
+        gesture_page_layout.addStretch()
+        self.settings_tabs.addTab(gesture_page, "Global gesture")
+
+        about_page = QWidget()
+        about_layout = QVBoxLayout(about_page)
+        about_layout.setContentsMargins(16, 16, 16, 16)
+        about_layout.setSpacing(8)
+        about_title = QLabel("LocalShift")
+        about_title.setStyleSheet("font-size: 18px; font-weight: 700;")
+        about_layout.addWidget(about_title)
+        about_desc = QLabel("An offline Windows file converter. Conversion runs on this device; source files stay unchanged.")
+        about_desc.setWordWrap(True)
+        about_layout.addWidget(about_desc)
+        about_legal = QLabel("Version 0.14.0 · MIT License")
+        about_legal.setObjectName("mutedText")
+        about_layout.addWidget(about_legal)
+        about_layout.addStretch()
+        self.settings_tabs.addTab(about_page, "About")
+        layout.addWidget(self.settings_tabs, stretch=1)
 
         btn_box = QHBoxLayout()
         btn_box.addStretch()
@@ -2390,11 +2315,13 @@ class SettingsDialog(QDialog):
         p = self.settings.save_to_folder_path
         valid, err = validate_destination_directory(p)
         if valid:
-            self.status_label.setText("✓ Folder is accessible and writable")
-            self.status_label.setStyleSheet("color: #34d399; font-size: 11px;")
+            self.status_label.setText("Folder is accessible and writable.")
+            self.status_label.setObjectName("successText")
         else:
-            self.status_label.setText(f"⚠ Inaccessible: {err}")
-            self.status_label.setStyleSheet("color: #f87171; font-size: 11px;")
+            self.status_label.setText(f"Folder unavailable: {err}")
+            self.status_label.setObjectName("errorText")
+        self.status_label.style().unpolish(self.status_label)
+        self.status_label.style().polish(self.status_label)
 
     def _on_toggle_dest(self, checked: bool) -> None:
         self.settings.save_to_folder_enabled = checked
@@ -2423,12 +2350,33 @@ class SettingsDialog(QDialog):
 
     def _on_toggle_gesture(self, checked: bool) -> None:
         self.settings.radial_gesture_enabled = checked
+        self._refresh_gesture_status()
         parent_win = self.parent()
         if hasattr(parent_win, "bg_controller") and parent_win.bg_controller:
             if checked:
                 parent_win.bg_controller.start_monitoring()
             else:
                 parent_win.bg_controller.stop_monitoring()
+        if hasattr(parent_win, "_refresh_gesture_status_indicator"):
+            parent_win._refresh_gesture_status_indicator()
+
+    def _refresh_gesture_status(self) -> None:
+        if sys.platform != "win32":
+            status = "Unavailable — background gesture monitoring requires Windows"
+            self.gesture_status_label.setObjectName("errorText")
+        elif self.settings.radial_gesture_enabled:
+            status = "On · waiting for a real local-file payload; external sources are not certified"
+            self.gesture_status_label.setObjectName("successText")
+        else:
+            status = "Off · no background gesture monitoring"
+            self.gesture_status_label.setObjectName("mutedText")
+        self.gesture_status_label.setText(f"Status: {status}")
+        self.gesture_status_label.style().unpolish(self.gesture_status_label)
+        self.gesture_status_label.style().polish(self.gesture_status_label)
+
+    def _test_gesture(self) -> None:
+        self.test_gesture_requested.emit()
+        self.accept()
 
 
 # ---------------------------------------------------------------------------
@@ -2454,9 +2402,19 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
+        app = QApplication.instance()
+        if sys.platform == "win32" and "Segoe UI" not in QFontDatabase.families():
+            system_font = Path(os.environ.get("WINDIR", r"C:\Windows")) / "Fonts" / "segoeui.ttf"
+            if system_font.is_file():
+                if QFontDatabase.addApplicationFont(str(system_font)) < 0:
+                    log.warning("Could not register the installed Segoe UI font.")
+            else:
+                log.warning("Segoe UI was not found; the Qt platform font fallback will be used.")
+        if app:
+            app.setFont(QFont("Segoe UI", 10))
         self.setWindowTitle("LocalShift — Offline Document & Image Converter")
         self.resize(1020, 680)
-        self.setMinimumSize(880, 580)
+        self.setMinimumSize(760, 560)
 
         self.settings = get_settings()
         self.current_theme = self.settings.theme
@@ -2479,40 +2437,24 @@ class MainWindow(QMainWindow):
         # -------------------------------------------------------------------
         self.sidebar = QFrame()
         self.sidebar.setObjectName("sidebar")
-        self.sidebar.setFixedWidth(205)
+        self.sidebar.setFixedWidth(176)
         sidebar_layout = QVBoxLayout(self.sidebar)
-        sidebar_layout.setContentsMargins(14, 16, 14, 16)
+        sidebar_layout.setContentsMargins(12, 16, 12, 14)
         sidebar_layout.setSpacing(6)
 
-        # Brand Header
-        brand_layout = QHBoxLayout()
-        brand_layout.setSpacing(10)
-        brand_icon = QLabel("✦")
-        brand_icon.setStyleSheet("""
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #3b82f6, stop:1 #818cf8);
-            color: #ffffff;
-            font-size: 15px;
-            font-weight: bold;
-            border-radius: 8px;
-            padding: 5px 8px;
-        """)
-        brand_layout.addWidget(brand_icon)
         brand_title = QLabel("LocalShift")
         brand_title.setObjectName("brandTitle")
-        brand_layout.addWidget(brand_title)
-        brand_layout.addStretch()
-        sidebar_layout.addLayout(brand_layout)
+        sidebar_layout.addWidget(brand_title)
         sidebar_layout.addSpacing(14)
 
-        # Nav Buttons (Mapped to QTabWidget indexes)
         self.nav_buttons: list[QPushButton] = []
         nav_items = [
-            ("⇄  Convert files", 0),
-            ("📄  PDF ↔ DOCX", 1),
-            ("🖼  PDF → Images", 2),
-            ("📚  Images → PDF", 3),
-            ("☰  PDF Workbench", 4),
-            ("🛠  PDF Suite", 5),
+            ("Convert files", 0),
+            ("PDF ↔ DOCX", 1),
+            ("PDF to images", 2),
+            ("Images to PDF", 3),
+            ("PDF workbench", 4),
+            ("PDF tools", 5),
         ]
         for text, idx in nav_items:
             btn = QPushButton(text)
@@ -2528,20 +2470,25 @@ class MainWindow(QMainWindow):
         self.bottom_status.setObjectName("bottomStatusCard")
         bs_layout = QVBoxLayout(self.bottom_status)
         bs_layout.setContentsMargins(10, 10, 10, 10)
-        bs_layout.setSpacing(4)
-        self.status_indicator = QLabel("● Offline engine ready")
-        self.status_indicator.setStyleSheet("color: #34d399; font-weight: 700; font-size: 12px;")
+        bs_layout.setSpacing(6)
+        self.status_indicator = QLabel("Local processing")
+        self.status_indicator.setObjectName("successText")
         bs_layout.addWidget(self.status_indicator)
-        status_desc = QLabel("Zero telemetry. Originals stay untouched.")
-        status_desc.setStyleSheet("color: #94a3b8; font-size: 11px; line-height: 1.2;")
+        status_desc = QLabel("Originals stay unchanged.")
+        status_desc.setObjectName("mutedText")
         status_desc.setWordWrap(True)
         bs_layout.addWidget(status_desc)
+        self.gesture_status_btn = QPushButton()
+        self.gesture_status_btn.setProperty("class", "secondary")
+        self.gesture_status_btn.clicked.connect(self.open_settings)
+        bs_layout.addWidget(self.gesture_status_btn)
+        self._refresh_gesture_status_indicator()
         sidebar_layout.addWidget(self.bottom_status)
 
         sidebar_layout.addSpacing(6)
 
         # Settings Button at bottom of sidebar
-        self.sidebar_settings_btn = QPushButton("⚙  Settings")
+        self.sidebar_settings_btn = QPushButton("Settings")
         self.sidebar_settings_btn.setProperty("class", "sidebar-nav")
         self.sidebar_settings_btn.clicked.connect(self.open_settings)
         sidebar_layout.addWidget(self.sidebar_settings_btn)
@@ -2553,7 +2500,7 @@ class MainWindow(QMainWindow):
         # -------------------------------------------------------------------
         main_content = QWidget()
         content_layout = QVBoxLayout(main_content)
-        content_layout.setContentsMargins(18, 14, 18, 14)
+        content_layout.setContentsMargins(14, 12, 14, 12)
         content_layout.setSpacing(10)
 
         # Top Bar
@@ -2563,22 +2510,25 @@ class MainWindow(QMainWindow):
         title_vbox = QVBoxLayout()
         title_vbox.setSpacing(2)
         self.page_title_lbl = QLabel("Convert files")
-        self.page_title_lbl.setStyleSheet("font-size: 20px; font-weight: 800;")
+        self.page_title_lbl.setStyleSheet("font-size: 20px; font-weight: 700;")
         title_vbox.addWidget(self.page_title_lbl)
-        self.page_subtitle_lbl = QLabel("Everything happens on this device.")
-        self.page_subtitle_lbl.setStyleSheet("color: #94a3b8; font-size: 12px;")
+        self.page_subtitle_lbl = QLabel("Local conversion · originals remain unchanged")
+        self.page_subtitle_lbl.setObjectName("mutedText")
         title_vbox.addWidget(self.page_subtitle_lbl)
         header_layout.addLayout(title_vbox)
 
         header_layout.addStretch()
 
-        self.quick_radial_btn = QPushButton("✦ Radial Menu  Shift")
+        self.quick_radial_btn = QPushButton("Quick format")
         self.quick_radial_btn.setProperty("class", "pill-cta")
-        self.quick_radial_btn.setToolTip("Open circular conversion dial (Press Shift or Shift+Space)")
+        self.quick_radial_btn.setToolTip(
+            "Open the format wheel for queued files. Shift+Space is the in-app shortcut; "
+            "global Shift+Drag is a separate opt-in."
+        )
         self.quick_radial_btn.clicked.connect(self.trigger_radial_menu)
         header_layout.addWidget(self.quick_radial_btn)
 
-        self.theme_btn = QPushButton("☼ Light Mode" if self.current_theme == "dark" else "☾ Dark Mode")
+        self.theme_btn = QPushButton("Light theme" if self.current_theme == "dark" else "Dark theme")
         self.theme_btn.setProperty("class", "secondary")
         self.theme_btn.setToolTip("Toggle dark/light desktop theme")
         self.theme_btn.clicked.connect(self.toggle_theme)
@@ -2688,7 +2638,7 @@ class MainWindow(QMainWindow):
             ("PDF → Images", "Rasterize PDF pages into high-resolution PNG or JPEG images."),
             ("Images → PDF", "Assemble multiple photos and graphics into a single PDF document."),
             ("PDF Workbench", "Merge, split, extract, reorder, and rotate PDF documents."),
-            ("PDF Suite", "Offline PDF productivity suite with 32 specialized tools."),
+            ("PDF Suite", "Search and filter the local PDF tool catalog."),
         ]
         if 0 <= index < len(tab_info):
             title, subtitle = tab_info[index]
@@ -2699,6 +2649,7 @@ class MainWindow(QMainWindow):
             btn.setProperty("active", "true" if i == index else "false")
             btn.style().unpolish(btn)
             btn.style().polish(btn)
+        self.quick_radial_btn.setVisible(index == 0)
 
     def resizeEvent(self, event: Any) -> None:
         super().resizeEvent(event)
@@ -2708,6 +2659,7 @@ class MainWindow(QMainWindow):
     def open_settings(self) -> None:
         """Open the persistent settings modal dialog."""
         dlg = SettingsDialog(self)
+        dlg.test_gesture_requested.connect(lambda: QTimer.singleShot(0, self.trigger_radial_menu))
         dlg.exec()
         if self.settings.theme != self.current_theme:
             self.apply_theme(self.settings.theme)
@@ -2718,11 +2670,23 @@ class MainWindow(QMainWindow):
         if theme == "light":
             self.setStyleSheet(LIGHT_THEME_STYLESHEET)
             self.current_theme = "light"
-            self.theme_btn.setText("☾ Dark Mode")
+            self.theme_btn.setText("Dark theme")
         else:
             self.setStyleSheet(DARK_THEME_STYLESHEET)
             self.current_theme = "dark"
-            self.theme_btn.setText("☼ Light Mode")
+            self.theme_btn.setText("Light theme")
+        if hasattr(self, "radial_overlay"):
+            self.radial_overlay.set_theme(theme)
+        if hasattr(self, "convert_tab") and self.convert_tab._radial_menu:
+            self.convert_tab._radial_menu.set_theme(theme)
+
+    def _refresh_gesture_status_indicator(self) -> None:
+        enabled = self.settings.radial_gesture_enabled
+        self.gesture_status_btn.setText(f"Shift+Drag: {'On' if enabled else 'Off'}")
+        self.gesture_status_btn.setToolTip(
+            "Global Shift+Drag is opt-in. Open Settings to manage it. "
+            "Off means no background gesture monitoring."
+        )
 
     def toggle_theme(self) -> None:
         """Toggle between modern slate dark theme and crisp neutral light theme."""
@@ -2739,7 +2703,8 @@ class MainWindow(QMainWindow):
     def _on_radial_format_selected(self, target_format: str, paths: list[Path]) -> None:
         """Route chosen radial format back to the primary conversion tab and auto-convert."""
         self.tabs.setCurrentWidget(self.convert_tab)
-        self.convert_tab.apply_radial_format(target_format, paths, auto_start=True)
+        if not self.convert_tab.apply_radial_format(target_format, paths, auto_start=True):
+            self.bg_controller.on_conversion_failed()
 
     def trigger_radial_menu(self) -> None:
         """Trigger floating radial conversion dial for active queue or picked file."""
@@ -2762,14 +2727,19 @@ class MainWindow(QMainWindow):
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:
         if event.mimeData().hasUrls():
             event.acceptProposedAction()
-            if is_shift_pressed() or (event.modifiers() & Qt.KeyboardModifier.ShiftModifier):
-                paths = [Path(u.toLocalFile()) for u in event.mimeData().urls() if u.toLocalFile()]
-                if paths:
+            if (
+                (is_shift_pressed() or (event.modifiers() & Qt.KeyboardModifier.ShiftModifier))
+                and not RadialConversionMenu.active_menu_in(self, exclude=self.radial_overlay)
+            ):
+                paths, error = self.radial_overlay._local_file_payload(event.mimeData())
+                if not error:
                     self.radial_overlay.set_paths(paths)
                     self.radial_overlay.setGeometry(self.rect())
                     self.radial_overlay.show()
                     self.radial_overlay.raise_()
                     self.radial_overlay.track_drag_pos(event.position().toPoint())
+                else:
+                    self.statusBar().showMessage(error, 6000)
         else:
             event.ignore()
 
@@ -2779,12 +2749,16 @@ class MainWindow(QMainWindow):
             shift_down = is_shift_pressed() or bool(event.modifiers() & Qt.KeyboardModifier.ShiftModifier)
             if shift_down:
                 if not self.radial_overlay.isVisible():
-                    paths = [Path(u.toLocalFile()) for u in event.mimeData().urls() if u.toLocalFile()]
-                    if paths:
+                    if RadialConversionMenu.active_menu_in(self, exclude=self.radial_overlay):
+                        return
+                    paths, error = self.radial_overlay._local_file_payload(event.mimeData())
+                    if not error:
                         self.radial_overlay.set_paths(paths)
                         self.radial_overlay.setGeometry(self.rect())
                         self.radial_overlay.show()
                         self.radial_overlay.raise_()
+                    else:
+                        self.statusBar().showMessage(error, 6000)
                 if self.radial_overlay.isVisible():
                     self.radial_overlay.track_drag_pos(event.position().toPoint())
             else:
@@ -2800,9 +2774,15 @@ class MainWindow(QMainWindow):
 
     def dropEvent(self, event: QDropEvent) -> None:
         if hasattr(self, "radial_overlay") and self.radial_overlay.isVisible():
+            target_paths, error = self.radial_overlay._local_file_payload(event.mimeData())
+            if error:
+                self.radial_overlay.hide()
+                self.statusBar().showMessage(error, 6000)
+                event.ignore()
+                return
+            self.radial_overlay.set_paths(target_paths)
             pos = event.position().toPoint()
             petal_idx = self.radial_overlay.petal_at_pos(pos)
-            target_paths = self.radial_overlay.paths
             self.radial_overlay.hide()
             if 0 <= petal_idx < len(self.radial_overlay.available_formats):
                 chosen_fmt = self.radial_overlay.available_formats[petal_idx]
@@ -2810,7 +2790,8 @@ class MainWindow(QMainWindow):
                 event.acceptProposedAction()
                 return
             else:
-                event.acceptProposedAction()
+                self.statusBar().showMessage("Drop on a format sector to convert; no output was created.", 6000)
+                event.ignore()
                 return
 
         current_widget = self.tabs.currentWidget()
@@ -2819,12 +2800,18 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event: Any) -> None:
         """Minimize to system tray if background monitoring is active, otherwise exit cleanly."""
-        if hasattr(self, "bg_controller") and self.bg_controller and self.bg_controller._tray_icon and self.bg_controller._tray_icon.isVisible():
+        if (
+            hasattr(self, "bg_controller")
+            and self.bg_controller
+            and self.bg_controller._is_monitoring
+            and self.bg_controller._tray_icon
+            and self.bg_controller._tray_icon.isVisible()
+        ):
             event.ignore()
             self.hide()
             self.bg_controller.show_notification(
                 "LocalShift is running in background",
-                "LocalShift minimized to system tray. Shift+Drag in File Explorer converts files instantly.",
+                "Shift+Drag opens a menu. Conversion requires a supported local-file drop on a format sector.",
             )
         else:
             if hasattr(self, "bg_controller") and self.bg_controller:

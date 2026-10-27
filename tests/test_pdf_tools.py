@@ -234,6 +234,15 @@ class TestPdfToolsEngine:
         doc.close()
 
     def test_convert_excel_to_pdf(self, tmp_path: Path):
+        from localshift.documents.docx_renderer import DocxToPdfRenderer
+        from localshift.documents.pdf_tools_engine import _is_excel_com_available
+
+        if (
+            DocxToPdfRenderer.find_libreoffice_binary() is None
+            and not _is_excel_com_available()
+        ):
+            pytest.skip("Excel to PDF requires Microsoft Excel or LibreOffice installed locally.")
+
         # Create minimal test xlsx
         test_xlsx = tmp_path / "data.xlsx"
         from localshift.documents.pdf_tools_engine import convert_pdf_to_excel
@@ -300,5 +309,4 @@ class TestPdfToolsEngine:
         assert out.suffix == ".md"
         content = out.read_text(encoding="utf-8")
         assert "# Executive Summary" in content
-
 

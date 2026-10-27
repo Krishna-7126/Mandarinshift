@@ -337,8 +337,9 @@ class TestInputValidation:
 
         class _FakeStat:
             st_size = MAX_INPUT_BYTES + 1
+            st_mode = real_stat.st_mode
 
-        monkeypatch.setattr(Path, "stat", lambda _self: _FakeStat())
+        monkeypatch.setattr(Path, "stat", lambda _self, *args, **kwargs: _FakeStat())
         with pytest.raises(ConversionError, match="exceeds"):
             convert_image(src, "jpeg", tmp_path)
 

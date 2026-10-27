@@ -25,6 +25,7 @@ from PySide6.QtGui import (
     QBrush,
     QColor,
     QCursor,
+    QCloseEvent,
     QDragEnterEvent,
     QDragLeaveEvent,
     QDragMoveEvent,
@@ -44,6 +45,8 @@ from PySide6.QtGui import (
 from PySide6.QtWidgets import QWidget
 
 from .formats import FORMAT_LABELS, input_format, output_formats_for
+from .planner import MAX_INPUT_BYTES
+from .settings import get_settings
 
 log = logging.getLogger(__name__)
 
@@ -85,19 +88,6 @@ class GestureState(str, Enum):
     PETAL_HOVER = "MENU_VISIBLE"
     DROP_ACCEPTED = "TARGET_SELECTED"
 
-
-
-# Design tokens for radial menu (tuples prevent global QColor destruction crashes at process exit)
-COLOR_RADIAL_BG = (15, 23, 42, 235)           # Slate 900 semi-translucent
-COLOR_RADIAL_CARD = (30, 41, 59, 245)         # Slate 800
-COLOR_RADIAL_HOVER = (99, 102, 241, 255)       # Electric Indigo Accent
-COLOR_RADIAL_BORDER = (51, 65, 85, 200)        # Slate 700
-COLOR_RADIAL_BORDER_HOVER = (165, 180, 252, 255) # Indigo 300 glow
-COLOR_RADIAL_TEXT_WHITE = (248, 250, 252, 255)
-COLOR_RADIAL_TEXT_MUTED = (148, 163, 184, 255)
-COLOR_RADIAL_TEXT_ACCENT = (129, 140, 248, 255)
-COLOR_RADIAL_BLUE_GRAD_START = (59, 130, 246, 255) # Blue 500
-COLOR_RADIAL_BLUE_GRAD_END = (129, 140, 248, 255)   # Indigo 400
 
 
 def _format_size(size_bytes: int) -> str:
@@ -170,6 +160,7 @@ class RadialConversionMenu(QWidget):
 
     format_selected = Signal(str, list)  # (target_format, list_of_paths)
     cancelled = Signal()
+    ole_drag_left = Signal()
 
     def __init__(
         self,
@@ -177,17 +168,23 @@ class RadialConversionMenu(QWidget):
         parent: Optional[QWidget] = None,
         output_dir: Optional[Path] = None,
         is_overlay: bool = False,
+        awaiting_drop: bool = False,
     ):
         super().__init__(parent)
         self.paths: list[Path] = [p for p in paths if p.is_file()]
         self.output_dir = output_dir
         self.is_overlay = is_overlay
+        self.awaiting_drop = awaiting_drop
+        self._drop_message: Optional[str] = None
+        self._ole_drag_active = False
+        self._selection_confirmed = False
+        self._cancelled = False
 
         # Geometry dimensions
         self._wheel_size = 400
         self.resize(self._wheel_size, self._wheel_size + 60)
         self._cx = self.width() / 2.0
-        self._cy = (self._wheel_size / 2.0) + 20.0
+        self._cy = self.height() / 2.0
         self._r_inner = 58.0
         self._r_outer = 138.0
         self._r_orbit = 104.0
@@ -195,18 +192,11 @@ class RadialConversionMenu(QWidget):
 
         # State
         self._available_formats: list[str] = self._determine_formats()
-        self._hover_index: int = 0 if self._available_formats else -1
+        self._hover_index: int = 0 if self._available_formats and not awaiting_drop else -1
         self._thumbnail_pixmap: Optional[QPixmap] = self._generate_thumbnail()
 
-        # Instance color tokens
-        self._c_bg = QColor(*COLOR_RADIAL_BG)
-        self._c_card = QColor(*COLOR_RADIAL_CARD)
-        self._c_hover = QColor(*COLOR_RADIAL_HOVER)
-        self._c_border = QColor(*COLOR_RADIAL_BORDER)
-        self._c_border_hover = QColor(*COLOR_RADIAL_BORDER_HOVER)
-        self._c_text_white = QColor(*COLOR_RADIAL_TEXT_WHITE)
-        self._c_text_muted = QColor(*COLOR_RADIAL_TEXT_MUTED)
-        self._c_text_accent = QColor(*COLOR_RADIAL_TEXT_ACCENT)
+        theme_owner = parent.window() if parent else None
+        self.set_theme(getattr(theme_owner, "current_theme", get_settings().theme))
 
         if not is_overlay:
             # Window properties for standalone floating mode (does not steal focus or drop drag capture)
@@ -218,14 +208,43 @@ class RadialConversionMenu(QWidget):
             )
             self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
             self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating, True)
+            self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
 
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus if is_overlay else Qt.FocusPolicy.NoFocus)
         self.setAcceptDrops(True)
 
+    def set_theme(self, theme: str) -> None:
+        light = theme == "light"
+        self._c_bg = QColor(250, 248, 242, 248) if light else QColor(27, 29, 27, 248)
+        self._c_card = QColor(255, 253, 247) if light else QColor(37, 40, 36)
+        self._c_hover = QColor(234, 216, 208) if light else QColor(89, 55, 45)
+        self._c_border = QColor(174, 170, 160, 220) if light else QColor(83, 86, 78, 230)
+        self._c_border_hover = QColor(143, 63, 46) if light else QColor(228, 154, 130)
+        self._c_text_white = QColor(39, 40, 37) if light else QColor(243, 241, 232)
+        self._c_text_muted = QColor(84, 86, 80) if light else QColor(194, 193, 184)
+        self._c_text_accent = QColor(135, 57, 41) if light else QColor(240, 173, 151)
+        self._c_overlay = QColor(32, 31, 27, 150) if light else QColor(10, 12, 10, 224)
+        self._c_hub = QColor(251, 249, 243) if light else QColor(29, 32, 29)
+        self.update()
+
     @property
     def available_formats(self) -> list[str]:
         return list(self._available_formats)
+
+    @classmethod
+    def active_menu_in(
+        cls, parent: QWidget, exclude: Optional[RadialConversionMenu] = None
+    ) -> Optional[RadialConversionMenu]:
+        """Return another visible menu owned by this application window, if any."""
+        return next(
+            (
+                menu
+                for menu in parent.findChildren(cls)
+                if menu is not exclude and menu.isVisible()
+            ),
+            None,
+        )
 
     @property
     def target_formats(self) -> list[str]:
@@ -246,7 +265,7 @@ class RadialConversionMenu(QWidget):
     @property
     def primary_name(self) -> str:
         if not self.paths:
-            return "No files"
+            return "Waiting for local file drop" if self.awaiting_drop else "No files"
         if len(self.paths) == 1:
             return self.paths[0].name
         return f"{len(self.paths)} files selected"
@@ -259,6 +278,10 @@ class RadialConversionMenu(QWidget):
     @property
     def item_count(self) -> int:
         return len(self.paths)
+
+    @property
+    def ole_drag_active(self) -> bool:
+        return self._ole_drag_active
 
     def _determine_formats(self) -> list[str]:
         """Compute supported target formats for the loaded file(s)."""
@@ -331,6 +354,17 @@ class RadialConversionMenu(QWidget):
             self._hover_index = new_idx
             self.update()
 
+    def _petal_center(self, index: int) -> QPointF:
+        """Return the center used to draw and hit-test one petal."""
+        count = len(self._available_formats)
+        angle = math.radians(90.0 - index * (360.0 / count))
+        offset = 8.0 if index == self._hover_index else 0.0
+        orbit = self._r_orbit + offset
+        return QPointF(
+            self._cx + orbit * math.cos(angle),
+            self._cy - orbit * math.sin(angle),
+        )
+
     def track_drag_pos(self, pos: Any) -> int:
         """Track drag position, update hovered petal index and repaint."""
         hit = self.petal_at_pos(pos)
@@ -361,8 +395,15 @@ class RadialConversionMenu(QWidget):
         """Trigger conversion for the chosen format index and close the menu."""
         if 0 <= index < len(self._available_formats):
             chosen_format = self._available_formats[index]
+            self._selection_confirmed = True
             self.format_selected.emit(chosen_format, self.paths)
             self.close()
+
+    def _cancel(self) -> None:
+        if not self._selection_confirmed and not self._cancelled:
+            self._cancelled = True
+            self.cancelled.emit()
+        self.close()
 
     # -----------------------------------------------------------------------
     # Events: Mouse, Keyboard, and Focus
@@ -371,9 +412,10 @@ class RadialConversionMenu(QWidget):
     def keyPressEvent(self, event: QKeyEvent) -> None:
         key = event.key()
         if key == Qt.Key.Key_Escape:
-            self.cancelled.emit()
-            self.close()
+            self._cancel()
             event.accept()
+        elif self.awaiting_drop:
+            event.ignore()
         elif key in (Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Space):
             if self._hover_index >= 0:
                 self.confirm_selection(self._hover_index)
@@ -397,63 +439,67 @@ class RadialConversionMenu(QWidget):
     def petal_at_pos(self, pos: Any) -> int:
         """Return the index of the petal that contains *pos*, or -1 if outside.
 
-        Uses stable polar coordinate sectors with boundary hysteresis and
-        disc proximity to eliminate edge oscillation and jitter.
+        Uses the visible petal discs as hit targets. The current petal gets a
+        small distance buffer so selection remains stable at its boundary.
         """
         count = len(self._available_formats)
         if count == 0:
             return -1
 
         pt = QPointF(pos.x(), pos.y()) if hasattr(pos, "x") else pos
-        dx = pt.x() - self._cx
-        dy = pt.y() - self._cy
-        dist = math.hypot(dx, dy)
-
-        # 1. Distance rejection with buffer
-        min_r = self._r_inner - 10.0
-        max_r = self._r_outer + 35.0
-        if self._hover_index >= 0:
-            min_r -= 6.0
-            max_r += 12.0
-
-        if dist < min_r or dist > max_r:
-            return -1
-
-        step_deg = 360.0 / count
-
-        # 2. Disc proximity check
-        for i in range(count):
-            angle_rad = math.radians(90.0 - i * step_deg)
-            pcx = self._cx + self._r_orbit * math.cos(angle_rad)
-            pcy = self._cy - self._r_orbit * math.sin(angle_rad)
-            disc_dist = math.hypot(pt.x() - pcx, pt.y() - pcy)
-            threshold = self._r_petal + (8.0 if i == self._hover_index else 0.0)
-            if disc_dist <= threshold:
-                return i
-
-        # 3. Polar sector angle with hysteresis
-        angle_rad = math.atan2(-(pt.y() - self._cy), pt.x() - self._cx)
-        deg = math.degrees(angle_rad) % 360.0
-        clock_deg = (90.0 - deg) % 360.0
-
-        # Sticky bias for currently hovered petal
         if 0 <= self._hover_index < count:
-            center_deg = (self._hover_index * step_deg) % 360.0
-            diff = abs((clock_deg - center_deg + 180.0) % 360.0 - 180.0)
-            hysteresis_deg = min(6.0, step_deg * 0.18)
-            if diff <= (step_deg / 2.0) + hysteresis_deg:
+            center = self._petal_center(self._hover_index)
+            dx, dy = pt.x() - center.x(), pt.y() - center.y()
+            radius = self._r_petal + 4.0 + 8.0
+            if dx * dx + dy * dy <= radius * radius:
                 return self._hover_index
 
-        raw_idx = int((clock_deg + (step_deg / 2.0)) / step_deg) % count
-        return raw_idx
+        nearest_index = -1
+        nearest_distance = self._r_petal * self._r_petal
+        for index in range(count):
+            if index == self._hover_index:
+                continue
+            center = self._petal_center(index)
+            dx, dy = pt.x() - center.x(), pt.y() - center.y()
+            distance = dx * dx + dy * dy
+            if distance <= nearest_distance and (nearest_index < 0 or distance < nearest_distance):
+                nearest_index = index
+                nearest_distance = distance
+        return nearest_index
 
     def set_paths(self, paths: Sequence[Path]) -> None:
         """Update active files dynamically (e.g. when dragged into menu directly)."""
         self.paths = [p for p in paths if p.is_file()]
         self._available_formats = self._determine_formats()
-        self._hover_index = 0 if self._available_formats else -1
+        self._hover_index = 0 if self._available_formats and not self.awaiting_drop else -1
         self._thumbnail_pixmap = self._generate_thumbnail()
         self.update()
+
+    def _local_file_payload(self, mime_data: Any) -> tuple[list[Path], Optional[str]]:
+        if not mime_data.hasUrls():
+            return [], "This source does not expose local file URLs."
+
+        urls = mime_data.urls()
+        if not urls:
+            return [], "This source did not provide any files."
+
+        paths: list[Path] = []
+        for url in urls:
+            if not url.isLocalFile():
+                return [], "Only local files can be converted."
+            path = Path(url.toLocalFile())
+            try:
+                if not path.is_absolute() or path.is_symlink() or not path.is_file():
+                    return [], "The drop contains an invalid or unsupported file path."
+                if path.stat().st_size > MAX_INPUT_BYTES:
+                    return [], "A dropped file exceeds the 250 MiB input limit."
+            except OSError:
+                return [], "A dropped file could not be accessed."
+            paths.append(path)
+
+        if not get_supported_targets(paths):
+            return [], "No common conversion target is available for these files."
+        return paths, None
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         hit = self.petal_at_pos(event.position())
@@ -464,65 +510,77 @@ class RadialConversionMenu(QWidget):
     # -----------------------------------------------------------------------
 
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:
-        if event.mimeData().hasUrls():
-            urls = [Path(u.toLocalFile()) for u in event.mimeData().urls() if u.toLocalFile()]
-            if urls and urls != self.paths:
-                self.set_paths(urls)
-            event.acceptProposedAction()
-        else:
+        self._ole_drag_active = False
+        paths, error = self._local_file_payload(event.mimeData())
+        if error:
+            self._drop_message = error
+            self._hover_index = -1
+            self.update()
+            log.info("OLE drag rejected: %s", error)
             event.ignore()
+            return
+
+        self._drop_message = None
+        self._ole_drag_active = True
+        if paths != self.paths:
+            self.set_paths(paths)
+        log.info("OLE drag accepted for preview: %d local file(s), %d target(s).", len(paths), len(self._available_formats))
+        event.acceptProposedAction()
 
     def dragMoveEvent(self, event: QDragMoveEvent) -> None:
-        if event.mimeData().hasUrls():
+        if self.paths and self._available_formats:
             hit = self.petal_at_pos(event.position())
-            if hit >= 0:
-                self.set_hover_index(hit)
+            self.set_hover_index(hit)
             event.acceptProposedAction()
         else:
             event.ignore()
 
     def dropEvent(self, event: QDropEvent) -> None:
-        urls = [Path(u.toLocalFile()) for u in event.mimeData().urls() if u.toLocalFile()]
-        target_paths = urls if urls else self.paths
-        if urls and urls != self.paths:
-            self.set_paths(urls)
+        self._ole_drag_active = False
+        target_paths, error = self._local_file_payload(event.mimeData())
+        if error:
+            self._drop_message = error
+            self._hover_index = -1
+            self.update()
+            log.info("OLE drop rejected: %s", error)
+            self.ole_drag_left.emit()
+            event.ignore()
+            return
+        if target_paths != self.paths:
+            self.set_paths(target_paths)
 
         hit = self.petal_at_pos(event.position())
-        chosen: Optional[str] = None
-        if hit >= 0 and hit < len(self._available_formats):
-            chosen = self._available_formats[hit]
-        elif self._hover_index >= 0 and self._hover_index < len(self._available_formats):
-            chosen = self._available_formats[self._hover_index]
-        elif len(self._available_formats) == 1:
-            chosen = self._available_formats[0]
-
-        if chosen and target_paths:
-            self.format_selected.emit(chosen, target_paths)
-            self.close()
+        if 0 <= hit < len(self._available_formats):
+            self.confirm_selection(hit)
             event.acceptProposedAction()
         else:
+            self._drop_message = "Drop directly on a format sector; no file was converted."
+            self._hover_index = -1
+            self.update()
+            log.info("OLE drop rejected: drop position did not hit a format sector.")
+            self.ole_drag_left.emit()
             event.ignore()
 
     def dragLeaveEvent(self, event: QDragLeaveEvent) -> None:
+        self._ole_drag_active = False
+        self.ole_drag_left.emit()
         event.accept()
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
-        if event.button() == Qt.MouseButton.LeftButton:
-            if self._hover_index >= 0:
-                self.confirm_selection(self._hover_index)
-                event.accept()
-                return
+        if event.button() == Qt.MouseButton.LeftButton and not self.awaiting_drop:
+            hit = self.petal_at_pos(event.position())
+            self.set_hover_index(hit)
+            if hit >= 0:
+                self.confirm_selection(hit)
+            else:
+                self._cancel()
+        event.accept()
 
-            # Check if clicked outside the radial wheel to dismiss
-            pos = event.position()
-            dist = math.hypot(pos.x() - self._cx, pos.y() - self._cy)
-            if dist > self._r_outer + 50 or dist < self._r_inner * 0.4:
-                self.cancelled.emit()
-                self.close()
-                event.accept()
-                return
-
-        super().mousePressEvent(event)
+    def closeEvent(self, event: QCloseEvent) -> None:
+        if not self._selection_confirmed and not self._cancelled:
+            self._cancelled = True
+            self.cancelled.emit()
+        super().closeEvent(event)
 
     def changeEvent(self, event: Any) -> None:
         super().changeEvent(event)
@@ -530,12 +588,12 @@ class RadialConversionMenu(QWidget):
     def resizeEvent(self, event: Any) -> None:
         super().resizeEvent(event)
         self._cx = self.width() / 2.0
-        self._cy = self.height() / 2.0 if self.is_overlay else ((self._wheel_size / 2.0) + 20.0)
+        self._cy = self.height() / 2.0
 
     def setGeometry(self, *args: Any) -> None:
         super().setGeometry(*args)
         self._cx = self.width() / 2.0
-        self._cy = self.height() / 2.0 if self.is_overlay else ((self._wheel_size / 2.0) + 20.0)
+        self._cy = self.height() / 2.0
 
     # -----------------------------------------------------------------------
     # Rendering: Vector radial segments, hub, badges, and headers
@@ -548,67 +606,43 @@ class RadialConversionMenu(QWidget):
 
         count = len(self._available_formats)
 
-        # 0. In overlay mode, draw dimmed window backdrop matching Mockup 3
+        # 0. In overlay mode, dim the application behind the wheel.
         if self.is_overlay:
-            painter.fillRect(self.rect(), QColor(11, 15, 25, 232))
-            painter.setFont(QFont("Segoe UI", 12, QFont.Weight.DemiBold))
-            painter.setPen(QColor(226, 232, 240, 220))
-            painter.drawText(QRectF(0, 36, self.width(), 30), Qt.AlignmentFlag.AlignCenter, "Release Shift or pick a conversion")
+            painter.fillRect(self.rect(), self._c_overlay)
 
         # 1. Floating Top Filename Pill
         self._paint_top_pill(painter)
 
         # 2. Orbital Ring Line
         painter.setBrush(Qt.BrushStyle.NoBrush)
-        painter.setPen(QPen(QColor(148, 163, 184, 45), 1.5))
+        orbit_color = QColor(self._c_border)
+        orbit_color.setAlpha(110)
+        painter.setPen(QPen(orbit_color, 1.0))
         painter.drawEllipse(QPointF(self._cx, self._cy), self._r_orbit, self._r_orbit)
 
         # 3. Radial Petals
         if count > 0:
-            total_deg = 360.0 / count
-            gap_deg = min(4.5, total_deg * 0.15) if count > 1 else 0.0
-            sweep_deg = -(total_deg - gap_deg)
-
             for i, fmt in enumerate(self._available_formats):
                 is_hovered = (i == self._hover_index)
-                start_deg = 90.0 - i * total_deg - (gap_deg / 2.0 if count > 1 else 0.0)
-                mid_deg = start_deg + sweep_deg / 2.0
-                mid_rad = math.radians(mid_deg)
-                offset = 8.0 if is_hovered else 0.0
-
-                # Calculate petal center
-                orbit_r = self._r_orbit + offset
-                px = self._cx + orbit_r * math.cos(mid_rad)
-                py = self._cy - orbit_r * math.sin(mid_rad)
+                petal_center = self._petal_center(i)
+                px, py = petal_center.x(), petal_center.y()
                 pr = self._r_petal + (4.0 if is_hovered else 0.0)
 
                 # Petal Circle
-                petal_center = QPointF(px, py)
                 if is_hovered:
-                    # Glowing indigo hover disc
-                    painter.setBrush(QBrush(QColor(*COLOR_RADIAL_HOVER)))
-                    painter.setPen(QPen(QColor(*COLOR_RADIAL_BORDER_HOVER), 2.5))
+                    painter.setBrush(QBrush(self._c_hover))
+                    painter.setPen(QPen(self._c_border_hover, 2.0))
                 else:
-                    painter.setBrush(QBrush(QColor(*COLOR_RADIAL_CARD)))
-                    painter.setPen(QPen(QColor(*COLOR_RADIAL_BORDER), 1.5))
+                    painter.setBrush(QBrush(self._c_card))
+                    painter.setPen(QPen(self._c_border, 1.0))
 
                 painter.drawEllipse(petal_center, pr, pr)
 
-                # Key number badge (1..9)
-                if i < 9:
-                    badge_rect = QRectF(px - pr + 4, py - pr + 4, 16, 16)
-                    painter.setBrush(QBrush(QColor(15, 23, 42, 160)))
-                    painter.setPen(Qt.PenStyle.NoPen)
-                    painter.drawEllipse(badge_rect)
-                    painter.setFont(QFont("Segoe UI", 7, QFont.Weight.Bold))
-                    painter.setPen(QColor(148, 163, 184, 220))
-                    painter.drawText(badge_rect, Qt.AlignmentFlag.AlignCenter, str(i + 1))
-
                 # Format label text
-                painter.setFont(QFont("Segoe UI", 11, QFont.Weight.Bold))
-                painter.setPen(QColor(*COLOR_RADIAL_TEXT_WHITE))
+                painter.setFont(QFont("Segoe UI", 12, QFont.Weight.DemiBold))
+                painter.setPen(self._c_text_white)
                 label = fmt.upper()
-                text_rect = QRectF(px - pr + 4, py - 12, (pr - 4) * 2, 24)
+                text_rect = QRectF(px - pr + 2, py - 14, (pr - 2) * 2, 28)
                 painter.drawText(text_rect, Qt.AlignmentFlag.AlignCenter, label)
         else:
             painter.setBrush(QBrush(self._c_card))
@@ -623,99 +657,93 @@ class RadialConversionMenu(QWidget):
 
     def _paint_top_pill(self, painter: QPainter) -> None:
         """Draw top pill card showing filename and file count."""
-        pill_rect = QRectF(self.width() / 2.0 - 130, 2, 260, 28)
+        pill_rect = self._top_pill_rect()
         painter.setBrush(QBrush(self._c_bg))
         painter.setPen(QPen(self._c_border, 1.0))
         painter.drawRoundedRect(pill_rect, 14, 14)
 
-        if not self.paths:
+        if not self.paths and self.awaiting_drop:
+            title = "Drop local files here"
+        elif not self.paths:
             title = "No files selected"
         elif len(self.paths) == 1:
             title = self.paths[0].name
         else:
             title = f"{len(self.paths)} files selected"
 
-        painter.setFont(QFont("Segoe UI", 10, QFont.Weight.DemiBold))
+        painter.setFont(QFont("Segoe UI", 12, QFont.Weight.DemiBold))
         painter.setPen(self._c_text_white)
         fm = painter.fontMetrics()
-        elided = fm.elidedText(title, Qt.TextElideMode.ElideMiddle, 240)
+        elided = fm.elidedText(title, Qt.TextElideMode.ElideMiddle, int(pill_rect.width() - 20))
         painter.drawText(pill_rect, Qt.AlignmentFlag.AlignCenter, elided)
 
+    def _pill_rect(self, width: float, height: float, center_y: float) -> QRectF:
+        width = min(width, max(1.0, self.width() - 16.0))
+        height = min(height, max(1.0, self.height() - 16.0))
+        left = (self.width() - width) / 2.0
+        top = min(max(center_y - height / 2.0, 8.0), self.height() - height - 8.0)
+        return QRectF(left, top, width, height)
+
+    def _top_pill_rect(self) -> QRectF:
+        extent = self._r_orbit + self._r_petal + 12.0
+        return self._pill_rect(260.0, 28.0, self._cy - extent - 22.0)
+
     def _paint_center_hub(self, painter: QPainter) -> None:
-        """Draw central circle with glowing gradient hub matching Mockup 3."""
-        from PySide6.QtGui import QLinearGradient
-
+        """Draw a quiet source-file hub."""
         hub_center = QPointF(self._cx, self._cy)
-
-        # Gradient circle matching Mockup 3
-        grad = QLinearGradient(
-            self._cx - self._r_inner, self._cy - self._r_inner,
-            self._cx + self._r_inner, self._cy + self._r_inner
-        )
-        grad.setColorAt(0.0, QColor(59, 130, 246))
-        grad.setColorAt(1.0, QColor(129, 140, 248))
-        painter.setBrush(QBrush(grad))
-        painter.setPen(QPen(QColor(199, 210, 254, 220), 2.0))
+        painter.setBrush(QBrush(self._c_hub))
+        painter.setPen(QPen(self._c_border, 1.5))
         painter.drawEllipse(hub_center, self._r_inner, self._r_inner)
 
-        # Center icon or thumbnail
         if self._thumbnail_pixmap and not self._thumbnail_pixmap.isNull():
             pw = self._thumbnail_pixmap.width()
             ph = self._thumbnail_pixmap.height()
-            painter.drawPixmap(int(self._cx - pw / 2.0), int(self._cy - 20), self._thumbnail_pixmap)
+            painter.drawPixmap(int(self._cx - pw / 2.0), int(self._cy - ph / 2.0), self._thumbnail_pixmap)
         else:
-            painter.setFont(QFont("Segoe UI", 24, QFont.Weight.Bold))
-            painter.setPen(QColor(255, 255, 255))
-            painter.drawText(QRectF(self._cx - 30, self._cy - 26, 60, 36), Qt.AlignmentFlag.AlignCenter, "✦")
-
-        # File size badge
-        size_str = ""
-        if len(self.paths) == 1:
-            try:
-                size_str = _format_size(self.paths[0].stat().st_size)
-            except OSError:
-                size_str = "—"
-        elif len(self.paths) > 1:
-            try:
-                total_bytes = sum(p.stat().st_size for p in self.paths)
-                size_str = f"{len(self.paths)} files • {_format_size(total_bytes)}"
-            except OSError:
-                size_str = f"{len(self.paths)} files"
-
-        if size_str:
-            badge_rect = QRectF(self._cx - 46, self._cy + 10, 92, 18)
-            painter.setBrush(QBrush(QColor(255, 255, 255, 20)))
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.drawRoundedRect(badge_rect, 9, 9)
-
-            painter.setFont(QFont("Segoe UI", 8, QFont.Weight.Bold))
-            painter.setPen(self._c_text_muted)
-            painter.drawText(badge_rect, Qt.AlignmentFlag.AlignCenter, size_str)
+            paper = QRectF(self._cx - 12, self._cy - 17, 24, 34)
+            painter.setBrush(QBrush(self._c_card))
+            painter.setPen(QPen(self._c_border_hover, 1.5))
+            painter.drawRoundedRect(paper, 2, 2)
+            painter.setPen(QPen(self._c_border, 1.0))
+            for y in (-7, 0, 7):
+                painter.drawLine(
+                    QPointF(self._cx - 6, self._cy + y),
+                    QPointF(self._cx + 6, self._cy + y),
+                )
 
     def _paint_bottom_pill(self, painter: QPainter) -> None:
         """Draw bottom hint pill with target preview or navigation help."""
-        bottom_y = self._wheel_size + 18
-        pill_rect = QRectF(self.width() / 2.0 - 150, bottom_y, 300, 30)
+        pill_rect = self._bottom_pill_rect()
 
         painter.setBrush(QBrush(self._c_bg))
         painter.setPen(QPen(self._c_border, 1.0))
         painter.drawRoundedRect(pill_rect, 15, 15)
 
-        if self._hover_index >= 0 and self._hover_index < len(self._available_formats):
+        if self._drop_message:
+            hint = self._drop_message
+            color = self._c_border_hover
+        elif self.awaiting_drop and not self.paths:
+            hint = "Drop local files on a format • virtual files need Open Files"
+            color = self._c_text_muted
+        elif self._hover_index >= 0 and self._hover_index < len(self._available_formats):
             fmt = self._available_formats[self._hover_index]
             label = FORMAT_LABELS.get(fmt, fmt.upper())
-            hint = f"Convert to {label} (. {fmt})  •  Enter / Click"
+            hint = f"Convert to {label} (.{fmt}) · Enter or click"
             color = self._c_text_accent
         elif not self._available_formats:
             hint = "No supported conversion routes available"
-            color = QColor(248, 113, 113)  # Red 400
+            color = self._c_border_hover
         else:
-            hint = "Hover format or use Arrows  •  Esc to close"
+            hint = "Choose a format · arrow keys move · Esc cancels"
             color = self._c_text_muted
 
-        painter.setFont(QFont("Segoe UI", 9, QFont.Weight.Medium))
+        painter.setFont(QFont("Segoe UI", 10, QFont.Weight.Medium))
         painter.setPen(color)
         painter.drawText(pill_rect, Qt.AlignmentFlag.AlignCenter, hint)
+
+    def _bottom_pill_rect(self) -> QRectF:
+        extent = self._r_orbit + self._r_petal + 12.0
+        return self._pill_rect(300.0, 30.0, self._cy + extent + 22.0)
 
 
 class ShiftActivationFilter(QObject):
@@ -762,6 +790,14 @@ class ShiftActivationFilter(QObject):
             self._active_menu.close()
             self._active_menu = None
             return False
+
+        if self.main_window:
+            if RadialConversionMenu.active_menu_in(self.main_window):
+                return False
+            controller = getattr(self.main_window, "bg_controller", None)
+            background_menu = getattr(controller, "_active_menu", None)
+            if background_menu and background_menu.isVisible():
+                return False
 
         # Verify there are supported conversion routes
         menu = RadialConversionMenu(target_paths, parent=self.main_window)
@@ -827,4 +863,3 @@ class ShiftActivationFilter(QObject):
                         return True
 
         return super().eventFilter(watched, event)
-

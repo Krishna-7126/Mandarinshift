@@ -253,12 +253,7 @@ class TestRadialConversionMenu:
 
         # Midpoint of Petal 0
         import math
-        count = len(menu.target_formats)
-        total_deg = 360.0 / count
-        gap_deg = min(4.5, total_deg * 0.15) if count > 1 else 0.0
-        start_deg = 90.0 - (gap_deg / 2.0 if count > 1 else 0.0)
-        sweep_deg = -(total_deg - gap_deg)
-        mid_deg = start_deg + sweep_deg / 2.0
+        mid_deg = 90.0
         rad = math.radians(mid_deg)
         drop_pos = QPointF(menu._cx + 100.0 * math.cos(rad), menu._cy - 100.0 * math.sin(rad))
 
@@ -279,6 +274,292 @@ class TestRadialConversionMenu:
 
         assert selected_fmt == menu.target_formats[0]
         assert selected_paths == [sample_png]
+
+    def test_global_drop_preserves_exact_multiple_file_payload(self, qapp, sample_png: Path, sample_jpeg: Path):
+        from PySide6.QtCore import QMimeData, QPointF, QUrl
+        from PySide6.QtGui import QDropEvent
+        import math
+
+        menu = RadialConversionMenu([], awaiting_drop=True)
+        mime = QMimeData()
+        mime.setUrls([QUrl.fromLocalFile(str(sample_png)), QUrl.fromLocalFile(str(sample_jpeg))])
+        paths, error = menu._local_file_payload(mime)
+        assert error is None
+        assert paths == [sample_png, sample_jpeg]
+
+        targets = get_supported_targets(paths)
+        mid_deg = 90.0
+        rad = math.radians(mid_deg)
+        pos = QPointF(menu._cx + 100.0 * math.cos(rad), menu._cy - 100.0 * math.sin(rad))
+        selected = []
+        menu.format_selected.connect(lambda fmt, pths: selected.append((fmt, pths)))
+
+        event = QDropEvent(pos, Qt.DropAction.CopyAction, mime, Qt.MouseButton.NoButton, Qt.KeyboardModifier.NoModifier)
+        menu.dropEvent(event)
+
+        assert selected == [(targets[0], [sample_png, sample_jpeg])]
+
+    def test_drop_outside_sector_never_uses_stale_hover(self, qapp, sample_png: Path):
+        from PySide6.QtCore import QMimeData, QPointF, QUrl
+        from PySide6.QtGui import QDropEvent
+
+        menu = RadialConversionMenu([sample_png])
+        menu.set_hover_index(0)
+        mime = QMimeData()
+        mime.setUrls([QUrl.fromLocalFile(str(sample_png))])
+        selected = []
+        menu.format_selected.connect(lambda *args: selected.append(args))
+
+        event = QDropEvent(
+            QPointF(menu._cx, menu._cy),
+            Qt.DropAction.CopyAction,
+            mime,
+            Qt.MouseButton.NoButton,
+            Qt.KeyboardModifier.NoModifier,
+        )
+        menu.dropEvent(event)
+
+        assert selected == []
+        assert not event.isAccepted()
+
+    def test_drag_move_clears_hover_when_cursor_leaves_all_sectors(self, qapp, sample_png: Path):
+        from PySide6.QtCore import QMimeData, QPointF, QUrl
+
+        menu = RadialConversionMenu([sample_png])
+        menu.set_hover_index(0)
+        mime = QMimeData()
+        mime.setUrls([QUrl.fromLocalFile(str(sample_png))])
+
+        class DragMoveEvent:
+            def position(self):
+                return QPointF(menu._cx, menu._cy)
+
+            def acceptProposedAction(self):
+                self.accepted = True
+
+            def ignore(self):
+                self.accepted = False
+
+        event = DragMoveEvent()
+
+        menu.dragMoveEvent(event)
+
+        assert menu.hover_index == -1
+        assert event.accepted
+
+    def test_hit_testing_matches_visible_petals_and_rejects_ring_gaps(self, qapp, sample_png: Path):
+        from PySide6.QtCore import QPointF
+        import math
+
+        menu = RadialConversionMenu([sample_png])
+        menu.set_hover_index(-1)
+        center = menu._petal_center(0)
+        assert menu.petal_at_pos(center) == 0
+
+        step = 360.0 / len(menu.available_formats)
+        angle = math.radians(90.0 - step / 2.0)
+        gap = QPointF(
+            menu._cx + (menu._r_outer + 10.0) * math.cos(angle),
+            menu._cy - (menu._r_outer + 10.0) * math.sin(angle),
+        )
+        assert menu.petal_at_pos(gap) == -1
+
+    def test_pills_stay_with_wheel_for_popup_and_overlay(self, qapp, sample_png: Path):
+        from PySide6.QtGui import QImage
+
+        menu = RadialConversionMenu([sample_png])
+        wheels = [menu, RadialConversionMenu([sample_png], is_overlay=True)]
+        for wheel in wheels:
+            if wheel.is_overlay:
+                wheel.setGeometry(0, 0, 800, 600)
+                qapp.processEvents()
+
+            top = wheel._top_pill_rect()
+            bottom = wheel._bottom_pill_rect()
+            petal_bounds = [
+                (
+                    wheel._petal_center(index).y()
+                    - wheel._r_petal
+                    - (4.0 if index == wheel.hover_index else 0.0),
+                    wheel._petal_center(index).y()
+                    + wheel._r_petal
+                    + (4.0 if index == wheel.hover_index else 0.0),
+                )
+                for index in range(len(wheel.available_formats))
+            ]
+            petal_top = min(bounds[0] for bounds in petal_bounds)
+            petal_bottom = max(bounds[1] for bounds in petal_bounds)
+
+            assert top.bottom() < petal_top
+            assert bottom.top() > petal_bottom
+            assert top.left() >= 0 and top.right() <= wheel.width()
+            assert bottom.left() >= 0 and bottom.right() <= wheel.width()
+
+        initial_pills = (menu._top_pill_rect(), menu._bottom_pill_rect())
+        menu.set_hover_index(-1)
+        assert (menu._top_pill_rect(), menu._bottom_pill_rect()) == initial_pills
+
+        image = QImage(menu.size(), QImage.Format.Format_ARGB32)
+        menu.render(image)
+        assert image.pixelColor(int(menu._cx), int(menu._cy)).alpha() > 0
+
+    def test_click_uses_current_hit_not_stale_hover(self, qapp, sample_png: Path):
+        from PySide6.QtCore import QPointF
+
+        menu = RadialConversionMenu([sample_png])
+        menu.set_hover_index(0)
+        target_index = 1
+        target = menu._petal_center(target_index)
+        selected = []
+        menu.format_selected.connect(lambda fmt, paths: selected.append(fmt))
+        event = QMouseEvent(
+            QEvent.Type.MouseButtonPress,
+            target,
+            target,
+            target,
+            Qt.MouseButton.LeftButton,
+            Qt.MouseButton.LeftButton,
+            Qt.KeyboardModifier.NoModifier,
+        )
+
+        menu.mousePressEvent(event)
+
+        assert selected == [menu.available_formats[target_index]]
+        assert event.isAccepted()
+
+    def test_click_gap_cancels_without_propagating_to_underlying_widget(self, qapp, sample_png: Path):
+        from PySide6.QtCore import QPointF
+        import math
+
+        menu = RadialConversionMenu([sample_png])
+        menu.set_hover_index(0)
+        step = 360.0 / len(menu.available_formats)
+        angle = math.radians(90.0 - step / 2.0)
+        gap = QPointF(
+            menu._cx + (menu._r_outer + 10.0) * math.cos(angle),
+            menu._cy - (menu._r_outer + 10.0) * math.sin(angle),
+        )
+        cancelled = []
+        menu.cancelled.connect(lambda: cancelled.append(True))
+        event = QMouseEvent(
+            QEvent.Type.MouseButtonPress,
+            gap,
+            gap,
+            gap,
+            Qt.MouseButton.LeftButton,
+            Qt.MouseButton.LeftButton,
+            Qt.KeyboardModifier.NoModifier,
+        )
+        event.ignore()
+
+        menu.mousePressEvent(event)
+
+        assert cancelled == [True]
+        assert event.isAccepted()
+
+    def test_window_manager_close_cancels_and_deletes_standalone_menu(self, qapp, sample_png: Path):
+        parent = QWidget()
+        menu = RadialConversionMenu([sample_png], parent=parent)
+        cancelled = []
+        menu.cancelled.connect(lambda: cancelled.append(True))
+        menu.show()
+        menu.close()
+        qapp.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        qapp.processEvents()
+
+        assert cancelled == [True]
+        assert parent.findChildren(RadialConversionMenu) == []
+
+    def test_shift_filter_does_not_open_a_second_window_menu(self, qapp, sample_png: Path):
+        parent = QWidget()
+        active = RadialConversionMenu([sample_png], parent=parent)
+        active.show()
+        filter_obj = ShiftActivationFilter(main_window=parent)
+
+        assert not filter_obj.trigger(paths=[sample_png])
+        assert active.isVisible()
+        assert parent.findChildren(RadialConversionMenu) == [active]
+
+        active.close()
+        qapp.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        qapp.processEvents()
+
+    def test_ole_drag_leave_notifies_controller_for_timeout_cleanup(self, qapp, sample_png: Path):
+        from PySide6.QtCore import QMimeData, QUrl
+
+        menu = RadialConversionMenu([], awaiting_drop=True)
+        mime = QMimeData()
+        mime.setUrls([QUrl.fromLocalFile(str(sample_png))])
+
+        class DragEvent:
+            def mimeData(self):
+                return mime
+
+            def acceptProposedAction(self):
+                self.accepted = True
+
+            def accept(self):
+                self.accepted = True
+
+            def ignore(self):
+                self.accepted = False
+
+        events = []
+        menu.ole_drag_left.connect(lambda: events.append("left"))
+        menu.dragEnterEvent(DragEvent())
+        assert menu._ole_drag_active
+        menu.dragLeaveEvent(DragEvent())
+
+        assert not menu._ole_drag_active
+        assert events == ["left"]
+
+    def test_global_payload_rejects_virtual_mixed_and_oversized_files(
+        self, qapp, sample_png: Path, monkeypatch
+    ):
+        from PySide6.QtCore import QMimeData, QUrl
+        import localshift.radial_menu as radial_menu_module
+
+        menu = RadialConversionMenu([], awaiting_drop=True)
+        virtual_mime = QMimeData()
+        virtual_mime.setUrls([QUrl("https://example.invalid/image.png")])
+        assert menu._local_file_payload(virtual_mime)[1] is not None
+
+        mixed_mime = QMimeData()
+        mixed_mime.setUrls([QUrl.fromLocalFile(str(sample_png)), QUrl("https://example.invalid/file")])
+        assert menu._local_file_payload(mixed_mime)[1] is not None
+
+        unsupported = sample_png.parent / "unsupported.unknownextxyz"
+        unsupported.write_text("not a supported format")
+        unsupported_mime = QMimeData()
+        unsupported_mime.setUrls([QUrl.fromLocalFile(str(unsupported))])
+        assert "No common conversion target" in menu._local_file_payload(unsupported_mime)[1]
+
+        monkeypatch.setattr(radial_menu_module, "MAX_INPUT_BYTES", 1)
+        local_mime = QMimeData()
+        local_mime.setUrls([QUrl.fromLocalFile(str(sample_png))])
+        assert "250 MiB" in menu._local_file_payload(local_mime)[1]
+
+    def test_global_menu_click_cannot_convert(self, qapp, sample_png: Path):
+        from PySide6.QtCore import QPointF
+
+        menu = RadialConversionMenu([], awaiting_drop=True)
+        menu.set_paths([sample_png])
+        menu.set_hover_index(0)
+        selected = []
+        menu.format_selected.connect(lambda *args: selected.append(args))
+        event = QMouseEvent(
+            QEvent.Type.MouseButtonPress,
+            QPointF(menu._cx, menu._cy - 100),
+            QPointF(menu._cx, menu._cy - 100),
+            QPointF(menu._cx, menu._cy - 100),
+            Qt.MouseButton.LeftButton,
+            Qt.MouseButton.LeftButton,
+            Qt.KeyboardModifier.NoModifier,
+        )
+
+        menu.mousePressEvent(event)
+
+        assert selected == []
 
 
 # ---------------------------------------------------------------------------
@@ -420,4 +701,3 @@ class TestShiftActivationFilter:
 
         # All petals must have been smoothly hit without gaps
         assert len(visited_petals) == num_targets
-

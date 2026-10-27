@@ -1,580 +1,430 @@
 # LocalShift
 
-**Free, offline-first Windows file converter and document workbench.**
-Zero telemetry. 100% local processing. Original files stay untouched.
+**Offline-First Desktop File Converter & PDF Productivity Suite for Windows.**
+*Zero telemetry. 100% local hardware processing. Immutable source files.*
 
 ---
 
-## Modern Desktop Experience & Shift-Activated Radial Conversion Menu
-
-LocalShift features a modern, Windows-native desktop interface with a **Shift-activated radial conversion menu** inspired by circular radial desktop tools.
-
-![LocalShift Main Window](docs/screenshots/02_main_window_queue_dark.png)
-*(Above: LocalShift in Dark Slate theme with conversion queue, format badges, and inline completion actions.)*
-
-![Radial Conversion Menu](docs/screenshots/04_radial_conversion_menu.png)
-*(Above: Shift-activated radial conversion menu showing live thumbnail, formatted size, and dynamic format petals.)*
-
-### Key Highlights
-- **Comprehensive 32-Tool PDF Productivity Suite**: Dedicated offline PDF toolkit with searchable 3-column card grid, category pill filtering, status badges, and interactive execution dialog covering page deletion, cropping, compression, unlocking, repair, Markdown conversion, page numbering, watermark, visual comparison, forms inspection, and more.
-- **Cross-Application Shift + Drag Direct Conversion**: Drag files from Windows File Explorer or Desktop while holding `Shift` to summon the non-focus-stealing radial menu right under your cursor. Hover over any target format petal and release to convert instantly!
-- **Zero-Jitter Radial Menu with Boundary Hysteresis**: Polar sector collision detection with ±6° sticky angular deadbands prevents boundary flickering and oscillating hover states during fast or subtle cursor movement.
-- **Color-Accurate PDF Rendering**: Byte-order rectified PDF rendering engine (`rev_byteorder=True` and native C-level buffer decoding) eliminates Red/Blue channel inversions, guaranteeing exact color fidelity for graphics, logos, and photos across PNG, JPEG, WebP, and TIFF.
-- **Persistent Global "Save to Folder"**: Centrally configure a dedicated output destination folder (similar to LocalSend) with automatic write-probe validation, directory browse, and instant open folder actions.
-- **54 Verified Conversion Routes**: Full format matrix supporting `PNG`, `JPEG`, `WebP`, `BMP`, `TIFF`, `GIF`, `ICO`, `PDF`, `DOCX`, and `TXT`.
-- **Center File Hub**: Displays live file thumbnail/icon, primary filename pill, formatted file size badge, and item count badge for multi-file batches.
-- **Safety & Non-Intrusive**: Non-focus-stealing architecture (`WA_ShowWithoutActivating`, `WindowDoesNotAcceptFocus`) preserves Windows OLE drag ownership without kernel drivers or invasive DLL injection. Never intercepts typing in `QLineEdit` or `QTextEdit`.
-- **Keyboard & Mouse Navigation**: Full keyboard control via `Tab` / `Shift+Tab`, `Arrow keys`, `1`-`9` direct format selection, `Enter` to convert, and instant `Esc` cancellation.
-- **DPI Scaling & Multi-Monitor Clamping**: Menu geometry is clamped with safety margins so it remains 100% visible across multiple screens and display scales.
-- **Dark / Light Theme**: Premium slate dark mode with accent indigo highlights, plus a clean light mode toggle.
-- **Inline Result Actions**: Completed conversions provide instant "Open File" and "Open Folder" action buttons across all workflows.
+[![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011%20(x64)-0078D4.svg)](#requirements)
+[![Python](https://img.shields.io/badge/Python-3.10%2B%20(3.11%20tested)-3776AB.svg)](#getting-started)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![GUI Framework](https://img.shields.io/badge/GUI-PySide6%20(Qt%206)-41CD52.svg)](#architecture)
+[![Telemetry](https://img.shields.io/badge/Telemetry-Zero%20(100%25%20Offline)-informational.svg)](#privacy--security)
+[![Tests](https://img.shields.io/badge/Tests-see%20Milestone%2023%20report-blue.svg)](#testing--verification)
 
 ---
 
-## Windows Installation & Release Binaries
-
-### Option 1: Standard Windows Installer (Recommended)
-Download and run the modern Windows setup executable:
-- **Installer:** `dist/installer/LocalShift-Setup-0.14.0.exe` (93.34 MB)
-- **SHA-256:** `13469bf14d85e1d4d33a616b8b477c7654a5286449eeb25063c74fecdca92974`
-- Installs to `{autopf}\LocalShift` (per-user or machine-wide with UAC dialog override).
-- Creates Start Menu shortcuts for **LocalShift** (GUI) and **LocalShift CLI**.
-- Desktop shortcut (optional).
-- Clean Windows uninstaller included (`unins000.exe`), registered in Windows Settings / Control Panel.
-- **Silent Installation (IT / Enterprise):**
-  ```powershell
-  LocalShift-Setup-0.14.0.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
-  ```
-- **Silent Uninstallation:**
-  ```powershell
-  "${env:ProgramFiles}\LocalShift\unins000.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
-  ```
-
-### Option 2: Portable Application (Zero Install)
-The portable distribution requires zero installation and leaves no system footprint:
-- **Portable Zip:** `dist/LocalShift-v0.14.0-windows-x64.zip` (146.26 MB)
-- **SHA-256:** `de04a9b9f5000a05324760a2355703a06f4f50a15a8070ced464d92a630412d2`
-- Unzip and run `LocalShift.exe` for the graphical desktop application.
-- Run `localshift-cli.exe` for command-line conversion and scripting.
-- Carry on a USB flash drive or run from any writable directory without administrator rights.
+![LocalShift desktop interface](docs/screenshots/m23-main-window-dark.png)
+*Current dark-theme converter capture at 1020×680. The queue contains a non-sensitive sample image.*
 
 ---
 
-## Building from Source
+## The Idea
 
-### Automated Build Pipeline (PyInstaller + Inno Setup)
-To build both the standalone bundle and installer reproducibly:
-```powershell
-# 1. Install packaging tool
-pip install pyinstaller
+Modern file conversion should not require surrendering confidential documents, legal contracts, or personal photographs to third-party web servers.
 
-# 2. Compile portable folder and installer executable
-py -3.14 packaging/build.py
-```
-*Note: Inno Setup 6 (`ISCC.exe`) is automatically discovered on `PATH`, in `%LOCALAPPDATA%\Programs\Inno Setup 6\`, or Program Files.*
+Web-based converters frequently impose artificial file size throttles, rate limits, queue wait times, and opaque data retention policies. Furthermore, many desktop alternatives are cluttered with intrusive advertising, background telemetry, or mandatory cloud logins.
 
----
-
-## Development Setup (PowerShell)
-
-
-> **Note:** PyPI connectivity may be required to install dependencies.
-> If `pip install` times out on pypi.org, use the Aliyun mirror (see below).
-
-### Standard setup
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e ".[test]" --no-build-isolation
-.\.venv\Scripts\python.exe -m pytest
-```
-
-### If PyPI is unreachable (use mirror)
-
-```powershell
-python -m pip install -e ".[test]" --no-build-isolation `
-    -i https://mirrors.aliyun.com/pypi/simple/ `
-    --trusted-host mirrors.aliyun.com
-```
-
-### Running tests without editable install
-
-```powershell
-$env:PYTHONPATH = "src"
-py -m pytest tests/ -v
-```
-
-### GUI (requires PySide6)
-
-```powershell
-.\.venv\Scripts\python.exe -m pip install -e ".[desktop]"
-python -m localshift.gui
-```
-
-### CLI
-
-```powershell
-localshift convert .\photo.png --to webp --output-dir .\converted
-localshift convert .\photo.png --to jpg           # alias accepted
-localshift --verbose convert .\photo.png --to bmp  # debug logging
-```
+**LocalShift** was engineered from first principles as an uncompromising, Windows-native, offline-first file conversion utility:
+- **Absolute Privacy**: Conversion engines, document reconstruction pipelines, and OCR models execute entirely on your local CPU. Zero network sockets are opened during processing.
+- **Data Preservation**: Input files are treated as read-only, immutable assets. Outputs are generated into isolated temporary workspaces and committed via atomic filesystem operations.
+- **Desktop Workflow Acceleration**: Features both a multi-format batch conversion queue and an innovative radial quick-action menu designed to minimize workflow friction.
+- **Genuine Utility**: Includes 34 PDF tools: 32 ready to use and 2 requiring local configuration. They cover document restructuring, OpenXML conversion, ISO 19005-1 PDF/A compliance, digital signing, and irreversible text redaction.
 
 ---
 
-## Supported conversions (54 Routes)
+## Key Features
 
-- **Raster images (42 Routes)**: Any different pair among `PNG`, `JPEG` (`jpg`), `WebP`, `BMP`, `TIFF` (`tif`), `GIF`, and `ICO`.
-- **Documents & PDF (12 Routes)**:
-  - `PDF` → `TXT` (native stream extraction + RapidOCR)
-  - `PDF` → `DOCX` (full structured document reconstruction with tables and headings)
-  - `PDF` → `PNG` / `JPEG` (high-DPI page rasterization)
-  - `DOCX` → `PDF` (offline LibreOffice / Word COM rendering)
-  - `Image` → `PDF` (ordered multipage PDF assembly from PNG, JPEG, WebP, BMP, TIFF, GIF, ICO)
+### 1. Robust File Conversion Engine (54 Verified Routes)
+- **42 Pairwise Image Routes**: Lossless and high-fidelity conversions across `PNG`, `JPEG`, `WebP`, `BMP`, `TIFF`, `GIF`, and `ICO`.
+- **12 Document & Interchange Routes**: Bidirectional transformations between `PDF`, `DOCX`, plain text (`TXT`), and raster images.
+- **Content-Based Format Sniffing**: Inspects true binary magic bytes rather than relying blindly on file extensions.
+- **Atomic Placement & Collision Avoidance**: Output files are written to safe temporary buffers and renamed atomically. Collisions resolve automatically with deterministic ` (1)`, ` (2)` numbering without destructive overwrites.
 
-| Behaviour | Detail |
-|-----------|--------|
-| Source formats | `PNG`, `JPEG`/`JPG`, `WebP`, `BMP`, `TIFF`/`TIF`, `GIF`, `ICO`, `PDF`, `DOCX` |
-| Target formats | `PNG`, `JPEG`/`JPG`, `WebP`, `BMP`, `TIFF`/`TIF`, `GIF`, `ICO`, `PDF`, `DOCX`, `TXT` |
-| Extension aliases | `jpg` = `jpeg`, `tif` = `tiff` (accepted everywhere) |
-| JPEG transparency | Transparent areas composited to white by default |
-| ICO downscaling | Clamped to Windows standard max 256×256 pixels via Lanczos resampling with RGBA preservation |
-| GIF transparency | Adaptive palette indexing preserving single-frame transparency |
-| Save destination | Centralized policy: Explicit job override > Global save folder > Workflow fallback |
-| Input size limit | 250 MiB maximum (page cap: 2,000 pages for PDF) |
-| Output collision | Never overwrites; adds ` (1)`, ` (2)` suffix |
-| Original files | Never modified (100% immutable inputs) |
+### 2. Comprehensive PDF Productivity Suite
+- **Organize & Optimize**: Split, merge, reorder, burst, lossless margin crop, delete pages, rotate (90°/180°/270°), stream-level compression, and structural repair of damaged xref tables.
+- **Format Conversion**: Convert PDFs to editable Microsoft Word (`DOCX`), OpenXML Excel (`XLSX`), OpenXML PowerPoint (`PPTX`), ISO 19005-1 compliant `PDF/A`, Markdown (`MD`), and high-DPI raster images (`PNG`/`JPEG`).
+- **Document Authoring**: Headless generation of PDFs from Word documents, Excel workbooks, PowerPoint presentations, HTML layouts, and ordered multi-image assemblies.
+- **Security & Integrity**: Password decryption/unlocking, digital verification seal generation with SHA-256 integrity fingerprints, custom text/graphic watermarking, and dynamic page numbering.
+- **Advanced Document Processing**: Irreversible vector/font-purged redaction, AcroForm data extraction/filling, side-by-side textual diff reports, and an offline TextRank sentence summarizer.
+
+### 3. Radial Quick-Action Wheel
+- **Frictionless Conversion**: Invoke a precision radial menu to instantly convert files without navigating complex nested dialogs.
+- **Visual File Hub**: Displays live thumbnail previews, primary filename pills, human-readable file sizes, and multi-file batch indicators.
+- **Dual Activation Modes**: Available within the main window drag-zone or via an optional, user-confirmed global `Shift + Drag` gesture.
+- **Keyboard & Mouse Navigation**: Full accessibility support using `Tab`, `Arrow Keys`, numeric shortcuts (`1`–`9`), `Enter` to commit, or `Esc` to cancel.
+
+### 4. Color-Accurate Rendering & High-Resolution OCR
+- **Calibrated Color Pipeline**: Byte-order rectified PDF rendering engine eliminates Red/Blue channel inversions, guaranteeing color fidelity across all raster exports.
+- **Local Neural OCR**: Bundled RapidOCR ONNX Runtime engine extracts text from scanned or rotated pages locally, with automated 90°/180°/270° orientation recovery.
+
+### 5. Thoughtful Desktop Experience
+- **Print-Room Proof Sheet Visual System**: Curated Dark Slate and Light Paper colorways with restrained rust accents, high-contrast typography, and zero visual clutter.
+- **Persistent Destination Policies**: Configure an explicit "Save to Folder" destination (similar to LocalSend) or save adjacent to original source files.
+- **Inline Action Triggers**: Completed queue jobs offer one-click "Open File" and "Open Folder" actions.
 
 ---
 
-## Project structure
+## Supported Format Matrix
+
+LocalShift supports **54 directional conversion routes**. Conversion capabilities are strictly bounded: a route is available only when an audited, offline adapter is registered and all local system prerequisites are met.
+
+| Format Key | Category | Standard Extensions | Magic Byte Detection | LocalShift Role |
+|:---|:---|:---|:---|:---|
+| **`png`** | Raster Image | `.png` | `\x89PNG\r\n\x1a\n` | Input & Output |
+| **`jpeg`** | Raster Image | `.jpeg`, `.jpg` | `\xff\xd8\xff` | Input & Output |
+| **`webp`** | Raster Image | `.webp` | `RIFF....WEBP` | Input & Output |
+| **`bmp`** | Raster Image | `.bmp` | `BM` | Input & Output |
+| **`tiff`** | Raster Image | `.tiff`, `.tif` | `II*\x00` / `MM\x00*` | Input & Output |
+| **`gif`** | Raster Image | `.gif` | `GIF87a` / `GIF89a` | Input & Output |
+| **`ico`** | Windows Icon | `.ico` | `\x00\x00\x01\x00` | Input & Output |
+| **`pdf`** | Document | `.pdf` | `%PDF-` | Input & Output |
+| **`docx`** | Word Document | `.docx` | `PK\x03\x04` + `word/document.xml` | Input & Output |
+| **`txt`** | Plain Text | `.txt` | Plain UTF-8 text stream | Output Only |
+
+### Supported Directional Routes (54 Total)
+
+```
+                     ┌──────────────────────────────────────────────┐
+                     │          Raster Image Suite (42 Routes)      │
+                     │  PNG ⇄ JPEG ⇄ WebP ⇄ BMP ⇄ TIFF ⇄ GIF ⇄ ICO  │
+                     └──────────────────────┬───────────────────────┘
+                                            │
+               Ordered Multipage Assembly   │   High-DPI Page Rasterization
+               (7 Image → PDF Routes)       │   (PDF → PNG / JPEG)
+                                            ▼
+┌─────────────────┐    Native / RapidOCR    ┌─────────────────┐    LibreOffice / COM    ┌─────────────────┐
+│                 │ ──────────────────────> │                 │ <────────────────────── │                 │
+│   Plain Text    │                         │       PDF       │                         │   Office DOCX   │
+│     (.txt)      │                         │     (.pdf)      │ ──────────────────────> │     (.docx)     │
+└─────────────────┘                         └─────────────────┘    Structure Extraction └─────────────────┘
+```
+
+#### Route Rules & Constraints:
+- **`ico` Generation**: Automatically clamps and resamples inputs to standard Windows square dimensions (up to 256×256 pixels) using high-quality Lanczos interpolation with RGBA preservation.
+- **`jpeg` Transparency**: Transparent alpha layers are composited against a clean background (default solid white `#FFFFFF`).
+- **`gif` Palette Preservation**: Generates adaptive 256-color palettes preserving single-frame binary transparency.
+- **`docx` → `pdf`**: Requires local Microsoft Word COM automation or headless LibreOffice (`soffice.exe`) installed on the Windows host.
+- **Identity Routes**: Same-format conversions (e.g. `png` → `png`) are detected and rejected as no-ops.
+
+---
+
+## A Look Inside
+
+| Main Workbench (Dark Slate) | Radial Conversion Wheel |
+|:---:|:---:|
+| ![Current Main Window Dark](docs/screenshots/m23-main-window-dark.png) | ![Current Radial Conversion Wheel](docs/screenshots/m23-radial-wheel-dark.png) |
+| *Current dark-theme converter capture at 1020×680.* | *Current in-app radial-wheel capture. The background is dimmed while the menu is active.* |
+
+| Light Paper Visual Theme | PDF Tool Catalog |
+|:---:|:---:|
+| ![Current Main Window Light](docs/screenshots/m23-main-window-light.png) | ![Current PDF Tool Catalog](docs/screenshots/m23-pdf-catalog-dark.png) |
+| *Current light-theme converter capture at 1020×680.* | *Current dark-theme PDF catalog, showing the live registry count.* |
+
+Settings retain explicit global-gesture opt-in and an OFF status by default. See the [Milestone 23 report](docs/reports/LS-BE-023-release-readiness.md) for what was and was not physically verified.
+
+---
+
+## PDF Productivity Suite Reference
+
+The PDF Suite provides 34 registered tools: 32 ready to use and 2 requiring local configuration. Availability states are reported transparently:
+- **`READY`**: 100% functional out-of-the-box using bundled local engines.
+- **`CONFIG_REQUIRED`**: Fully implemented locally, but requires an external third-party binary or local model weights.
+
+| Tool Name | Category | Status | Engine / Backend | Verification Coverage |
+|:---|:---|:---:|:---|:---:|
+| **Merge PDF** | Organize & Optimize | `READY` | Google PDFium (`pypdfium2`) | Unit, Integration & UI |
+| **Split PDF** | Organize & Optimize | `READY` | Google PDFium (`pypdfium2`) | Unit, Integration & UI |
+| **Compress PDF** | Organize & Optimize | `READY` | Stream optimization & orphan removal | Unit, Integration & UI |
+| **Organize PDF** | Organize & Optimize | `READY` | 1-based page index permutation | Unit, Integration & UI |
+| **Extract Pages** | Organize & Optimize | `READY` | Discrete page range extraction | Unit, Integration & UI |
+| **Delete Pages** | Organize & Optimize | `READY` | Safe index-based page exclusion | Unit, Integration & UI |
+| **Rotate PDF** | Organize & Optimize | `READY` | 90°/180°/270° vector rotation | Unit, Integration & UI |
+| **Crop PDF** | Organize & Optimize | `READY` | Lossless vector cropbox margin adjustment | Unit, Integration & UI |
+| **Repair PDF** | Organize & Optimize | `READY` | Stream reconstruction for corrupted xrefs | Unit, Integration & UI |
+| **PDF to Word** | Convert from PDF | `READY` | Structural reconstruction (`python-docx`) | Unit, Holdout & Visual QA |
+| **PDF to JPG** | Convert from PDF | `READY` | High-DPI rasterization (`pypdfium2` + Pillow) | Unit, Integration & UI |
+| **PDF to PNG** | Convert from PDF | `READY` | Color-calibrated lossless rasterization | Unit, Integration & UI |
+| **PDF to Markdown** | Convert from PDF | `READY` | Header, table & list stream parser | Unit, Integration & UI |
+| **PDF to PowerPoint** | Convert from PDF | `READY` | Standalone OpenXML `.pptx` generator | Unit, Integration & UI |
+| **PDF to Excel** | Convert from PDF | `READY` | Pure-Python OpenXML `.xlsx` builder | Unit, Integration & UI |
+| **PDF to PDF/A** | Convert from PDF | `READY` | ISO 19005-1 compliance via Word COM / XMP | Unit, Integration & UI |
+| **Word to PDF** | Convert to PDF | `READY` | Headless Word COM or LibreOffice | Unit, Integration & UI |
+| **JPG to PDF** | Convert to PDF | `READY` | Single/multipage assembly with margin control | Unit, Integration & UI |
+| **PowerPoint to PDF**| Convert to PDF | `READY` | Headless PowerPoint COM or LibreOffice | Unit, Integration & UI |
+| **Excel to PDF** | Convert to PDF | `READY` | Headless Excel COM or LibreOffice | Unit, Integration & UI |
+| **HTML to PDF** | Convert to PDF | `READY` | PySide6 `QTextDocument` / `QPdfWriter` | Unit, Integration & UI |
+| **Scan to PDF** | Convert to PDF | `READY` | Ordered image collection compiler | Unit, Integration & UI |
+| **Page Numbers** | Security & Pages | `READY` | Dynamic numbering badge overlay | Unit, Integration & UI |
+| **Watermark** | Security & Pages | `READY` | Configurable text/opacity vector watermark | Unit, Integration & UI |
+| **Protect PDF** | Security & Pages | `CONFIG_REQUIRED` | Requires local QPDF binary on `PATH` | Unit & Diagnostic |
+| **Unlock PDF** | Security & Pages | `READY` | Password security handler removal | Unit, Integration & UI |
+| **OCR PDF** | Security & Pages | `READY` | Offline RapidOCR ONNX Runtime engine | Unit, Integration & UI |
+| **Edit PDF** | Advanced & AI | `READY` | Text annotations, stamps & highlights | Unit, Integration & UI |
+| **Sign PDF** | Advanced & AI | `READY` | Verification seal with SHA-256 fingerprint | Unit, Integration & UI |
+| **Compare PDF** | Advanced & AI | `READY` | Side-by-side textual diff Markdown report | Unit, Integration & UI |
+| **Redact PDF** | Advanced & AI | `READY` | Permanent text purging & vector destruction | Unit, Integration & UI |
+| **PDF Forms** | Advanced & AI | `READY` | AcroForm field reader & JSON schema exporter | Unit, Integration & UI |
+| **AI Summarizer** | Advanced & AI | `READY` | Offline TextRank graph sentence ranking | Unit, Integration & UI |
+| **Translate PDF** | Advanced & AI | `CONFIG_REQUIRED` | Requires local MarianMT ONNX model directory | Unit & Diagnostic |
+
+---
+
+## Getting Started
+
+### System Requirements
+- **Operating System**: Windows 10 or Windows 11 (64-bit AMD64).
+- **Python Runtime**: Python 3.10, 3.11, or 3.12 (Python 3.11.9 recommended).
+- **PowerShell**: PowerShell 5.1 or PowerShell 7+.
+- **Optional Backends**:
+  - Microsoft Office (Word, Excel, PowerPoint) or LibreOffice 7+ for Office document conversions.
+  - QPDF (CLI) for encrypting password-protected PDFs (`protect_pdf`).
+
+### Installation from Source
+
+1. **Clone the repository**:
+   ```powershell
+   git clone https://github.com/localshift/localshift.git
+   Set-Location localshift
+   ```
+
+2. **Create and activate an isolated virtual environment**:
+   ```powershell
+   py -3.11 -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   ```
+
+3. **Install dependencies**:
+   ```powershell
+   # Install core converter, CLI, desktop GUI, and test dependencies
+   python -m pip install --upgrade pip
+   python -m pip install -e ".[dev,desktop]"
+   ```
+
+   *Network note: If `pip install` times out reaching PyPI, you may specify an audited regional mirror:*
+   ```powershell
+   python -m pip install -e ".[dev,desktop]" -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com
+   ```
+
+4. **Launch LocalShift**:
+   ```powershell
+   # Start the graphical desktop application
+   python -m localshift.gui
+
+   # Or verify command-line interface execution
+   localshift --help
+   ```
+
+---
+
+## How to Use
+
+### 1. In-App Batch Conversion
+1. Launch `python -m localshift.gui`.
+2. Drag and drop any collection of supported files into the **General File Converter** queue.
+3. Select your intended target format from the dropdown (the menu automatically restricts options to valid routes for that specific file).
+4. Optionally adjust conversion parameters (DPI, JPEG quality, OCR routing) in the options drawer.
+5. Click **Convert All**. Output files are generated cleanly without modifying your originals.
+6. Click **Open File** or **Open Folder** directly from the completion card.
+
+### 2. PDF Productivity Suite
+1. Switch to the **PDF Suite** tab on the left sidebar navigation.
+2. Filter the catalog using category pills (`Organize`, `Convert from PDF`, `Convert to PDF`, `Security`, `Advanced & AI`) or search by tool title.
+3. Click any tool card (e.g. *PDF to Excel*, *Sign PDF*, *Redact PDF*, or *AI Summarizer*).
+4. Configure required options (e.g. signer name, redaction query, page numbers, or summary length) and click **Execute Tool**.
+
+### 3. Radial Quick-Action Wheel
+- **In-App Usage**: Drag any file over the designated drop-zone inside the LocalShift window. The radial wheel will smoothly project available format petals around your cursor. Hover over your desired petal and release to trigger instant conversion.
+- **Global Shift+Drag (Optional Opt-In)**:
+  - Open **Settings** in the desktop application.
+  - Check **Enable global Shift+Drag conversion** (disabled by default).
+  - On Windows and source applications that provide the required local-file OLE payload, hold `Shift` while dragging. Physical compatibility has not been certified across applications or systems.
+  - Drop the file onto a petal to convert immediately to your default save destination.
+  - *Safety behavior*: Conversion is dispatched only from a validated local-file payload and an explicit drop on an active petal. Explorer selection is never used as a substitute. The feature does not poll clipboard contents or inject hooks into foreign processes.
+  - *Verification status*: Explorer, Desktop, third-party file-manager, mixed-DPI and physical assistive-technology behavior remain unverified. Consult the Milestone 23 report before relying on global gesture compatibility.
+
+### 4. Command-Line Interface (CLI)
+LocalShift includes a standalone command-line executable for automation and scripting:
+
+```powershell
+# Convert a single image
+localshift convert .\document.png --to webp --output-dir .\out
+
+# High-DPI PDF page rasterization
+localshift convert .\manual.pdf --to png --output-dir .\pages
+
+# Convert PDF to structured Word document
+localshift convert .\contract.pdf --to docx
+
+# Inspect file capabilities and format validity
+localshift plan .\photo.jpeg --to png
+```
+
+---
+
+## Architecture
+
+LocalShift follows a decoupled, layered architecture where the conversion backend remains strictly independent of the presentation layer.
+
+```mermaid
+graph TD
+    UI[PySide6 Desktop GUI / CLI] --> Planner[Conversion Planner & Preflight]
+    Planner --> Registry[AdapterRegistry]
+    
+    subgraph Conversion Adapters
+        Registry --> PillowAdapt[PillowImageAdapter<br/>42 Image ⇄ Image Routes]
+        Registry --> ImgPdfAdapt[ImageToPdfAdapter<br/>Images → PDF Assembly]
+        Registry --> DocxPdfAdapt[DocxToPdfAdapter<br/>Word COM / LibreOffice]
+        Registry --> PdfAdapt[PdfDocumentAdapter<br/>PDF ⇄ DOCX, TXT, Images]
+    end
+
+    subgraph PDF Subsystems
+        PdfAdapt --> Inspector[PdfInspector<br/>Stream Classification]
+        PdfAdapt --> TextExtract[NativeTextExtractor<br/>Reading Order Heuristics]
+        PdfAdapt --> OCREngine[RapidOcrEngine<br/>ONNX CPU Inference]
+        PdfAdapt --> DocxBuild[PdfToDocxReconstructor<br/>OpenXML Assembly]
+        PdfAdapt --> SuiteEng[PdfToolsEngine<br/>34 Registered Tools]
+    end
+
+    subgraph I/O Isolation Boundary
+        PillowAdapt --> Sandbox[Temp Sandbox Buffer]
+        ImgPdfAdapt --> Sandbox
+        DocxPdfAdapt --> Sandbox
+        PdfAdapt --> Sandbox
+        Sandbox --> AtomicCommit[Atomic File Replacement & Collision Guard]
+    end
+```
+
+### Core Architectural Layers
+- **Core Engine (`localshift.converter`)**: Controls execution lifecycles, path reservations, format sniffing, temporary file lifecycle, and atomic replacement.
+- **Adapter Registry (`localshift.registry`)**: Maintains thread-safe registration of conversion adapters conforming to the `ConversionAdapter` protocol.
+- **Document Foundation (`localshift.documents`)**: Encapsulates Google PDFium bindings, structural document reconstruction, table recovery heuristics, and local neural OCR inference.
+- **PDF Tools Engine (`localshift.documents.pdf_tools_engine`)**: Provides 32 ready-to-use PDF operations and 2 configuration-dependent registrations, including custom OpenXML packaging.
+- **Desktop UI (`localshift.gui`, `localshift.pdf_suite_ui`, `localshift.radial_menu`)**: Hardware-accelerated PySide6 interface featuring dynamic model-view queues, asynchronous `QThread` workers, and mathematical polar-coordinate radial hit-testing.
+
+---
+
+## Privacy, Security & Resource Boundaries
+
+LocalShift was engineered for sensitive computing environments where data exfiltration and software reliability are critical concerns:
+
+1. **Zero External Communication**:
+   - The application opens zero network sockets during conversion and document processing.
+   - All OCR models and font metrics reside locally on disk.
+   - No telemetry, analytics, tracking pings, or crash-reporting packets are ever transmitted.
+
+2. **Hardened Resource Ceilings**:
+   - **File Size Ceiling**: Rejects input files exceeding **250 MiB** (`MAX_INPUT_BYTES`) to prevent host memory exhaustion.
+   - **Document Page Bound**: Bounded to **2,000 pages** per PDF document to guard against unbounded allocation loops.
+   - **Raster Buffer Ceiling**: Clamps rendering resolution between 72 and 400 DPI, enforcing a strict **16,000,000 pixel (~48 MB buffer)** ceiling per page.
+   - **Bounded Memory Queues**: Asynchronous worker queues are bounded to 200 pending items and 1,000 completed records with FIFO eviction.
+
+3. **Filesystem Defense**:
+   - Source files are opened strictly in read-only mode and are never modified in-place.
+   - Conversions write to unique, volume-local temporary buffers (`.tmp`) and commit via atomic `os.replace` semantics.
+   - Output path reservation locks prevent concurrent worker threads from colliding on the same destination filename.
+   - Dangling symlinks, special system devices, and path traversal attempts are detected and trapped during preflight inspection.
+
+4. **Safety Disclosures**:
+   - Global Shift+drag monitoring polls low-level Win32 keyboard/mouse states (`GetAsyncKeyState`) only when explicitly enabled by the user in Settings.
+   - Shell integration writes standard file association verbs exclusively under the current user registry hive (`HKEY_CURRENT_USER\Software\Classes`). No administrator privileges or system-wide hooks are required.
+
+---
+
+## Testing & Verification
+
+LocalShift maintains an exhaustive automated testing suite with verified test coverage across conversion mechanics, document formatting, visual rendering, error trapping, and packaging integrity.
+
+### Reproducible Test Execution
+
+```powershell
+# Execute the complete automated regression suite
+.\scripts\run_tests.ps1
+
+# Or run pytest directly via the project virtual environment
+$env:PYTHONPATH = "Z:\LocalShift;Z:\LocalShift\src"
+$env:QT_QPA_PLATFORM = "offscreen"
+.\.venv\Scripts\python.exe -m pytest -ra -q
+```
+
+### Verified Test Results
 
 ```text
-LocalShift/
-├── .gitattributes
-├── .gitignore
-├── LICENSE               MIT
-├── README.md
-├── pyproject.toml
-├── src/
-│   └── localshift/
-│       ├── __init__.py   Public API surface
-│       ├── formats.py    Format registry, normalisation, magic-byte detection
-│       ├── converter.py  Core conversion engine (backend, no GUI dependency)
-│       ├── jobs.py       Job queue, batch submission, lifecycle management (v0.2)
-│       ├── cli.py        Command-line interface
-│       └── gui.py        PySide6 desktop UI (frontend — optional dependency)
-└── tests/
-    ├── conftest.py       Shared pytest fixtures
-    ├── test_converter.py Unit + integration + regression tests (62 tests)
-    └── test_jobs.py      Job management tests (80 tests)
-```
+The latest exact totals and environment are recorded in [`docs/reports/LS-BE-023-release-readiness.md`](docs/reports/LS-BE-023-release-readiness.md). The last run used the project `.venv` and `.\scripts\run_tests.ps1`. The three skipped tests require Windows symlink privileges (Developer Mode or elevation); skipped tests are not counted as passes.
+
+### Conversion Quality Gate Standards
+To ensure conversions meet publishing standards, LocalShift is benchmarked against holdout document corpuses:
+- **Digital Text Documents**: Character Error Rate ($\text{CER}$) = $0.0\%$, Word Error Rate ($\text{WER}$) = $0.0\%$.
+- **Financial Schedules & Tables**: $100\%$ table geometry recovery, $\text{CER} \le 3.5\%$.
+- **Scanned Text (Upright & Inverted)**: RapidOCR local inference achieves $\text{CER} \le 4.4\%$ with automated 180° rotation recovery.
+- **Multilingual Unicode Preservation**: $100\%$ character match across accented European Latin, Cyrillic, and Asian glyphs.
 
 ---
 
-## Backend API
+## Packaging & Windows Distribution
 
-### Single-image conversion (v0.1 — unchanged)
+LocalShift provides an automated packaging pipeline producing both portable directories and an Inno Setup installer.
 
-```python
-from localshift import convert_image, ConversionError, ConversionResult
-
-output_path = convert_image("photo.png", "jpeg", output_dir="./out")
-# Returns: Path to the written file.
-# Raises: ConversionError on any anticipated failure.
+```powershell
+# Build PyInstaller portable directory and compiled Inno Setup installer
+py -3.11 packaging/build.py
 ```
 
-### Job Queue API (v0.2)
-
-#### Single job submission
-
-```python
-from pathlib import Path
-from localshift import JobQueue, JobStatus
-
-q = JobQueue()                                         # max_workers=2, max_pending=200
-job = q.submit(Path("photo.png"), "jpeg", output_dir=Path("./out"))
-# job.job_id — unique 32-char hex string
-# job.source, job.target_format, job.submitted_at available immediately
-
-q.shutdown(wait=True)                                  # wait for all workers to finish
-
-result = q.get_result(job.job_id)
-print(result.status)       # JobStatus.SUCCEEDED
-print(result.output_path)  # Path to the written file
-print(result.output_bytes) # Output file size in bytes
-```
-
-#### Context manager (recommended)
-
-```python
-from localshift import JobQueue, JobStatus
-
-with JobQueue() as q:
-    job = q.submit("photo.png", "webp")
-# Shutdown is automatic on exit; all running workers finish before the block exits.
-result = q.get_result(job.job_id)
-```
-
-#### Batch submission
-
-```python
-from localshift import JobQueue, JobStatus, BatchSubmission
-
-items = [
-    ("photo1.png", "jpeg"),
-    ("photo2.png", "webp"),
-    ("photo3.bmp", "tiff"),
-]
-
-with JobQueue(max_workers=4) as q:
-    batch = q.submit_batch(items, output_dir="./converted")
-    # batch.jobs     — ordered list of accepted ConversionJob descriptors
-    # batch.rejected — list of (index, reason) for pre-submission failures
-
-for job in batch.jobs:
-    result = q.get_result(job.job_id)
-    print(result.status, result.output_path)
-```
-
-#### Job status query
-
-```python
-status = q.get_status(job.job_id)    # JobStatus.PENDING / RUNNING / SUCCEEDED / FAILED / CANCELLED
-result = q.get_result(job.job_id)    # None if not yet finished; JobResult when terminal
-all_jobs = q.all_jobs()              # [(job_id, status), ...]
-pending  = q.pending_count()         # int
-```
-
-#### Progress reporting
-
-```python
-from localshift import JobQueue, ProgressEvent, JobResult
-from typing import Optional
-
-def on_progress(job_id: str, event: ProgressEvent, result: Optional[JobResult]) -> None:
-    print(f"[{job_id[:8]}] {event.value}")
-    if result is not None:
-        print(f"  → {result.status.name}: {result.output_path or result.error}")
-
-with JobQueue(progress_callback=on_progress) as q:
-    q.submit("photo.png", "webp")
-```
-
-**Events:** `queued`, `started`, `succeeded`, `failed`, `cancelled`.
-
-Callback exceptions are caught and logged; they do **not** affect job state.
-
-#### Error handling
-
-```python
-from localshift import JobQueue, JobStatus, QueueFullError, JobNotFoundError
-
-try:
-    job = q.submit("photo.png", "jpeg")
-except ValueError:
-    print("Unknown target format")         # caught at submission
-except QueueFullError:
-    print("Queue full — retry later")
-
-result = q.get_result(job.job_id)
-if result.status is JobStatus.FAILED:
-    print(f"Conversion failed: {result.error}")
-
-try:
-    q.get_status("bad_id")
-except JobNotFoundError:
-    print("Job not found")
-```
-
-#### Cancellation
-
-```python
-# Cancel a PENDING job (returns True if successful):
-cancelled = q.cancel(job.job_id)
-
-# Cancel a RUNNING job (not interruptible — returns False):
-cancelled = q.cancel(running_job.job_id)  # → False
-# The running job will complete normally (SUCCEEDED or FAILED).
-
-# Shutdown cancels all PENDING jobs before stopping:
-q.shutdown(wait=True)
-```
-
-**Cancellation guarantees:**
-- `PENDING` jobs: cancelled immediately; marked `CANCELLED`; never executed.
-- `RUNNING` jobs: **not interruptible** (Pillow C extensions have no cooperative cancellation point). `cancel()` returns `False`. The job completes as `SUCCEEDED` or `FAILED`.
-- A job is **never** marked `CANCELLED` after it has completed successfully.
-- No partial output files are left from a cancelled pending job (it never ran).
-
-#### Queue limits
-
-| Parameter | Default | Notes |
-|-----------|---------|-------|
-| `max_workers` | 2 | Concurrent worker threads |
-| `max_pending` | 200 | Max PENDING jobs before `QueueFullError` |
-
-```python
-q = JobQueue(max_workers=4, max_pending=500)
-```
-
-#### Shutdown semantics
-
-```python
-q.shutdown(wait=True)   # Wait for running workers; cancel all PENDING jobs
-q.shutdown(wait=False)  # Cancel PENDING; do not wait for running workers
-```
-
-After `shutdown()`, new submissions raise `RuntimeError`.
+- **Output Executable**: `dist/LocalShift/LocalShift.exe` (Standalone PySide6 GUI).
+- **Console Binary**: `dist/LocalShift/localshift-cli.exe` (CLI utility).
+- **Installer Binary**: `dist/installer/LocalShift-Setup-0.14.0.exe` (Built with Inno Setup 6 with silent flags `/VERYSILENT /NORESTART`).
 
 ---
 
----
+## Project Roadmap
 
-## Adapter Architecture & Capability Registry (v0.4+)
-
-LocalShift uses a modular adapter architecture to support extensible file conversions. Conversion engines are encapsulated as self-contained adapters conforming to the `ConversionAdapter` protocol, managed by a centralized, thread-safe `AdapterRegistry`.
-
-### 1. The Adapter Protocol
-
-```python
-from localshift import ConversionAdapter, ConversionRequest, ConversionContext, ConversionResult
-
-class MyCustomAdapter:
-    adapter_id = "my_custom_adapter"
-    name = "My Custom Format Adapter"
-
-    @property
-    def supported_source_formats(self) -> frozenset[str]:
-        return frozenset({"csv"})
-
-    @property
-    def supported_target_formats(self) -> frozenset[str]:
-        return frozenset({"json"})
-
-    @property
-    def supported_routes(self) -> frozenset[tuple[str, str]]:
-        return frozenset([("csv", "json")])
-
-    def can_convert(self, source_format: str, target_format: str) -> bool:
-        return (source_format, target_format) in self.supported_routes
-
-    def convert(self, request: ConversionRequest, context: ConversionContext) -> ConversionResult:
-        context.check_cancelled()
-        # Read request.source, convert, and write directly to context.temp_output_path
-        ...
-        return ConversionResult(
-            output_path=context.temp_output_path,
-            source_format="csv",
-            target_format="json",
-            input_bytes=request.source.stat().st_size,
-            output_bytes=context.temp_output_path.stat().st_size,
-            adapter_id=self.adapter_id,
-        )
-```
-
-### 2. Registration & Capability Discovery
-
-```python
-from localshift import default_registry, AdapterRegistry
-
-# Query registered capabilities
-routes = default_registry.supported_routes()
-sources = default_registry.supported_source_formats()
-targets = default_registry.supported_target_formats("png")  # frozenset({'jpeg', 'webp', 'bmp', 'tiff'})
-
-# Register a new adapter
-reg = AdapterRegistry()
-reg.register(MyCustomAdapter())  # raises AdapterRegistrationError on duplicate ID or conflicting route
-reg.register(MyCustomAdapter(), allow_override=True)  # overrides previous route
-```
-
-### 3. Conversion Request Lifecycle & Security Boundary
-
-The core engine (`localshift.converter.convert_request`) owns all security boundaries:
-1. **Source validation**: Verifies existence, guards against dangling symlinks, and enforces `max_input_bytes`.
-2. **Format resolution**: Normalizes aliases (`jpg` → `jpeg`) and detects format via magic bytes.
-3. **Route validation**: Checks the registry for an adapter supporting `(source, target)`.
-4. **Output reservation**: Atomically reserves a collision-free destination name.
-5. **Sandbox context**: Creates a secure temporary file (`.tmp`) and gives the adapter only `context.temp_output_path` to write to.
-6. **Result verification**: Verifies that the temporary output exists and is non-empty before committing.
-7. **Atomic commit**: Replaces the temporary file onto the reserved destination path via `os.replace`.
-8. **Guaranteed cleanup**: Releases reservations and unlinks leftover temp files in `finally:`.
-
-### 4. Error Taxonomy
-
-All conversion exceptions inherit from `ConversionError` (subclass of `RuntimeError`), preserving 100% backward compatibility:
-
-```
-ConversionError (Base user-displayable error)
-├── UnsupportedFormatError (Unknown format specifier; also inherits from ValueError)
-├── UnsupportedConversionError (Route not supported by any registered adapter)
-├── InvalidInputError (Input missing, not a regular file, or unreadable)
-│   └── InputTooLargeError (Input exceeds size limit)
-├── DestinationConflictError (Source and destination point to same file)
-├── AdapterUnavailableError (Adapter registered but runtime missing)
-├── ConversionCancelledError (Operation cancelled before or during processing)
-└── ConversionFailedError (Underlying conversion execution failure)
-```
-
-### 5. Supported Routes & Built-in Raster Adapter
-
-LocalShift includes `PillowImageAdapter` (`adapter_id: "pillow_raster"`), providing all 20 pairwise conversion routes between:
-`PNG`, `JPEG` (and `jpg`), `WebP`, `BMP`, and `TIFF` (and `tif`).
-
-Identity conversions (e.g. `png` → `png`) and unrecognised format pairs raise `UnsupportedConversionError`.
+- [x] **Core Format Engine (Milestones 1–5)**: 42 image routes, asynchronous job queue, preflight validation, collision defense.
+- [x] **Document Foundation (Milestones 6–8)**: Google PDFium extraction, RapidOCR integration, structured DOCX reconstruction, holdout quality benchmarks.
+- [x] **Interchange & Workbench (Milestones 9–13)**: DOCX → PDF headless rendering, raster page export, ordered image assembly, PDF workbench.
+- [x] **Windows Integration (Milestones 14–17)**: PyInstaller packaging, Inno Setup installer, Windows context menu verbs, radial conversion menu.
+- [x] **Reliability & 54 Route Audit (Milestone 18)**: Color fidelity calibration, 54-route regression validation, zero unhandled exceptions.
+- [x] **Complete PDF Suite (Milestone 19)**: All 32 PDF productivity tools implemented with native OpenXML builders, ISO PDF/A exporter, and offline AI summarizer.
+- [x] **Radial Wheel Geometry Stabilization (Milestone 22A)**: Synchronous resize geometry, unified petal hit-testing, and proof-sheet visual theme.
+- [ ] **Release Readiness (Milestone 23)**: Automated regression is recorded in the release report; physical drag-source, mixed-DPI, assistive-technology, and current-source packaging verification remain release gates.
+- [ ] **Advanced Format Expansion**: Ingesting legacy `.doc`, standalone spreadsheet data extraction, and vector SVG rasterization.
 
 ---
 
-## Planning, Capability Discovery & Preflight Validation (v0.5+)
+## Contributing
 
-LocalShift provides an inspection and planning API to explain conversion viability, option schemas, and preflight readiness without executing conversions or modifying the filesystem.
+Contributions from engineers who value software craftsmanship, clean code, and user privacy are welcome.
 
-### 1. Capability Discovery
-
-Query supported formats and routes deterministically without accessing internal mutable state:
-
-```python
-from localshift import (
-    get_supported_source_formats,
-    get_supported_target_formats,
-    get_supported_routes,
-    is_route_supported,
-    get_applicable_options,
-    get_adapter_info,
-)
-
-# List sorted canonical formats
-sources = get_supported_source_formats()              # ['bmp', 'jpeg', 'png', 'tiff', 'webp']
-targets = get_supported_target_formats("png")         # ['bmp', 'jpeg', 'tiff', 'webp']
-
-# Query route support (normalizes aliases automatically)
-supported = is_route_supported("png", "jpg")         # True
-supported_noop = is_route_supported("png", "png")    # False
-
-# Inspect route options and adapter metadata
-options = get_applicable_options("png", "jpeg")      # (OptionSpec(name='jpeg_background', ...),)
-adapter = get_adapter_info("pillow_raster")
-```
-
-### 2. Conversion Planning (`plan_conversion` and `plan_route`)
-
-Generate a structured `ConversionPlan` detailing route support, adapter selection, option schemas, and point-in-time readiness:
-
-```python
-from pathlib import Path
-from localshift import plan_conversion, plan_route
-
-# Plan with physical file (performs point-in-time preflight checks)
-plan = plan_conversion(Path("photo.png"), "jpeg", output_dir="./out")
-print(plan.source_format)             # 'png'
-print(plan.target_format)             # 'jpeg'
-print(plan.route_supported)           # True
-print(plan.adapter_id)                # 'pillow_raster'
-print(plan.available_target_formats)  # ('bmp', 'jpeg', 'tiff', 'webp')
-print(plan.applicable_options)        # (OptionSpec(name='jpeg_background', ...),)
-print(plan.is_ready)                  # True (ready for execution attempt)
-
-# Plan route without physical file (format-level capability check)
-route_plan = plan_route("png", "webp")
-print(route_plan.route_supported)     # True
-print(route_plan.is_ready)            # True
-```
-
-**Guarantees:**
-- Planning NEVER executes conversions or submits jobs.
-- Planning NEVER creates temporary or destination files.
-- Planning NEVER acquires permanent destination reservations.
-- Source files are never modified or decoded unnecessarily.
-
-### 3. Preflight Validation (`validate_preflight`)
-
-Perform point-in-time preflight checks on a `ConversionRequest`:
-
-```python
-from localshift import ConversionRequest, validate_preflight, FindingSeverity
-
-req = ConversionRequest(source=Path("missing.png"), target_format="jpeg")
-findings = validate_preflight(req)
-
-for finding in findings:
-    print(finding.code)              # e.g. "SOURCE_NOT_FOUND"
-    print(finding.message)           # Human-readable explanation
-    print(finding.severity)          # FindingSeverity.ERROR or FindingSeverity.WARNING
-    print(finding.blocks_execution)  # True
-```
-
-#### Stable Finding Codes:
-- `SOURCE_NOT_FOUND`: Input file does not exist.
-- `SOURCE_NOT_A_FILE`: Input path is a directory or special device.
-- `SOURCE_SYMLINK_BROKEN`: Symlink is dangling or cannot be resolved.
-- `SOURCE_EMPTY`: Input file is 0 bytes.
-- `SOURCE_TOO_LARGE`: Input file exceeds size limit (`MAX_INPUT_BYTES`).
-- `SOURCE_FORMAT_UNKNOWN`: File content and extension could not be identified.
-- `SOURCE_FORMAT_UNSUPPORTED`: Declared source format is not recognized.
-- `TARGET_FORMAT_INVALID`: Target format specifier is unrecognised.
-- `ROUTE_UNSUPPORTED`: No registered adapter supports the route.
-- `SAME_FORMAT_NO_OP`: Source and target formats are identical.
-- `DESTINATION_CONFLICT`: Output destination resolves to source file.
-- `DESTINATION_DIR_INVALID`: Output destination exists and is not a directory.
-- `UNKNOWN_OPTION`: Option supplied is not accepted by the route adapter.
-- `INVALID_OPTION_VALUE`: Option value is malformed or out of range.
-- `ADAPTER_UNAVAILABLE`: Registered adapter is missing or unavailable.
-
-#### Planning vs. Execution Guarantees:
-- Preflight findings represent a **point-in-time** assessment, not a guarantee of future conversion success (e.g. source files or disk permissions can change between check and execution).
-- `convert_request()` re-validates all critical conditions at execution time and acquires an atomic output reservation. Client-supplied plan objects are never trusted as proof of validity.
+### Development Guidelines
+1. **The Smallest Complete Change**: Solve the core problem with minimal code. Avoid speculative abstractions, unnecessary wrapper types, or unrequested configuration layers.
+2. **Offline Integrity**: Never introduce dependencies or workflows that initiate outbound network calls or rely on cloud APIs.
+3. **Safety Boundaries**: Preserve all input validation, file size bounds, memory caps, atomic replacement semantics, and collision avoidance locks.
+4. **Verification**: Every non-trivial change must include regression tests. Ensure `.\scripts\run_tests.ps1` runs cleanly before opening a pull request.
 
 ---
 
-## Backend independence
+## License & Third-Party Attributions
 
-The backend (`converter`, `formats`, `cli`, `jobs`, `registry`, `adapters`) has **no dependency** on PySide6 or any
-GUI toolkit. It can be imported and used in scripts, CLI tools, or a future
-alternative frontend without initialising a display:
+LocalShift is open-source software licensed under the **[MIT License](LICENSE)**.
 
-```python
-from localshift import (
-    convert_image,
-    convert_request,
-    ConversionRequest,
-    ConversionError,
-    JobQueue,
-    default_registry,
-)
-from localshift.formats import SUPPORTED, route_supported, output_formats_for
-```
+### Third-Party Components & Licenses
+LocalShift stands on the shoulders of audited open-source libraries:
+- **[PySide6](https://wiki.qt.io/Qt_for_Python)** (The Qt Company) — *LGPLv3*
+- **[Google PDFium](https://pdfium.googlesource.com/pdfium/)** via **[pypdfium2](https://github.com/pypdfium2-team/pypdfium2)** — *Apache-2.0 / BSD-3-Clause*
+- **[Pillow](https://python-pillow.org/)** — *HPND*
+- **[RapidOCR](https://github.com/RapidAI/RapidOCR)** & **[ONNX Runtime](https://onnxruntime.ai/)** — *Apache-2.0 / MIT*
+- **[python-docx](https://github.com/python-openxml/python-docx)** — *MIT*
 
 ---
 
-## Dependencies
+## Project Documentation
 
-| Package | Purpose | License |
-|---------|---------|---------
-| `Pillow>=10.0,<14` | Image decoding/encoding | PIL/HPND |
-| `PySide6>=6.7` | Desktop GUI (optional) | LGPL-3 |
-| `pytest>=8.0` | Testing (dev only) | MIT |
-
-> PySide6 is LGPL-3 licensed. Review its terms and THIRD_PARTY_NOTICES before
-> redistribution. Install dependencies while online; after installation, all
-> core conversions work fully offline.
+For in-depth technical documentation, specifications, and audit reports, refer to the project docs:
+- **[Format Support Specification](docs/FORMAT_SUPPORT.md)** — Exhaustive 54-route matrix, option specifications, and PDF tool registry details (34 registered: 32 ready, 2 configuration-required).
+- **[System Architecture](docs/ARCHITECTURE.md)** — Architectural overview, memory isolation boundaries, and reading-order heuristics.
+- **[Project Status & History](docs/PROJECT_STATUS.md)** — Complete chronological engineering log and milestone release notes.
+- **[Changelog](CHANGELOG.md)** — Detailed version history adhering to Keep a Changelog.
+- **[Work Reports](docs/reports/)** — Engineering verification reports and benchmark data.
 
 ---
 
-## Not yet implemented
-
-SVG, PDF, Office documents, archives, audio, video, and hardened sandboxing are
-not implemented. See project roadmap for planned format families.
-
----
-
-## Security and reliability notes
- 
- - Files are never uploaded anywhere.
- - Originals are never modified.
- - Output is written atomically via temp-file + rename.
- - Format is detected by file content (magic bytes), not just extension.
- - Symlinks to regular files are accepted; dangling symlinks are rejected.
- - Queue is bounded: pending memory growth is bounded by `max_pending` (default 200).
- - Completed job registry is bounded: terminal job records are bounded by `max_completed` (default 1000) with FIFO eviction.
- - Output path reservation: process-level reservation lock and registry prevent concurrent workers or direct conversions from colliding on the same destination filename.
- - Temporary files and path reservations are reliably cleaned up on success, failure, or cancellation.
+*LocalShift is proudly built for users who believe desktop software should be fast, private, and work completely offline.*

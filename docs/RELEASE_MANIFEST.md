@@ -12,7 +12,7 @@
 
 | Artifact Name | Type | Size (Bytes) | Size (MB) | SHA-256 Checksum |
 |---|---|---|---|---|
-| **`LocalShift-Setup-0.14.0.exe`** | Windows Inno Setup Installer | `97,875,968` | 93.34 MB | `13469bf14d85e1d4d33a616b8b477c7654a5286449eeb25063c74fecdca92974` |
+| **`LocalShift-Setup-0.14.0.exe`** | Windows Inno Setup Installer | `97,877,415` | 93.34 MB | `13469bf14d85e1d4d33a616b8b477c7654a5286449eeb25063c74fecdca92974` |
 | **`LocalShift-v0.14.0-windows-x64.zip`** | Portable Standalone Bundle | `153,360,020` | 146.26 MB | `de04a9b9f5000a05324760a2355703a06f4f50a15a8070ced464d92a630412d2` |
 
 ---

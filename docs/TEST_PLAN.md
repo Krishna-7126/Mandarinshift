@@ -1,18 +1,20 @@
 # LocalShift — Test Plan & Quality Assurance Strategy
 
-**Version:** 0.16.2 (Updated: Milestone LS-BE-016D)  
-**Test Suite Size:** 609 tests collected (606 passed, 3 skipped on non-admin Windows)  
+**Updated:** Milestone LS-BE-023
+**Current exact results:** Recorded in [`LS-BE-023-release-readiness.md`](./reports/LS-BE-023-release-readiness.md); counts are verified in the project Python 3.11 venv.
 
 ---
 
 ## 1. Scope & Strategy
 
+The official Windows launcher is `.\scripts\run_tests.ps1`; it requires the project `.venv`, adds `src` to `PYTHONPATH`, and sets `QT_QPA_PLATFORM=offscreen`. The current run's exact counts and environment are in the Milestone 23 report. Automated Windows/API tests do not establish physical drag-source, mixed-DPI, or assistive-technology compatibility.
+
 LocalShift uses a layered testing strategy focused strictly on backend correctness, safety, and reliability:
 - **Unit Tests:** Fast, isolated testing of format normalization, magic-byte sniffing, options validation, and capability lookups.
 - **Integration Tests:** End-to-end execution of `convert_request()` with real adapters, destination path collision resolution, atomic replacement, and cleanup verification.
 - **PDF Color Fidelity & Pixel Accuracy Tests:** Automated visual color test suite asserting native RGB byte alignment, channel order verification (no Red/Blue swapping), pure primary color patch accuracy, Team Lemon yellow verification, alpha compositing against background, and Mean Absolute Error (MAE < 3.0) against reference specifications.
-- **Radial Menu Stability & Hysteresis Tests:** Polar sector collision accuracy, sticky boundary hysteresis (±6° deadband), circular disc proximity, multi-monitor DPI boundary clamping, continuous cursor movement without jitter or oscillation, and non-focus-stealing window flags.
-- **Windows Shell & Background Gesture Tests:** Active Explorer selection retrieval via `IShellWindows`, foreground window validation, "Start with Windows" registry key configuration, non-invasive drag tracking, source-adapter architecture (Explorer, Desktop, OLE, Fallback), discrete state machine transitions (`GestureState`), instant Escape cancellation, and system tray integration.
+- **Radial Menu Stability & Hysteresis Tests:** Visible-petal hit geometry, buffered hover at boundaries, current-pointer click selection, ring-gap cancellation, centered popup/overlay labels, synchronous resize geometry, single active in-app menu ownership, close/cancel cleanup, screen-boundary clamping, continuous cursor movement, and non-focus-stealing window flags.
+- **Windows Shell & Background Gesture Tests:** "Start with Windows" registry configuration, explicit opt-in monitoring, persisted OFF parsing, actual local-file OLE payload validation, mixed/virtual/oversized payload rejection, exact drop-only queue execution, single-dispatch protection, hover clearing, release/Escape/Shift cancellation, failure recovery, and non-focus-stealing window flags. No automated test simulates physical Explorer/Desktop OLE delivery.
 - **XML 1.0 Compatibility & Reconstruction Tests:** Centralized sanitization of illegal ASCII control chars (`0x00–0x08`, `0x0E–0x1F`), conversion of vertical tabs and form feeds, Unicode emoji and multi-lingual preservation, atomic temporary replacement.
 - **Reliability & Concurrency Tests:** In-process path reservation locks, thread-safe job queue lifecycle, worker pool thread exhaustion, and cancel propagation.
 - **Document & OCR Tests:** Offline OCR engine invocation, bounding box parsing, line grouping, memory-bounded rendering, DPI bounds, per-page routing (`auto`, `native_only`, `force_ocr`), text de-duplication, memory ownership, language model audits, CJK punctuation normalization, faint scan preprocessing, 180° upside-down and 90°/270° orientation recovery, and offline language pack registration.
@@ -49,9 +51,9 @@ LocalShift uses a layered testing strategy focused strictly on backend correctne
 | [`tests/test_pdf_image_export.py`](file:///Z:/LocalShift/tests/test_pdf_image_export.py) | PDF to PNG/JPEG raster export engine | 39 | Routes, page selection parser, DPI/quality validation, multipage export, custom pattern tokens, atomic placement, collision avoidance, cancellation, corruption handling |
 | [`tests/test_image_to_pdf.py`](file:///Z:/LocalShift/tests/test_image_to_pdf.py) | Image to PDF conversion & assembly | 39 | All raster formats, multi-image assembly, page sizes, fit (contain/cover), orientation, margins, alpha background, CMYK/greyscale, EXIF, cancellation, cleanup |
 | [`tests/test_pdf_workbench.py`](file:///Z:/LocalShift/tests/test_pdf_workbench.py) | PDF Workbench (Merge, Split, Extract, Reorder, Rotate) | 41 | Multi-PDF merge order & dimension preservation, split subset exports & pattern tokens, page extraction, 1-based index reorder, relative/absolute rotations (90/180/270/-90), immutability, collision avoidance, CLI commands |
-| [`tests/test_gui.py`](file:///Z:/LocalShift/tests/test_gui.py) | PySide6 Desktop GUI integration & workflows | 30 | Tabs, queue loading, reorder, options binding, worker execution, cancellation, error dialogs |
-| [`tests/test_radial_menu.py`](file:///Z:/LocalShift/tests/test_radial_menu.py) | Shift-activated Radial Conversion Menu & OLE gesture | 20 | Target derivation, multi-file intersection, keyboard nav, hit-testing, overlay mode, drag tracking, escape cancel, boundary hysteresis, fast sweep |
-| [`tests/test_shell_integration.py`](file:///Z:/LocalShift/tests/test_shell_integration.py) | Windows Shell integration & GestureStateMachine | 8 | IShellWindows selection, autostart registry, DragSourceAdapter hierarchy, state machine transitions, Escape cancellation, non-activating window flags |
+| [`tests/test_gui.py`](file:///Z:/LocalShift/tests/test_gui.py) | PySide6 Desktop GUI integration & workflows | 38 | Tabs, queue loading, reorder, options binding, radial menu ownership/cleanup, worker execution, cancellation, error dialogs |
+| [`tests/test_radial_menu.py`](file:///Z:/LocalShift/tests/test_radial_menu.py) | Shift-activated Radial Conversion Menu & OLE gesture | 32 | Target derivation, visible-petal hit-testing, click position, overlay geometry, close cleanup, boundary hysteresis, drag tracking, fast sweep |
+| [`tests/test_shell_integration.py`](file:///Z:/LocalShift/tests/test_shell_integration.py) | Windows Shell integration & GestureStateMachine | 8 | Opt-in monitoring, actual OLE payload dispatch, no selection fallback, state transitions, Escape/Shift cancellation, non-activating window flags |
 | [`tests/test_pdf_color_fidelity.py`](file:///Z:/LocalShift/tests/test_pdf_color_fidelity.py) | PDF color rendering fidelity & channel accuracy | 6 | Pure RGB primaries, Team Lemon yellow, neutral grays, PNG/JPEG/WebP/TIFF exports, MAE < 3.0 |
 | [`tests/test_settings.py`](file:///Z:/LocalShift/tests/test_settings.py) | Persistent AppSettings, Save to Folder & resolution | 7 | QSettings persistence, directory validation probe, 3-tier precedence hierarchy |
 | [`tests/test_packaging.py`](file:///Z:/LocalShift/tests/test_packaging.py) | Windows packaging, assets, version & installer | 6 | Spec configuration, dual targets, icon assets, version metadata, Inno Setup config |
@@ -76,8 +78,7 @@ LocalShift uses a layered testing strategy focused strictly on backend correctne
 
 ### Reproduction Command:
 ```powershell
-$env:PYTHONPATH = "src"
-py -3.14 tests/pdf_quality_evaluator.py
+.\.venv\Scripts\python.exe tests\pdf_quality_evaluator.py
 ```
 
 ---
@@ -98,8 +99,7 @@ The real-world evaluation harness (`tests/real_world_generator.py` and `tests/re
 
 ### Reproduction Command:
 ```powershell
-$env:PYTHONPATH = "src"
-py -3.14 tests/real_world_quality_evaluator.py
+.\.venv\Scripts\python.exe tests\real_world_quality_evaluator.py
 ```
 
 ---
@@ -120,8 +120,7 @@ The independent holdout evaluation harness (`tests/holdout_generator.py` and `te
 
 ### Reproduction Command:
 ```powershell
-$env:PYTHONPATH = "src"
-py -3.14 tests/holdout_quality_evaluator.py
+.\.venv\Scripts\python.exe tests\holdout_quality_evaluator.py
 ```
 
 ---
@@ -135,7 +134,29 @@ py -3.14 tests/holdout_quality_evaluator.py
 
 ---
 
-## 7. DOCX → PDF Rendering Verification & Fixture Ground Truth (`tests/docx_fixture_generator.py`)
+## 7. Windows Gesture Physical Verification (Manual Only)
+
+Start diagnostics and the app from the project environment:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\verify_windows_gesture.py --interactive --log-file .\gesture-diagnostics.log --report-file .\docs\reports\LS-BE-021-physical-verification.json
+```
+
+| Source / condition | Procedure | Record |
+|---|---|---|
+| Explorer, one file | Hold Shift, drag a supported file, drop on a matching sector | Whether payload arrives; output format/path; compare source hash before/after |
+| Explorer, multiple files | Drag mixed supported image files and drop on a common target | Compare the actual drag contents with outputs; confirm common format and no unselected files are converted |
+| Desktop | Repeat single- and multi-file checks | Record independently from Explorer |
+| Third-party manager | Record manager/version, repeat single and multi-file checks | Do not generalize results to other apps |
+| Virtual/unsupported source | Drag browser preview, archive item, or virtual item | Confirm safe rejection and no conversion |
+| Monitoring OFF/ON | Toggle in Settings, repeat a drag | OFF must not open global wheel; ON requires an actual payload |
+| Cancellation | Release Shift, press Escape, or release outside a sector | Confirm no output is created |
+| Mixed DPI / monitors | Repeat across each monitor and sector boundary | Record cursor alignment, focus, flicker, and monitor scaling |
+| Reliability | Use unsupported format, >250 MiB file, existing output name, and a forced failure | Confirm safe error, collision handling, and unchanged source |
+
+Automated tests exercise Qt payloads and state transitions only. They do not count as physical Windows results. Diagnostics log state transitions, file/target counts, and rejection reasons; they do not log source paths or file contents. The JSON report starts with all physical cases `NOT TESTED` and updates only from explicit operator responses.
+
+## 8. DOCX → PDF Rendering Verification & Fixture Ground Truth (`tests/docx_fixture_generator.py`)
 
 A deterministic test suite and fixture generator creates 6 dedicated DOCX test documents with ground truth metadata:
 1. `docx_01_simple.docx` (1 page: title heading, bold/italic runs, standard paragraphs).
@@ -147,7 +168,5 @@ A deterministic test suite and fixture generator creates 6 dedicated DOCX test d
 
 ### Reproduction Command:
 ```powershell
-$env:PYTHONPATH = "src"
-py -3.14 -m pytest -o pythonpath=src tests/test_docx_pdf.py
+.\.venv\Scripts\python.exe -m pytest tests\test_docx_pdf.py
 ```
-

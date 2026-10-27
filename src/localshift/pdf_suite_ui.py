@@ -1,10 +1,10 @@
 """
-localshift.pdf_suite_ui — Searchable PDF Productivity Suite Grid & Interactive Tool Execution Dialog.
+localshift.pdf_suite_ui — Searchable PDF task catalog & interactive execution dialog.
 
 Provides:
-1. `PdfToolsSuiteTab`: Searchable grid of 32 PDF productivity tools matching the LocalShift design mockups.
-   - Real-time search filter and category pill navigation.
-   - Rich tool cards with colored category iconography, status badges ("New!", "Available"), and hover animations.
+1. `PdfToolsSuiteTab`: Searchable, category-grouped catalog of local PDF tasks.
+   - Real-time search and category filtering.
+   - Keyboard-accessible tool choices with concise availability details.
 2. `PdfToolExecutionDialog`: Dedicated execution dialog for standalone tools.
    - Drag & Drop file zone with instant path resolution.
    - Context-aware option inputs (page numbers format, watermark opacity, crop margins, password, etc.).
@@ -18,7 +18,7 @@ import logging
 from pathlib import Path
 from typing import Any, Callable, Optional, Sequence
 
-from PySide6.QtCore import QPoint, QRect, QSize, Qt, QThread, Signal
+from PySide6.QtCore import QEvent, QPoint, QRect, QSize, Qt, QThread, Signal
 from PySide6.QtGui import QColor, QCursor, QFont, QIcon, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import (
     QApplication,
@@ -110,99 +110,43 @@ class ToolExecutionWorker(QThread):
 # Tool Card Widget (Matching User's Mockup Screenshots)
 # ---------------------------------------------------------------------------
 
-class ToolCardWidget(QFrame):
-    """Clickable PDF productivity card displaying title, description, category icon, and badges."""
-    clicked = Signal(str)  # tool_id
+class ToolCardWidget(QPushButton):
+    """Keyboard-accessible PDF tool choice with concise task information."""
 
     def __init__(self, tool: PdfToolDefinition, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self.tool = tool
-        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        self.setMinimumHeight(125)
+        self.setMinimumHeight(96)
         self.setObjectName("toolCard")
-
-        self.setStyleSheet("""
-            QFrame#toolCard {
-                background-color: #1e293b;
-                border: 1px solid #334155;
-                border-radius: 12px;
-                padding: 12px;
-            }
-            QFrame#toolCard:hover {
-                border: 1px solid #6366f1;
-                background-color: #1e293b;
-            }
-        """)
+        self.setAccessibleName(tool.title)
+        status = (
+            tool.availability.value.replace("_", " ").title()
+            if not tool.is_available
+            else ""
+        )
+        self.setAccessibleDescription(
+            f"{tool.category.value}. {tool.description}"
+            + (f" Status: {status}." if status else "")
+        )
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.setSpacing(6)
+        layout.setContentsMargins(13, 11, 13, 11)
+        layout.setSpacing(4)
 
-        # Top row: Category Icon Badge + Status Badge
-        top_row = QHBoxLayout()
-        top_row.setSpacing(8)
-
-        # Icon box
-        icon_box = QLabel(tool.icon_symbol)
-        icon_box.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        icon_box.setFixedSize(36, 36)
-        icon_box.setStyleSheet(f"""
-            background-color: {tool.accent_color}22;
-            color: {tool.accent_color};
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-        """)
-        top_row.addWidget(icon_box)
-
-        top_row.addStretch()
-
-        # Badge if present
-        if tool.badge:
-            badge_lbl = QLabel(tool.badge)
-            badge_lbl.setStyleSheet("""
-                background-color: #312e81;
-                color: #818cf8;
-                border: 1px solid #4338ca;
-                border-radius: 6px;
-                padding: 2px 6px;
-                font-size: 10px;
-                font-weight: 700;
-            """)
-            top_row.addWidget(badge_lbl)
-        elif tool.availability == ToolAvailability.CONFIG_REQUIRED:
-            badge_lbl = QLabel("Setup Req")
-            badge_lbl.setStyleSheet("""
-                background-color: #451a03;
-                color: #f97316;
-                border: 1px solid #7c2d12;
-                border-radius: 6px;
-                padding: 2px 6px;
-                font-size: 10px;
-                font-weight: 700;
-            """)
-            top_row.addWidget(badge_lbl)
-
-        layout.addLayout(top_row)
-
-        # Title
         title_lbl = QLabel(tool.title)
-        title_lbl.setStyleSheet("color: #f8fafc; font-size: 14px; font-weight: 700;")
+        title_lbl.setStyleSheet("font-size: 14px; font-weight: 700;")
         layout.addWidget(title_lbl)
 
-        # Description
         desc_lbl = QLabel(tool.description)
         desc_lbl.setWordWrap(True)
-        desc_lbl.setStyleSheet("color: #94a3b8; font-size: 11px; line-height: 1.2;")
+        desc_lbl.setObjectName("mutedText")
         layout.addWidget(desc_lbl)
 
-    def mousePressEvent(self, event: Any) -> None:
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.clicked.emit(self.tool.id)
-            event.accept()
-            return
-        super().mousePressEvent(event)
+        if status:
+            status_lbl = QLabel(status)
+            status_lbl.setObjectName("warningText")
+            layout.addWidget(status_lbl)
 
 
 # ---------------------------------------------------------------------------
@@ -216,7 +160,7 @@ class PdfToolExecutionDialog(QDialog):
         super().__init__(parent)
         self.tool = tool
         self.setWindowTitle(f"{tool.title} — LocalShift PDF Suite")
-        self.setMinimumWidth(560)
+        self.setMinimumWidth(480)
         self.settings = get_settings()
         self.worker: Optional[ToolExecutionWorker] = None
         self._last_output_path: Optional[Path] = None
@@ -228,26 +172,13 @@ class PdfToolExecutionDialog(QDialog):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(14)
 
-        # Header with icon and title
         header = QHBoxLayout()
-        icon_box = QLabel(self.tool.icon_symbol)
-        icon_box.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        icon_box.setFixedSize(40, 40)
-        icon_box.setStyleSheet(f"""
-            background-color: {self.tool.accent_color}22;
-            color: {self.tool.accent_color};
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: bold;
-        """)
-        header.addWidget(icon_box)
-
         title_vbox = QVBoxLayout()
-        title_vbox.setSpacing(2)
+        title_vbox.setSpacing(4)
         title_lbl = QLabel(self.tool.title)
-        title_lbl.setStyleSheet("font-size: 16px; font-weight: bold; color: #f8fafc;")
+        title_lbl.setStyleSheet("font-size: 17px; font-weight: 700;")
         desc_lbl = QLabel(self.tool.description)
-        desc_lbl.setStyleSheet("color: #94a3b8; font-size: 12px;")
+        desc_lbl.setObjectName("mutedText")
         desc_lbl.setWordWrap(True)
         title_vbox.addWidget(title_lbl)
         title_vbox.addWidget(desc_lbl)
@@ -280,12 +211,12 @@ class PdfToolExecutionDialog(QDialog):
         # Setup guide banner for config-required tools
         if self.tool.availability == ToolAvailability.CONFIG_REQUIRED or self.tool.setup_guide:
             setup_box = QGroupBox("Configuration Required")
-            setup_box.setStyleSheet("QGroupBox { border: 1px solid #b45309; border-radius: 8px; margin-top: 6px; padding: 8px; }")
+            setup_box.setObjectName("setupBox")
             setup_layout = QVBoxLayout(setup_box)
             msg = self.tool.setup_guide or self.tool.limitations or "External dependency required."
             lbl = QLabel(msg)
             lbl.setWordWrap(True)
-            lbl.setStyleSheet("color: #f59e0b; font-size: 11px;")
+            lbl.setObjectName("warningText")
             setup_layout.addWidget(lbl)
             layout.addWidget(setup_box)
 
@@ -488,13 +419,7 @@ class PdfToolExecutionDialog(QDialog):
         btn_row.addStretch()
 
         self.run_btn = QPushButton(f"Execute {self.tool.title}")
-        self.run_btn.setStyleSheet("""
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #3b82f6, stop:1 #6366f1);
-            color: #ffffff;
-            font-weight: bold;
-            padding: 8px 18px;
-            border-radius: 8px;
-        """)
+        self.run_btn.setProperty("class", "accent")
         self.run_btn.clicked.connect(self._on_execute)
         btn_row.addWidget(self.run_btn)
         layout.addLayout(btn_row)
@@ -664,13 +589,15 @@ class PdfToolExecutionDialog(QDialog):
 # ---------------------------------------------------------------------------
 
 class PdfToolsSuiteTab(QWidget):
-    """Searchable grid containing all 32 PDF productivity tools."""
+    """Searchable, responsive catalog of local PDF tasks."""
     tool_triggered = Signal(str)  # tool_id for external tab switching
 
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self._current_category_filter: Optional[ToolCategory] = None
         self._cards: list[ToolCardWidget] = []
+        self._visible_tools: list[PdfToolDefinition] = list(ALL_PDF_TOOLS)
+        self._column_count = 0
 
         self._init_ui()
 
@@ -679,80 +606,86 @@ class PdfToolsSuiteTab(QWidget):
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(12)
 
-        # Search Bar + Category Pills Row
         filter_row = QHBoxLayout()
-        filter_row.setSpacing(10)
+        filter_row.setSpacing(8)
 
         self.search_edit = QLineEdit()
-        self.search_edit.setPlaceholderText("🔍  Search PDF tools (e.g. compress, watermark, ocr, word)…")
-        self.search_edit.setStyleSheet("""
-            QLineEdit {
-                background-color: #1e293b;
-                border: 1px solid #334155;
-                border-radius: 8px;
-                padding: 8px 12px;
-                color: #f8fafc;
-                font-size: 13px;
-            }
-            QLineEdit:focus {
-                border: 1px solid #6366f1;
-            }
-        """)
+        self.search_edit.setPlaceholderText("Search by task, such as merge or watermark")
+        self.search_edit.setAccessibleName("Search PDF tools")
         self.search_edit.textChanged.connect(self._on_search_changed)
         filter_row.addWidget(self.search_edit, stretch=1)
+
+        self.category_combo = QComboBox()
+        self.category_combo.setAccessibleName("Filter PDF tools by category")
+        self.category_combo.addItem("All categories", None)
+        for cat in ToolCategory:
+            self.category_combo.addItem(cat.value, cat)
+        self.category_combo.currentIndexChanged.connect(
+            lambda index: self._set_category_filter(self.category_combo.itemData(index))
+        )
+        filter_row.addWidget(self.category_combo)
         layout.addLayout(filter_row)
 
-        # Category Buttons Row
-        cat_row = QHBoxLayout()
-        cat_row.setSpacing(6)
+        self.result_count = QLabel(f"{len(ALL_PDF_TOOLS)} PDF tools")
+        self.result_count.setObjectName("mutedText")
+        layout.addWidget(self.result_count)
 
-        self.cat_buttons: list[QPushButton] = []
-        all_btn = QPushButton("All Tools")
-        all_btn.setProperty("class", "cat-pill")
-        all_btn.clicked.connect(lambda: self._set_category_filter(None))
-        cat_row.addWidget(all_btn)
-        self.cat_buttons.append(all_btn)
+        self.empty_state = QLabel("No tools match. Try another search or choose All categories.")
+        self.empty_state.setObjectName("mutedText")
+        self.empty_state.setWordWrap(True)
+        self.empty_state.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.empty_state.setVisible(False)
+        layout.addWidget(self.empty_state, stretch=1)
 
-        for cat in ToolCategory:
-            b = QPushButton(cat.value)
-            b.setProperty("class", "cat-pill")
-            b.clicked.connect(lambda _, c=cat: self._set_category_filter(c))
-            cat_row.addWidget(b)
-            self.cat_buttons.append(b)
-
-        cat_row.addStretch()
-        layout.addLayout(cat_row)
-
-        # Scroll Area with Grid of Tool Cards
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setStyleSheet("QScrollArea { border: none; background: transparent; }")
+        self.scroll_area.setAccessibleName("PDF tools")
+        self.scroll_area.viewport().setStyleSheet("background: transparent;")
+        self.scroll_area.viewport().installEventFilter(self)
 
         self.grid_container = QWidget()
-        self.grid_layout = QGridLayout(self.grid_container)
-        self.grid_layout.setContentsMargins(4, 4, 4, 4)
-        self.grid_layout.setSpacing(12)
-
-        self._populate_grid(ALL_PDF_TOOLS)
+        self.grid_container.setAutoFillBackground(False)
+        self.catalog_layout = QVBoxLayout(self.grid_container)
+        self.catalog_layout.setContentsMargins(2, 2, 2, 2)
+        self.catalog_layout.setSpacing(12)
 
         self.scroll_area.setWidget(self.grid_container)
         layout.addWidget(self.scroll_area, stretch=1)
+        self._populate_grid(self._visible_tools)
 
     def _populate_grid(self, tools: Sequence[PdfToolDefinition]) -> None:
-        # Clear existing
-        for card in self._cards:
-            self.grid_layout.removeWidget(card)
-            card.deleteLater()
+        while self.catalog_layout.count():
+            item = self.catalog_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
         self._cards.clear()
 
-        cols = 3  # 3-column layout matching mockup screenshots
-        for i, tool in enumerate(tools):
-            card = ToolCardWidget(tool, self)
-            card.clicked.connect(self._on_card_clicked)
-            r = i // cols
-            c = i % cols
-            self.grid_layout.addWidget(card, r, c)
-            self._cards.append(card)
+        width = self.scroll_area.viewport().width() if hasattr(self, "scroll_area") else self.width()
+        cols = 1 if width < 600 else 2 if width < 900 else 3
+        self._column_count = cols
+        for category in ToolCategory:
+            category_tools = [tool for tool in tools if tool.category == category]
+            if not category_tools:
+                continue
+            heading = QLabel(category.value)
+            heading.setObjectName("catalogHeading")
+            self.catalog_layout.addWidget(heading)
+            grid_widget = QWidget(self.grid_container)
+            grid = QGridLayout(grid_widget)
+            grid.setContentsMargins(0, 0, 0, 0)
+            grid.setHorizontalSpacing(10)
+            grid.setVerticalSpacing(8)
+            for index, tool in enumerate(category_tools):
+                card = ToolCardWidget(tool, grid_widget)
+                card.clicked.connect(
+                    lambda checked=False, tool_id=tool.id: self._on_card_clicked(tool_id)
+                )
+                grid.addWidget(card, index // cols, index % cols)
+                self._cards.append(card)
+            for column in range(cols):
+                grid.setColumnStretch(column, 1)
+            self.catalog_layout.addWidget(grid_widget)
+        self.catalog_layout.addStretch()
 
     def _set_category_filter(self, category: Optional[ToolCategory]) -> None:
         self._current_category_filter = category
@@ -766,7 +699,32 @@ class PdfToolsSuiteTab(QWidget):
         matched = PdfToolRegistry.search_tools(q)
         if self._current_category_filter is not None:
             matched = [t for t in matched if t.category == self._current_category_filter]
-        self._populate_grid(matched)
+        self._visible_tools = matched
+        self.result_count.setText(f"{len(matched)} PDF tool{'s' if len(matched) != 1 else ''}")
+        self.empty_state.setVisible(not matched)
+        self.scroll_area.setVisible(bool(matched))
+        if matched:
+            self._populate_grid(matched)
+
+    def resizeEvent(self, event: Any) -> None:
+        super().resizeEvent(event)
+        if not hasattr(self, "scroll_area"):
+            return
+        self._update_grid_columns(self.scroll_area.viewport().width())
+
+    def eventFilter(self, watched: Any, event: Any) -> bool:
+        if (
+            hasattr(self, "catalog_layout")
+            and watched is self.scroll_area.viewport()
+            and event.type() == QEvent.Type.Resize
+        ):
+            self._update_grid_columns(event.size().width())
+        return super().eventFilter(watched, event)
+
+    def _update_grid_columns(self, width: int) -> None:
+        columns = 1 if width < 600 else 2 if width < 900 else 3
+        if columns != self._column_count:
+            self._populate_grid(self._visible_tools)
 
     def _on_card_clicked(self, tool_id: str) -> None:
         # Emit signal for main window tab redirection or modal dialog execution

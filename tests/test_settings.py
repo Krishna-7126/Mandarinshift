@@ -29,6 +29,25 @@ def clean_settings(tmp_path: Path):
 
 
 class TestAppSettings:
+    def test_global_radial_conversion_is_off_by_default(self, monkeypatch):
+        class EmptySettings:
+            def value(self, key, default=None):
+                return default
+
+        monkeypatch.setattr("localshift.settings.QSettings", lambda *args: EmptySettings())
+        assert AppSettings().radial_gesture_enabled is False
+
+    @pytest.mark.parametrize(("stored_value", "expected"), [("false", False), ("true", True), ("0", False), ("1", True)])
+    def test_radial_preference_parses_persisted_string_values(self, monkeypatch, stored_value, expected):
+        class StoredSettings:
+            def value(self, key, default=None):
+                if key == "radial_gesture_enabled":
+                    return stored_value
+                return default
+
+        monkeypatch.setattr("localshift.settings.QSettings", lambda *args: StoredSettings())
+        assert AppSettings().radial_gesture_enabled is expected
+
     def test_default_save_folder_exists(self):
         folder = get_default_save_folder()
         assert isinstance(folder, Path)

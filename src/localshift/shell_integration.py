@@ -1,13 +1,11 @@
 """
-localshift.shell_integration — Windows Shell integration, Explorer selection inspection,
-Start with Windows registration, and background Shift+Drag gesture controller.
+localshift.shell_integration — Windows startup integration and background Shift+Drag controller.
 
 Features:
-1. Active Explorer & Desktop selected items inspection via Shell.Application (IShellWindows).
-2. Start with Windows configuration in HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run.
-3. Non-invasive BackgroundGestureController detecting Shift+Drag in File Explorer and
-   summoning the floating radial conversion menu with direct drop/click execution.
-4. Lightweight completion notifications with 'Open File' and 'Open Folder' actions.
+1. Start with Windows configuration in HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run.
+2. Non-invasive BackgroundGestureController detecting Shift+Drag and requiring an actual
+   local-file OLE drop on a radial target before conversion.
+3. Lightweight completion notifications with 'Open File' and 'Open Folder' actions.
 """
 from __future__ import annotations
 
@@ -30,8 +28,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .formats import output_formats_for
-from .radial_menu import GestureState, RadialConversionMenu, get_supported_targets, is_shift_pressed
+from .radial_menu import GestureState, RadialConversionMenu, is_shift_pressed
 from .settings import get_settings
 
 log = logging.getLogger(__name__)
@@ -66,11 +63,9 @@ def set_start_with_windows_enabled(enable: bool) -> bool:
                 if getattr(sys, "frozen", False):
                     exe_path = f'"{sys.executable}" --minimized'
                 else:
-                    python_exe = sys.executable
-                    script = Path(__file__).resolve().parent / "gui.py"
-                    exe_path = f'"{python_exe}" "{script}" --minimized'
+                    exe_path = f'"{sys.executable}" -m localshift.gui --minimized'
                 winreg.SetValueEx(key, APP_RUN_NAME, 0, winreg.REG_SZ, exe_path)
-                log.info("Registered LocalShift startup entry: %s", exe_path)
+                log.info("Registered LocalShift startup entry.")
             else:
                 try:
                     winreg.DeleteValue(key, APP_RUN_NAME)
@@ -278,9 +273,8 @@ class BackgroundGestureController(QObject):
     - Never installs an invasive global keyboard hook or kernel driver.
     - Discrete state machine: IDLE -> DRAG_CANDIDATE -> MENU_VISIBLE -> TARGET_SELECTED -> CONVERTING -> COMPLETED/FAILED/CANCELLED.
     - Uses non-blocking polling of physical key/mouse button state (VK_LBUTTON, VK_SHIFT, VK_ESCAPE).
-    - Uses source-adapter architecture (Explorer, Desktop, OLE).
-    - Summons floating RadialConversionMenu centered at cursor without stealing focus or breaking OLE drag capture.
-    - Dispatches conversion to the background worker upon format drop/click.
+    - Opens a floating drop target without activation or focus stealing.
+    - Converts only validated local-file OLE payloads dropped on an actual format petal.
     """
 
     conversion_requested = Signal(str, list)  # (target_format, list_of_paths)
@@ -297,6 +291,10 @@ class BackgroundGestureController(QObject):
         self._lbutton_was_down = False
         self._drag_start_pos: Optional[QPoint] = None
         self._drag_triggered = False
+        self._drop_timeout = QTimer(self)
+        self._drop_timeout.setSingleShot(True)
+        self._drop_timeout.setInterval(500)
+        self._drop_timeout.timeout.connect(self._cancel_unaccepted_drop)
 
         # 50ms polling timer for responsive, lightweight interaction without high CPU usage
         self._poll_timer = QTimer(self)
@@ -310,9 +308,11 @@ class BackgroundGestureController(QObject):
 
     def _set_state(self, new_state: GestureState) -> None:
         if self.state != new_state:
+            previous = self.state.value
             self.state = new_state
             val = new_state.value if hasattr(new_state, "value") else str(new_state)
             self.state_changed.emit(val)
+            log.info("Background gesture state: %s -> %s", previous, val)
 
     def _init_tray(self) -> None:
         """Initialize system tray icon with status, open, and toggle actions."""
@@ -388,14 +388,18 @@ class BackgroundGestureController(QObject):
 
     def stop_monitoring(self) -> None:
         """Stop background gesture monitoring."""
-        if self._is_monitoring:
-            self._is_monitoring = False
-            self._poll_timer.stop()
-            self._drag_triggered = False
-            if self._active_menu and self._active_menu.isVisible():
-                self._active_menu.close()
-                self._active_menu = None
-            self._set_state(GestureState.IDLE)
+        was_monitoring = self._is_monitoring
+        self._is_monitoring = False
+        self._poll_timer.stop()
+        self._drop_timeout.stop()
+        self._drag_triggered = False
+        self._lbutton_was_down = False
+        self._drag_start_pos = None
+        if self._active_menu:
+            self._active_menu.close()
+            self._active_menu = None
+        self._set_state(GestureState.IDLE)
+        if was_monitoring:
             log.info("Background Shift+Drag gesture controller stopped.")
 
     def show_notification(self, title: str, message: str, path: Optional[Path] = None) -> None:
@@ -420,18 +424,30 @@ class BackgroundGestureController(QObject):
 
         # 0. Check Escape key for instant cancellation: VK_ESCAPE = 0x1B
         if bool(user32.GetAsyncKeyState(0x1B) & 0x8000):
-            if self._active_menu and self._active_menu.isVisible():
-                self._active_menu.close()
-                self._active_menu = None
-            self._set_state(GestureState.CANCELLED)
-            self._set_state(GestureState.IDLE)
-            self._drag_start_pos = None
-            self._drag_triggered = False
-            self._lbutton_was_down = False
+            left_button_down = bool(user32.GetAsyncKeyState(0x01) & 0x8000)
+            if self._active_menu or self.state != GestureState.IDLE:
+                self._drop_timeout.stop()
+                if self._active_menu and self._active_menu.isVisible():
+                    self._active_menu.close()
+                    self._active_menu = None
+                self._set_state(GestureState.CANCELLED)
+                self._set_state(GestureState.IDLE)
+                self._drag_start_pos = None
+                self._drag_triggered = left_button_down
+                self._lbutton_was_down = left_button_down
             return
 
-        # 1. Do not interfere if user is dragging over LocalShift's own active window
+        # LocalShift's in-app OLE target owns drags over its active window.
         if self.main_window and self.main_window.isActiveWindow() and self.main_window.underMouse():
+            self._drop_timeout.stop()
+            if self._active_menu:
+                self._active_menu.close()
+                self._active_menu = None
+                self._set_state(GestureState.CANCELLED)
+                self._set_state(GestureState.IDLE)
+            self._lbutton_was_down = False
+            self._drag_start_pos = None
+            self._drag_triggered = False
             return
 
         # Check physical left mouse button: VK_LBUTTON = 0x01
@@ -451,14 +467,12 @@ class BackgroundGestureController(QObject):
             if self._active_menu and self._active_menu.isVisible():
                 # If user released Shift while dragging, dismiss radial menu so regular drag proceeds
                 if not shift_down:
+                    self._drop_timeout.stop()
                     self._active_menu.close()
                     self._active_menu = None
                     self._set_state(GestureState.CANCELLED)
                     self._set_state(GestureState.IDLE)
                     return
-
-                local_pos = self._active_menu.mapFromGlobal(curr_pos)
-                self._active_menu.track_drag_pos(local_pos)
 
             elif not self._drag_triggered and self._drag_start_pos:
                 dx = curr_pos.x() - self._drag_start_pos.x()
@@ -468,25 +482,14 @@ class BackgroundGestureController(QObject):
                 # Drag threshold: cursor moved more than 8 pixels with button held
                 if dist_sq >= 64:
                     if shift_down:
-                        source = detect_active_drag_source()
-                        if source.can_retrieve_paths():
-                            paths = source.get_dragged_paths()
-                            if paths:
-                                self._trigger_background_radial(curr_pos, paths=paths)
+                        self._trigger_background_radial(curr_pos)
 
-        # C. Mouse button released (drop or release)
+        # C. Mouse release never selects a format; only OLE dropEvent may convert.
         elif not lbutton_down and self._lbutton_was_down:
             if self._active_menu and self._active_menu.isVisible():
-                local_pos = self._active_menu.mapFromGlobal(curr_pos)
-                hit = self._active_menu.petal_at_pos(local_pos)
-                if 0 <= hit < len(self._active_menu.available_formats):
-                    self._set_state(GestureState.TARGET_SELECTED)
-                    self._active_menu.confirm_selection(hit)
-                else:
-                    self._active_menu.close()
-                    self._active_menu = None
-                    self._set_state(GestureState.CANCELLED)
-                    self._set_state(GestureState.IDLE)
+                if not self._active_menu.ole_drag_active:
+                    self._drop_timeout.start()
+                log.info("Global drag released; awaiting an accepted OLE file drop.")
             else:
                 if self.state == GestureState.DRAG_CANDIDATE:
                     self._set_state(GestureState.IDLE)
@@ -496,45 +499,89 @@ class BackgroundGestureController(QObject):
 
         self._lbutton_was_down = lbutton_down
 
-    def _trigger_background_radial(self, pos: QPoint, paths: Optional[list[Path]] = None) -> None:
-        """Inspect selected files in Explorer and display the floating radial menu."""
+    def _trigger_background_radial(self, pos: QPoint) -> None:
+        """Open a global drop target without inferring paths from Explorer selection."""
         if self._active_menu and self._active_menu.isVisible():
             return
-
-        selected_paths = paths if paths is not None else get_explorer_selected_paths()
-        if not selected_paths:
-            return
-
-        available_targets = get_supported_targets(selected_paths)
-        if not available_targets:
+        if self.main_window and RadialConversionMenu.active_menu_in(self.main_window):
+            self._drag_triggered = True
+            log.info("Global radial gesture suppressed because an in-app menu is already active.")
             return
 
         self._drag_triggered = True
 
-        menu = RadialConversionMenu(selected_paths, parent=None, is_overlay=False)
+        menu = RadialConversionMenu([], parent=None, is_overlay=False, awaiting_drop=True)
         menu.format_selected.connect(self._on_format_selected)
         menu.cancelled.connect(self._on_menu_cancelled)
+        menu.ole_drag_left.connect(self._on_ole_drag_left)
         self._active_menu = menu
         self._set_state(GestureState.MENU_VISIBLE)
+        log.info("Global radial drop target opened; awaiting local file URLs.")
         menu.show_at_cursor(pos)
 
+    def _cancel_unaccepted_drop(self) -> None:
+        if self._active_menu and self._active_menu.ole_drag_active:
+            return
+        if sys.platform == "win32":
+            import ctypes
+            if ctypes.windll.user32.GetAsyncKeyState(0x01) & 0x8000:
+                return
+        if self._active_menu:
+            was_visible = self._active_menu.isVisible()
+            self._active_menu.close()
+            self._active_menu = None
+            if self.state == GestureState.MENU_VISIBLE:
+                self._set_state(GestureState.CANCELLED)
+                self._set_state(GestureState.IDLE)
+            if was_visible:
+                self.show_notification(
+                    "No file received",
+                    "This source did not provide a supported local file drop. Use Open Files or drop into LocalShift.",
+                )
+                log.info("Global gesture cancelled: no supported OLE file drop received.")
+
+    def _on_ole_drag_left(self) -> None:
+        if self.state == GestureState.MENU_VISIBLE and self._active_menu and self._active_menu.isVisible():
+            self._drop_timeout.start()
+
     def _on_format_selected(self, target_format: str, paths: list[Path]) -> None:
+        if self.state != GestureState.MENU_VISIBLE or self._active_menu is None:
+            log.warning("Ignoring stale or duplicate global OLE drop dispatch.")
+            return
+        self._drop_timeout.stop()
         self._active_menu = None
+        self._set_state(GestureState.TARGET_SELECTED)
         self._set_state(GestureState.CONVERTING)
+        log.info("Global OLE drop accepted: %d file(s), target=%s.", len(paths), target_format)
         self.conversion_requested.emit(target_format, paths)
 
     def _on_menu_cancelled(self) -> None:
+        if self.state != GestureState.MENU_VISIBLE:
+            return
+        self._drop_timeout.stop()
         self._active_menu = None
         self._set_state(GestureState.CANCELLED)
         self._set_state(GestureState.IDLE)
 
     def on_conversion_completed(self) -> None:
         """Notify state machine that conversion finished successfully."""
-        self._set_state(GestureState.COMPLETED)
-        self._set_state(GestureState.IDLE)
+        if self.state != GestureState.CONVERTING:
+            return
+        self._reset_after_conversion(GestureState.COMPLETED)
 
     def on_conversion_failed(self) -> None:
         """Notify state machine that conversion failed."""
-        self._set_state(GestureState.FAILED)
-        self._set_state(GestureState.IDLE)
+        if self.state != GestureState.CONVERTING:
+            return
+        self._reset_after_conversion(GestureState.FAILED)
 
+    def _reset_after_conversion(self, final_state: GestureState) -> None:
+        self._drop_timeout.stop()
+        if self._active_menu:
+            self._active_menu.close()
+            self._active_menu = None
+        self._drag_start_pos = None
+        self._drag_triggered = False
+        self._lbutton_was_down = False
+        self._set_state(final_state)
+        self._set_state(GestureState.IDLE)

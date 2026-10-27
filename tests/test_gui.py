@@ -23,7 +23,8 @@ os.environ["QT_QPA_PLATFORM"] = "offscreen"
 
 import PySide6
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication
+from PySide6.QtTest import QTest
+from PySide6.QtWidgets import QApplication, QLabel
 
 from localshift.gui import (
     BatchConversionWorker,
@@ -33,6 +34,7 @@ from localshift.gui import (
     MainWindow,
     PdfRasterizeTab,
     PdfWorkbenchTab,
+    SettingsDialog,
     SingleTaskWorker,
 )
 from localshift.pdf_suite_ui import PdfToolsSuiteTab
@@ -150,12 +152,117 @@ class TestMainWindow:
         assert win.tabs.currentIndex() == 4
         assert win.workbench_tab.op_combo.currentIndex() == 0
 
+    def test_global_radial_setting_controls_background_monitoring(self, qapp):
+        from localshift.settings import get_settings
+
+        settings = get_settings()
+        previous_enabled = settings.radial_gesture_enabled
+        settings.radial_gesture_enabled = False
+        win = MainWindow()
+        dlg = SettingsDialog(win)
+
+        assert win.gesture_status_btn.text() == "Shift+Drag: Off"
+        assert dlg.gesture_cb.text() == "Enable global Shift+Drag conversion"
+        assert dlg.gesture_status_label.text().endswith("no background gesture monitoring")
+        assert not win.bg_controller._is_monitoring
+
+        dlg.gesture_cb.setChecked(True)
+        assert win.bg_controller._is_monitoring
+        assert dlg.gesture_status_label.text().endswith("external sources are not certified")
+
+        dlg.gesture_cb.setChecked(False)
+        assert not win.bg_controller._is_monitoring
+        assert not win.bg_controller._poll_timer.isActive()
+
+        win.bg_controller.stop_monitoring()
+        settings.radial_gesture_enabled = previous_enabled
+
+    def test_close_with_monitoring_off_exits_even_if_tray_exists(self, qapp):
+        from types import SimpleNamespace
+        from PySide6.QtGui import QCloseEvent
+        from localshift.settings import get_settings
+
+        settings = get_settings()
+        previous_enabled = settings.radial_gesture_enabled
+        settings.radial_gesture_enabled = False
+        win = MainWindow()
+        win.bg_controller._is_monitoring = False
+        win.bg_controller._tray_icon = SimpleNamespace(isVisible=lambda: True)
+
+        event = QCloseEvent()
+        win.closeEvent(event)
+
+        assert event.isAccepted()
+        assert not win.bg_controller._is_monitoring
+        settings.radial_gesture_enabled = previous_enabled
+
+    @pytest.mark.parametrize(
+        ("succeeded", "failed", "terminal_state"),
+        [(1, 0, "COMPLETED"), (0, 1, "FAILED")],
+    )
+    def test_conversion_completion_resets_global_gesture_state(
+        self, qapp, dialogs, succeeded, failed, terminal_state
+    ):
+        from localshift.radial_menu import GestureState
+        from localshift.settings import get_settings
+
+        settings = get_settings()
+        previous_enabled = settings.radial_gesture_enabled
+        settings.radial_gesture_enabled = False
+        win = MainWindow()
+        states = []
+        win.bg_controller.state_changed.connect(states.append)
+        win.bg_controller._set_state(GestureState.CONVERTING)
+
+        win.convert_tab._on_finished(succeeded, failed, [])
+
+        assert win.bg_controller.state == GestureState.IDLE
+        assert terminal_state in states
+        settings.radial_gesture_enabled = previous_enabled
+
 
 # ---------------------------------------------------------------------------
 # Test 2: FileConverterTab
 # ---------------------------------------------------------------------------
 
 class TestFileConverterTab:
+    def test_primary_workflow_controls_have_accessible_names(self, qapp):
+        converter = FileConverterTab()
+        rasterizer = PdfRasterizeTab()
+        image_assembler = ImagesToPdfTab()
+        workbench = PdfWorkbenchTab()
+        settings = SettingsDialog()
+
+        assert converter.table.accessibleName() == "Conversion queue"
+        assert rasterizer.dpi_spin.accessibleName() == "Resolution in DPI"
+        assert rasterizer.dpi_spin.lineEdit().accessibleName() == "Resolution in DPI"
+        assert rasterizer.pattern_edit.accessibleName() == "Output naming pattern"
+        assert image_assembler.table.accessibleName() == "Images to assemble"
+        assert image_assembler.margin_spin.accessibleName() == "Page margin in points"
+        assert workbench.merge_table.accessibleName() == "PDF merge order"
+        assert settings.settings_tabs.accessibleName() == "Settings pages"
+        assert settings.dest_edit.accessibleName() == "Default destination folder"
+
+    def test_compact_queue_fits_narrow_layout(self, qapp, sample_png):
+        tab = FileConverterTab()
+        tab.resize(540, 480)
+        tab.add_paths([sample_png])
+        tab.show()
+        qapp.processEvents()
+
+        assert tab.table.isColumnHidden(1)
+        assert tab.table.isColumnHidden(4)
+        assert tab.right_panel.isHidden()
+        assert not tab.table.verticalHeader().isVisible()
+        combo = tab.table.cellWidget(0, 2)
+        assert combo.maximumWidth() <= 170
+        assert combo.currentText() == f"{combo.currentData().upper()} (.{combo.currentData()})"
+        assert tab.table.horizontalScrollBar().maximum() == 0
+
+        tab.resize(800, 480)
+        qapp.processEvents()
+        assert not tab.right_panel.isHidden()
+
     def test_add_paths_populates_table(self, qapp, sample_png, sample_pdf):
         tab = FileConverterTab()
         tab.add_paths([sample_png, sample_pdf])
@@ -173,6 +280,9 @@ class TestFileConverterTab:
         formats_png = [combo_png.itemData(i) for i in range(combo_png.count())]
         assert "jpeg" in formats_png
         assert "pdf" in formats_png
+        bmp_index = combo_png.findData("bmp")
+        assert combo_png.itemText(bmp_index) == "BMP (.bmp)"
+        assert combo_png.itemData(bmp_index, Qt.ItemDataRole.ToolTipRole) == "BMP image (.bmp)"
 
         combo_pdf = tab.table.cellWidget(1, 2)
         formats_pdf = [combo_pdf.itemData(i) for i in range(combo_pdf.count())]
@@ -221,8 +331,8 @@ class TestDocxInterchangeTab:
     def test_backend_status_display(self, qapp):
         tab = DocxInterchangeTab()
         tab._refresh_backend_status()
-        status_text = tab.backend_status_label.text()
-        assert ("Active Rendering Backend" in status_text) or ("No rendering backend" in status_text)
+        status_text = tab.backend_status_label.text().casefold()
+        assert ("active rendering backend" in status_text) or ("no rendering backend" in status_text)
 
     def test_missing_input_validation(self, qapp, monkeypatch):
         tab = DocxInterchangeTab()
@@ -439,6 +549,60 @@ class TestWorkers:
 # ---------------------------------------------------------------------------
 
 class TestWorkflowExecution:
+    def test_repeated_radial_open_reuses_one_menu_and_close_releases_it(self, qapp, sample_png):
+        from PySide6.QtCore import QEvent
+        from localshift.radial_menu import RadialConversionMenu
+
+        tab = FileConverterTab()
+        tab.trigger_radial_menu(paths=[sample_png])
+        menu = tab._radial_menu
+        assert menu is not None and menu.isVisible()
+
+        tab.trigger_radial_menu(paths=[sample_png])
+        assert tab._radial_menu is menu
+        assert tab.findChildren(RadialConversionMenu) == [menu]
+
+        menu.close()
+        qapp.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        qapp.processEvents()
+
+        assert tab._radial_menu is None
+        assert tab.findChildren(RadialConversionMenu) == []
+
+    def test_radial_conversion_does_not_replace_running_worker(self, qapp, sample_png, sample_pdf, dialogs):
+        tab = FileConverterTab()
+        tab.add_paths([sample_pdf])
+        tab.worker = type("RunningWorker", (), {"isRunning": lambda self: True})()
+
+        assert not tab.apply_radial_format("jpeg", [sample_png], auto_start=True)
+        assert tab.paths == [sample_pdf]
+        assert len(dialogs["info"]) == 1
+
+    def test_radial_conversion_only_runs_dropped_paths(self, qapp, sample_png, sample_pdf, monkeypatch):
+        tab = FileConverterTab()
+        tab.add_paths([sample_pdf])
+        captured = {}
+
+        class Signal:
+            def connect(self, callback):
+                pass
+
+        class CapturingWorker:
+            def __init__(self, jobs):
+                captured["jobs"] = jobs
+                self.item_done = Signal()
+                self.progress = Signal()
+                self.finished = Signal()
+
+            def start(self):
+                pass
+
+        monkeypatch.setattr("localshift.gui.BatchConversionWorker", CapturingWorker)
+
+        assert tab.apply_radial_format("jpeg", [sample_png], auto_start=True)
+        assert [job[1] for job in captured["jobs"]] == [sample_png]
+        assert captured["jobs"][0][2] == "jpeg"
+
     def test_file_converter_execution(self, qapp, sample_png, tmp_path, dialogs):
         tab = FileConverterTab()
         tab.add_paths([sample_png])
@@ -448,7 +612,7 @@ class TestWorkflowExecution:
         jpeg_idx = combo.findData("jpeg")
         combo.setCurrentIndex(jpeg_idx)
 
-        tab.start_conversion()
+        tab.convert_btn.click()
         assert tab.worker is not None
         tab.worker.wait(5000)
         qapp.processEvents()
@@ -484,6 +648,57 @@ class TestWorkflowExecution:
 
         assert len(dialogs["info"]) == 1
         assert out_pdf.is_file()
+
+
+class TestPdfToolsCatalog:
+    def test_tool_cards_avoid_repeated_category_kickers(self, qapp):
+        catalog = PdfToolsSuiteTab()
+        card = catalog._cards[0]
+
+        assert card.findChild(QLabel, "toolCategory") is None
+        assert card.minimumHeight() == 96
+
+    def test_grid_reflows_when_viewport_crosses_breakpoint(self, qapp):
+        catalog = PdfToolsSuiteTab()
+        catalog.resize(520, 480)
+        catalog.show()
+        qapp.processEvents()
+        assert catalog.scroll_area.viewport().width() < 600
+        assert catalog._column_count == 1
+
+        catalog.resize(900, 480)
+        qapp.processEvents()
+        assert catalog._column_count == 2
+
+    def test_search_shows_empty_state_and_restores_results(self, qapp):
+        catalog = PdfToolsSuiteTab()
+        catalog.show()
+        catalog.search_edit.setText("no-such-localshift-tool")
+        qapp.processEvents()
+
+        assert catalog.empty_state.isVisible()
+        assert not catalog.scroll_area.isVisible()
+        assert catalog.result_count.text() == "0 PDF tools"
+
+        catalog.search_edit.clear()
+        qapp.processEvents()
+        assert not catalog.empty_state.isVisible()
+        assert catalog.scroll_area.isVisible()
+        assert catalog._cards
+
+    def test_tool_choice_is_keyboard_activatable(self, qapp):
+        catalog = PdfToolsSuiteTab()
+        catalog.show()
+        qapp.processEvents()
+        triggered = []
+        catalog.tool_triggered.connect(triggered.append)
+        card = catalog._cards[0]
+
+        assert card.accessibleName() == card.tool.title
+        card.setFocus()
+        QTest.keyClick(card, Qt.Key.Key_Space)
+
+        assert triggered == [card.tool.id]
 
     def test_pdf_workbench_merge_execution(self, qapp, sample_pdf, tmp_path, dialogs):
         tab = PdfWorkbenchTab()
@@ -563,4 +778,3 @@ class TestWorkflowExecution:
 
         assert len(dialogs["info"]) == 1
         assert out_pdf.is_file()
-

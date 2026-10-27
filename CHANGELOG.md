@@ -4,6 +4,66 @@ All notable changes to the LocalShift project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Milestone 23: Release Readiness & Regression Stabilization
+
+### Fixed
+- Launch source checkouts through `python -m localshift.gui` for the Windows "Start with Windows" entry; direct execution of the package file failed with an attempted-relative-import error.
+- Added explicit accessible names to workflow tables, form controls, settings tabs, and destination/theme controls.
+- Corrected the registered PDF tool count and clarified that global drag-source compatibility is not physically certified.
+- Replaced the README's stale main/radial screenshots with current dark/light converter and radial captures; preserved the older screenshots.
+- Corrected the recorded installer size; its existing checksum was independently reverified.
+
+### Verification
+- Full regression suite: **725 passed, 3 skipped, 0 failed** in the project Python 3.11 venv; the three symlink tests require Developer Mode or elevation.
+- Exact commands, findings, artifact checks, manual checklist, and release gates are recorded in `docs/reports/LS-BE-023-release-readiness.md`.
+- Physical Explorer/Desktop/third-party drag behavior, mixed-DPI displays, assistive technology, and a current-source packaging build are not verified; release readiness remains blocked.
+
+## [Unreleased] — Milestone 22A: Radial Wheel Reliability
+
+### User interface
+- Replace the competing gradient/card hierarchy with a restrained proof-sheet visual system, clearer converter and queue priority, grouped settings, and a theme-aware radial wheel.
+- Make PDF tool choices keyboard-focusable and searchable, add an empty-results state, remove repeated category labels, and reflow the catalog to one column at minimum width.
+- Collapse the Recent panel at narrow widths, shorten closed queue format labels while retaining full names in tooltips, and remove the unused row header to prevent overflow.
+- Register Segoe UI when Windows Qt font discovery is empty; keep the PDF catalog count driven by the live registry instead of a stale header number.
+
+### Fixed
+- Anchor radial filename and destination pills around the wheel instead of the popup or application edges, and recalculate wheel geometry synchronously when resized.
+- Align hit-testing with the visible petal discs, preserve the active petal with a distance buffer, and hit-test the pointer on click rather than confirming stale hover.
+- Accept wheel mouse presses so clicks outside a petal cancel instead of reaching underlying controls.
+- Keep one visible radial menu per app interaction and clear cancellation/ownership state when standalone menus close.
+
+### Verification status
+- Full regression suite: **723 passed, 3 skipped, 0 failed**; physical Windows drag-source and mixed-DPI verification remain open.
+- Offscreen Qt captures reviewed in dark/light themes at 1020×680 and 760×560 for the converter, PDF catalog, settings, and radial wheel; physical-display and DPI behavior remain unverified.
+- Detailed findings and test commands: `docs/reports/LS-BE-022A-radial-wheel-report.md`.
+
+## Milestone 21: Global Gesture Reliability & Verification
+
+### Fixed
+- Radial conversion now submits only the exact paths in the validated drop payload; unrelated files already in the conversion queue are left untouched.
+- Clear radial hover when a drag leaves all sectors, prevent stale or duplicate global drop dispatch, and return gesture state to IDLE after success or failure.
+- Closing the app exits when global monitoring is off, even if a system tray icon is available.
+- Parse saved global-gesture preferences safely when QSettings returns string values, preserving an explicit OFF choice.
+
+### Added
+- Physical verification mode writes a structured JSON report with every case initially marked `NOT TESTED`; an operator must record outcomes and short non-sensitive notes.
+- Tests cover exact-payload-only conversion, stale hover, duplicate dispatch, cancellation recovery, settings parsing, and controller completion/failure cleanup.
+
+### Verification status
+- Automated checks are recorded in `docs/reports/LS-BE-021-reliability-report.md`.
+- Explorer/Desktop/third-party physical tests and production performance measurements remain unverified; no release-ready or universal compatibility claim is made.
+
+## Milestone 20: Environment Recovery & Verified Global Drag
+
+### Fixed
+- Global Shift+drag no longer reads Explorer selections or converts on mouse release; it requires the actual local-file OLE payload and a drop on a format sector.
+- Rejects mixed/virtual URLs, inaccessible files, unsupported routes, and inputs larger than 250 MiB without converting a partial or guessed file list.
+- Aligns radial sector drawing with hit testing and removes stale-hover fallback when a drop misses a sector.
+- Constrains RapidOCR to the model/API series exercised by the OCR regression suite and makes Windows test execution use the project venv with Qt offscreen.
+
+### Added
+- Privacy-conscious optional gesture diagnostics and a repeatable Windows source/monitor/cancellation checklist.
+
 ## [0.19.0] — Milestone 19: Complete PDF Suite, Functional Features & Production-Ready Offline Conversion
 
 ### Added

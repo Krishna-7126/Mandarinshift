@@ -121,7 +121,7 @@ LocalShift supports **54 directional conversion routes**. Conversion capabilitie
 | ![Current Main Window Light](docs/screenshots/m23-main-window-light.png) | ![Current PDF Tool Catalog](docs/screenshots/m23-pdf-catalog-dark.png) |
 | *Current light-theme converter capture at 1020×680.* | *Current dark-theme PDF catalog, showing the live registry count.* |
 
-Settings retain explicit global-gesture opt-in and an OFF status by default. See the [Milestone 23 report](docs/reports/LS-BE-023-release-readiness.md) for what was and was not physically verified.
+Settings retain explicit global-gesture opt-in and an OFF status by default. See the [Milestone 24 report](docs/reports/LS-BE-024-release-readiness.md) for what was and was not physically verified.
 
 ---
 
@@ -241,7 +241,7 @@ The PDF Suite provides 34 registered tools: 32 ready to use and 2 requiring loca
   - On Windows and source applications that provide the required local-file OLE payload, hold `Shift` while dragging. Physical compatibility has not been certified across applications or systems.
   - Drop the file onto a petal to convert immediately to your default save destination.
   - *Safety behavior*: Conversion is dispatched only from a validated local-file payload and an explicit drop on an active petal. Explorer selection is never used as a substitute. The feature does not poll clipboard contents or inject hooks into foreign processes.
-  - *Verification status*: Explorer, Desktop, third-party file-manager, mixed-DPI and physical assistive-technology behavior remain unverified. Consult the Milestone 23 report before relying on global gesture compatibility.
+  - *Verification status*: Explorer, Desktop, third-party file-manager, mixed-DPI and physical assistive-technology behavior remain unverified. Consult the Milestone 24 report before relying on global gesture compatibility.
 
 ### 4. Command-Line Interface (CLI)
 LocalShift includes a standalone command-line executable for automation and scripting:
@@ -338,10 +338,14 @@ LocalShift maintains an exhaustive automated testing suite with verified test co
 ### Reproducible Test Execution
 
 ```powershell
+# Create the intended Python 3.11 environment and install declared extras
+py -3.11 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e ".[dev,desktop,build]"
+
 # Execute the complete automated regression suite
 .\scripts\run_tests.ps1
 
-# Or run pytest directly via the project virtual environment
+# Or run pytest directly
 $env:PYTHONPATH = "Z:\LocalShift;Z:\LocalShift\src"
 $env:QT_QPA_PLATFORM = "offscreen"
 .\.venv\Scripts\python.exe -m pytest -ra -q
@@ -349,8 +353,10 @@ $env:QT_QPA_PLATFORM = "offscreen"
 
 ### Verified Test Results
 
-```text
-The latest exact totals and environment are recorded in [`docs/reports/LS-BE-023-release-readiness.md`](docs/reports/LS-BE-023-release-readiness.md). The last run used the project `.venv` and `.\scripts\run_tests.ps1`. The three skipped tests require Windows symlink privileges (Developer Mode or elevation); skipped tests are not counted as passes.
+The current Milestone 24 totals and environment are recorded in
+[`docs/reports/LS-BE-024-release-readiness.md`](docs/reports/LS-BE-024-release-readiness.md). The full run used the
+project `.venv` and `.\scripts\run_tests.ps1`. Three skipped tests require Windows symlink privileges (Developer
+Mode or elevation); skipped tests are not counted as passes.
 
 ### Conversion Quality Gate Standards
 To ensure conversions meet publishing standards, LocalShift is benchmarked against holdout document corpuses:
@@ -363,16 +369,24 @@ To ensure conversions meet publishing standards, LocalShift is benchmarked again
 
 ## Packaging & Windows Distribution
 
-LocalShift provides an automated packaging pipeline producing both portable directories and an Inno Setup installer.
+LocalShift provides an automated packaging pipeline for a portable directory and, when Inno Setup is installed, an
+installer. The isolated build requires fresh output, work, and installer directories; it refuses to overwrite any.
 
 ```powershell
-# Build PyInstaller portable directory and compiled Inno Setup installer
-py -3.11 packaging/build.py
+# Use new, unused paths outside existing release output folders
+.\.venv\Scripts\python.exe packaging\build.py `
+  --output-dir "$env:TEMP\LocalShift-build\dist" `
+  --work-dir "$env:TEMP\LocalShift-build\work" `
+  --installer-dir "$env:TEMP\LocalShift-build\installer"
 ```
 
-- **Output Executable**: `dist/LocalShift/LocalShift.exe` (Standalone PySide6 GUI).
-- **Console Binary**: `dist/LocalShift/localshift-cli.exe` (CLI utility).
-- **Installer Binary**: `dist/installer/LocalShift-Setup-0.14.0.exe` (Built with Inno Setup 6 with silent flags `/VERYSILENT /NORESTART`).
+- Output is placed under the chosen distribution path in `LocalShift\LocalShift.exe` (GUI) and
+  `LocalShift\localshift-cli.exe` (CLI).
+- If Inno Setup 6 is unavailable, pass `--skip-installer` and omit `--installer-dir`.
+- Do not use the historical `--clean-only` option against directories containing files you need; it removes the
+  repository's standard `build`, `dist\LocalShift`, and `dist\installer` directories.
+- PyInstaller is pinned by the `[build]` extra. Application runtime dependencies remain version-ranged in
+  `pyproject.toml`; a complete dependency lockfile is not currently provided.
 
 ---
 
@@ -385,7 +399,7 @@ py -3.11 packaging/build.py
 - [x] **Reliability & 54 Route Audit (Milestone 18)**: Color fidelity calibration, 54-route regression validation, zero unhandled exceptions.
 - [x] **Complete PDF Suite (Milestone 19)**: All 32 PDF productivity tools implemented with native OpenXML builders, ISO PDF/A exporter, and offline AI summarizer.
 - [x] **Radial Wheel Geometry Stabilization (Milestone 22A)**: Synchronous resize geometry, unified petal hit-testing, and proof-sheet visual theme.
-- [ ] **Release Readiness (Milestone 23)**: Automated regression is recorded in the release report; physical drag-source, mixed-DPI, assistive-technology, and current-source packaging verification remain release gates.
+- [ ] **Release Readiness (Milestones 23–24)**: Automated regression and a clean-environment current-source build are recorded in the release report; Explorer/Desktop/third-party drag, mixed-DPI, assistive-technology, and installer lifecycle verification remain release gates.
 - [ ] **Advanced Format Expansion**: Ingesting legacy `.doc`, standalone spreadsheet data extraction, and vector SVG rasterization.
 
 ---

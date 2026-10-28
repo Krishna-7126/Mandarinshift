@@ -36,18 +36,20 @@
 - [ ] **LS-BE-020**: Environment Recovery & Verified Global Drag (Python 3.11 Windows test runner and dependency compatibility; payload-only OLE gesture with local-path, size, and route validation; privacy-conscious diagnostics and manual compatibility matrix. Automated implementation is complete; physical Windows source testing remains open.)
 - [ ] **LS-BE-021**: Global Gesture Reliability, Physical Verification & Production Readiness (exact-payload-only conversion, stale-hover clearing, single-dispatch and state cleanup, OFF-state exit/persistence hardening, operator-entered JSON manual results. Automated fixes are tested; physical compatibility and production performance gates remain open.)
 - [x] **LS-BE-022A**: Radial Wheel & Overlay Reliability (shared visible-petal draw/hit geometry, current-pointer click selection, centered file/destination pills, synchronous resize mapping, one active in-app menu, standalone close cleanup; **718 passed, 3 skipped**. Physical display/DPI behavior remains unverified.)
-- [ ] **LS-BE-023**: Release Readiness & Regression Stabilization (source-checkout startup fixed; UI accessible names added; latest full-suite totals and package verification recorded in the release report. Physical drag sources, mixed-DPI, assistive technology, and a current-source packaging build remain release blockers.)
+- [ ] **LS-BE-023**: Release Readiness & Regression Stabilization (source-checkout startup fixed; UI accessible names added; full-suite totals and package verification recorded. Physical drag sources, mixed-DPI and assistive technology remain release blockers.)
+- [ ] **LS-BE-024**: Release Readiness & Windows Verification (fixture-safe tests; non-overwriting isolated builds; current-source portable bundle and installer compiled and smoke-tested in a clean Python 3.11 environment; 732 passed, 3 skipped. Physical drag-source compatibility, mixed-DPI, accessibility, and installer lifecycle remain unverified.)
 
 ---
 
 ## Current Status
 
-- **Milestone:** LS-BE-023 release-readiness work is in progress; physical Windows interaction, display/DPI, accessibility, and current-source packaging gates remain open.
+- **Milestone:** LS-BE-024 release-readiness work is in progress; physical Windows interaction, display/DPI, accessibility, and installer lifecycle gates remain open.
 - **Version:** 0.19.0 release notes; package metadata remains 0.14.0.
 - **Test Suite:** Final Milestone 20 result recorded in `docs/reports/LS-BE-020B-gesture-report.md`.
 - **Milestone 21:** Current automated result and physical compatibility matrix are in `docs/reports/LS-BE-021-reliability-report.md`. Do not claim release readiness before its physical test and performance gates are closed.
 - **Milestone 22A:** Findings and exact verification are in `docs/reports/LS-BE-022A-radial-wheel-report.md`. Operator testing at real Windows display scales and drag sources is still required.
-- **Milestone 23:** Current release assessment and operator checklist are in `docs/reports/LS-BE-023-release-readiness.md`. Do not describe the current source as release-ready until the physical and packaging gates are closed.
+- **Milestone 23:** Historical automated assessment is in `docs/reports/LS-BE-023-release-readiness.md`.
+- **Milestone 24:** Current automated assessment, clean-environment packaging evidence, artifact hashes, and physical operator checklist are in `docs/reports/LS-BE-024-release-readiness.md`. Do not describe the current source as release-ready until the physical and accessibility gates are closed.
 - **Python Version:** Project venv Python 3.11.9 on Windows; `requires-python = ">=3.10"`.
 - **Packaging:** PyInstaller onedir distribution with dual GUI (`LocalShift.exe`) and CLI (`localshift-cli.exe`) targets.
 - **Installer:** Inno Setup 6 compiled installer `dist/installer/LocalShift-Setup-0.14.0.exe` (93.34 MB, LZMA2/ultra64 compressed).

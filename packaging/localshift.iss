@@ -7,6 +7,13 @@
 #define MyAppURL "https://github.com/localshift/localshift"
 #define MyAppExeName "LocalShift.exe"
 
+#ifndef LocalShiftSourceDir
+#define LocalShiftSourceDir "..\dist\LocalShift"
+#endif
+#ifndef LocalShiftOutputDir
+#define LocalShiftOutputDir "..\dist\installer"
+#endif
+
 [Setup]
 AppId={{9D3C012B-5B74-4C2E-8E92-3FE0696E8751}
 AppName={#MyAppName}
@@ -18,7 +25,7 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={autopf}\{#MyAppName}
 DisableProgramGroupPage=yes
 PrivilegesRequiredOverridesAllowed=commandline dialog
-OutputDir=..\dist\installer
+OutputDir={#LocalShiftOutputDir}
 OutputBaseFilename=LocalShift-Setup-{#MyAppVersion}
 SetupIconFile=..\assets\icon.ico
 Compression=lzma2/ultra64
@@ -38,7 +45,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "..\dist\LocalShift\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#LocalShiftSourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

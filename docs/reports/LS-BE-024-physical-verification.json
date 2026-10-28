@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-10-27T20:45:09.648988+00:00",
+  "environment": {
+    "windows_name": "Windows 10 Home Single Language",
+    "windows_version": "10.0.26300",
+    "architecture": "AMD64",
+    "processor": "AMD64 Family 25 Model 68 Stepping 1, AuthenticAMD",
+    "logical_cpu_count": 16,
+    "python_version": "3.11.9"
+  },
+  "cases": [
+    {
+      "id": "EXP-SINGLE",
+      "source_application": "Windows File Explorer",
+      "source_version": "Windows build 10.0.26300",
+      "scenario": "Single supported file",
+      "status": "NOT TESTED",
+      "local_payload_received": null,
+      "selected_file_count": null,
+      "output_correct": null,
+      "cancellation_behavior": null,
+      "evidence_notes": ""
+    },
+    {
+      "id": "EXP-MULTI",
+      "source_application": "Windows File Explorer",
+      "source_version": "Windows build 10.0.26300",
+      "scenario": "Multiple supported files",
+      "status": "NOT TESTED",
+      "local_payload_received": null,
+      "selected_file_count": null,
+      "output_correct": null,
+      "cancellation_behavior": null,
+      "evidence_notes": ""
+    },
+    {
+      "id": "DESKTOP-SINGLE",
+      "source_application": "Windows Desktop",
+      "source_version": "Windows build 10.0.26300",
+      "scenario": "Single supported file",
+      "status": "NOT TESTED",
+      "local_payload_received": null,
+      "selected_file_count": null,
+      "output_correct": null,
+      "cancellation_behavior": null,
+      "evidence_notes": ""
+    },
+    {
+      "id": "DESKTOP-MULTI",
+      "source_application": "Windows Desktop",
+      "source_version": "Windows build 10.0.26300",
+      "scenario": "Multiple supported files",
+      "status": "NOT TESTED",
+      "local_payload_received": null,
+      "selected_file_count": null,
+      "output_correct": null,
+      "cancellation_behavior": null,
+      "evidence_notes": ""
+    },
+    {
+      "id": "THIRD-PARTY",
+      "source_application": "Third-party file manager",
+      "source_version": null,
+      "scenario": "Single and multiple supported files",
+      "status": "NOT TESTED",
+      "local_payload_received": null,
+      "selected_file_count": null,
+      "output_correct": null,
+      "cancellation_behavior": null,
+      "evidence_notes": ""
+    },
+    {
+      "id": "VIRTUAL",
+      "source_application": "Unsupported or virtual source",
+      "source_version": null,
+      "scenario": "Browser, remote, archive, or virtual item",
+      "status": "NOT TESTED",
+      "local_payload_received": null,
+      "selected_file_count": null,
+      "output_correct": null,
+      "cancellation_behavior": null,
+      "evidence_notes": ""
+    },
+    {
+      "id": "MIXED-DPI",
+      "source_application": "Windows desktop",
+      "source_version": null,
+      "scenario": "Repeat on each available DPI scale / monitor",
+      "status": "NOT TESTED",
+      "local_payload_received": null,
+      "selected_file_count": null,
+      "output_correct": null,
+      "cancellation_behavior": null,
+      "evidence_notes": ""
+    },
+    {
+      "id": "CANCEL",
+      "source_application": "Windows desktop",
+      "source_version": null,
+      "scenario": "Escape, Shift release, and cancellation",
+      "status": "NOT TESTED",
+      "local_payload_received": null,
+      "selected_file_count": null,
+      "output_correct": null,
+      "cancellation_behavior": null,
+      "evidence_notes": ""
+    },
+    {
+      "id": "TOGGLE",
+      "source_application": "LocalShift settings",
+      "source_version": null,
+      "scenario": "Monitoring OFF/ON and restart persistence",
+      "status": "NOT TESTED",
+      "local_payload_received": null,
+      "selected_file_count": null,
+      "output_correct": null,
+      "cancellation_behavior": null,
+      "evidence_notes": ""
+    },
+    {
+      "id": "RELIABILITY",
+      "source_application": "LocalShift conversion",
+      "source_version": null,
+      "scenario": "Unsupported format, oversized input, collision, and source immutability",
+      "status": "NOT TESTED",
+      "local_payload_received": null,
+      "selected_file_count": null,
+      "output_correct": null,
+      "cancellation_behavior": null,
+      "evidence_notes": ""
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 0,
+    "not_tested": 10
+  }
+}

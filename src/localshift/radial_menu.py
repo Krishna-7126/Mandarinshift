@@ -101,6 +101,26 @@ def _format_size(size_bytes: int) -> str:
     return f"{mb:.1f} MB"
 
 
+def _clamped_menu_origin(cursor_pos: QPoint, screen_rect: QRect, size: QSize) -> QPoint:
+    """Keep the menu visible while ensuring its activation pointer remains in its hit area."""
+    def axis_origin(cursor: int, start: int, extent: int, menu_extent: int) -> int:
+        if extent <= menu_extent:
+            return start
+        low = start + 10
+        high = start + extent - menu_extent - 10
+        origin = min(max(cursor - menu_extent // 2, low), high)
+        if cursor < origin:
+            return cursor
+        if cursor >= origin + menu_extent:
+            return cursor - menu_extent + 1
+        return origin
+
+    return QPoint(
+        axis_origin(cursor_pos.x(), screen_rect.left(), screen_rect.width(), size.width()),
+        axis_origin(cursor_pos.y(), screen_rect.top(), screen_rect.height(), size.height()),
+    )
+
+
 def get_supported_targets(paths: Sequence[Path]) -> list[str]:
     """Derive genuinely supported target formats for given paths from registry."""
     valid_paths = [p for p in paths if p.is_file()]
@@ -311,7 +331,7 @@ class RadialConversionMenu(QWidget):
         return None
 
     def show_at_cursor(self, cursor_pos: Optional[QPoint] = None) -> None:
-        """Position the menu centered at cursor_pos, clamped safely to screen boundaries."""
+        """Center on the activation pointer where possible without clamping it outside the menu."""
         if cursor_pos is None:
             cursor_pos = QCursor.pos()
 
@@ -322,18 +342,7 @@ class RadialConversionMenu(QWidget):
 
         geom = screen.availableGeometry() if screen else QRect(0, 0, 1920, 1080)
 
-        menu_w = self.width()
-        menu_h = self.height()
-
-        target_x = cursor_pos.x() - menu_w // 2
-        target_y = cursor_pos.y() - menu_h // 2
-
-        # Clamp with 10px margin to ensure 100% visibility on all screens
-        margin = 10
-        clamped_x = max(geom.left() + margin, min(target_x, geom.right() - menu_w - margin))
-        clamped_y = max(geom.top() + margin, min(target_y, geom.bottom() - menu_h - margin))
-
-        self.move(int(clamped_x), int(clamped_y))
+        self.move(_clamped_menu_origin(cursor_pos, geom, self.size()))
         self.show()
         self.raise_()
         if self.is_overlay:

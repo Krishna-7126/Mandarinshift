@@ -86,7 +86,7 @@ hidden_imports = [
     'docx',
     'rapidocr_onnxruntime',
     'rapidocr_onnxruntime.ch_ppocr_v2_cls',
-    'rapidocr_onnxruntime.ch_ppocr_v2_cls.cls_postprocess',
+    'rapidocr_onnxruntime.ch_ppocr_v2_cls.text_cls',
     'rapidocr_onnxruntime.ch_ppocr_v3_det',
     'rapidocr_onnxruntime.ch_ppocr_v3_det.text_detect',
     'rapidocr_onnxruntime.ch_ppocr_v3_rec',

@@ -71,8 +71,25 @@ def clean() -> None:
     print("Clean complete.")
 
 
-def run_pyinstaller() -> None:
-    """Run PyInstaller with localshift.spec."""
+def validate_build_paths(
+    output_dir: Path,
+    work_dir: Path,
+    installer_dir: Path | None = None,
+) -> tuple[Path, Path, Path | None]:
+    """Require isolated, non-overlapping paths that do not already exist."""
+    paths = [output_dir.resolve(), work_dir.resolve()]
+    if installer_dir is not None:
+        paths.append(installer_dir.resolve())
+    for index, path in enumerate(paths):
+        if any(path == other or path in other.parents or other in path.parents for other in paths[index + 1 :]):
+            raise ValueError("Build output, work, and installer directories must be separate.")
+        if path.exists():
+            raise FileExistsError(f"Refusing to overwrite existing build path: {path}")
+    return paths[0], paths[1], paths[2] if installer_dir is not None else None
+
+
+def run_pyinstaller(output_dir: Path, work_dir: Path) -> None:
+    """Run PyInstaller with localshift.spec into isolated output directories."""
     spec_path = PACKAGING_DIR / "localshift.spec"
     if not spec_path.is_file():
         raise FileNotFoundError(f"Spec file not found: {spec_path}")
@@ -87,12 +104,17 @@ def run_pyinstaller() -> None:
         "PyInstaller",
         "--noconfirm",
         "--clean",
+        "--distpath",
+        str(output_dir),
+        "--workpath",
+        str(work_dir),
         str(spec_path),
     ]
     subprocess.run(cmd, cwd=PROJECT_ROOT, check=True)
 
-    gui_exe = APP_DIR / "LocalShift.exe"
-    cli_exe = APP_DIR / "localshift-cli.exe"
+    app_dir = output_dir / "LocalShift"
+    gui_exe = app_dir / "LocalShift.exe"
+    cli_exe = app_dir / "localshift-cli.exe"
 
     if not gui_exe.is_file():
         raise RuntimeError(f"PyInstaller failed to produce {gui_exe}")
@@ -104,15 +126,15 @@ def run_pyinstaller() -> None:
     print(f"  CLI: {cli_exe} ({cli_exe.stat().st_size / (1024*1024):.2f} MB)")
 
 
-def verify_bundle() -> bool:
+def verify_bundle(app_dir: Path = APP_DIR) -> bool:
     """Verify critical files and libraries exist within the packaged bundle."""
     print("\n" + "=" * 60)
     print("Verifying packaged bundle integrity...")
     print("=" * 60)
 
     critical_checks = [
-        APP_DIR / "LocalShift.exe",
-        APP_DIR / "localshift-cli.exe",
+        app_dir / "LocalShift.exe",
+        app_dir / "localshift-cli.exe",
     ]
 
     missing = [str(p) for p in critical_checks if not p.exists()]
@@ -121,28 +143,28 @@ def verify_bundle() -> bool:
         return False
 
     # Check for pdfium dll
-    pdfium_found = any(APP_DIR.glob("**/pdfium.dll")) or any(APP_DIR.glob("pdfium.dll"))
+    pdfium_found = any(app_dir.glob("**/pdfium.dll")) or any(app_dir.glob("pdfium.dll"))
     print(f"  pdfium.dll present: {pdfium_found}")
 
     # Check for onnxruntime dll
-    onnx_found = any(APP_DIR.glob("**/onnxruntime*.dll"))
+    onnx_found = any(app_dir.glob("**/onnxruntime*.dll"))
     print(f"  onnxruntime DLL present: {onnx_found}")
 
     # Check for OCR onnx models
-    ocr_models = list(APP_DIR.glob("**/*.onnx"))
+    ocr_models = list(app_dir.glob("**/*.onnx"))
     print(f"  ONNX OCR models present: {len(ocr_models)} models found")
 
     print("Bundle verification passed.")
     return True
 
 
-def run_inno_setup() -> Path | None:
+def run_inno_setup(source_dir: Path, output_dir: Path) -> Path:
     """Compile Inno Setup installer."""
     iscc = find_iscc()
     if not iscc:
-        print("\nWARNING: Inno Setup compiler (ISCC.exe) not found.")
-        print("Skipping installer creation. Packaged folder is ready at dist/LocalShift.")
-        return None
+        raise FileNotFoundError(
+            "Inno Setup compiler (ISCC.exe) not found; install Inno Setup 6 or pass --skip-installer."
+        )
 
     iss_file = PACKAGING_DIR / "localshift.iss"
     if not iss_file.is_file():
@@ -152,10 +174,15 @@ def run_inno_setup() -> Path | None:
     print(f"Building Windows Setup installer using {iscc}...")
     print("=" * 60)
 
-    cmd = [str(iscc), str(iss_file)]
+    cmd = [
+        str(iscc),
+        f"/DLocalShiftSourceDir={source_dir}",
+        f"/DLocalShiftOutputDir={output_dir}",
+        str(iss_file),
+    ]
     subprocess.run(cmd, cwd=PACKAGING_DIR, check=True)
 
-    installer = next(INSTALLER_DIR.glob("LocalShift-Setup-*.exe"), None)
+    installer = next(output_dir.glob("LocalShift-Setup-*.exe"), None)
     if installer and installer.is_file():
         size_mb = installer.stat().st_size / (1024 * 1024)
         sha = calculate_sha256(installer)
@@ -164,35 +191,58 @@ def run_inno_setup() -> Path | None:
         print(f"  Size: {size_mb:.2f} MB")
         print(f"  SHA-256: {sha}")
         return installer
-    else:
-        raise RuntimeError("Inno Setup ran but installer output was not found.")
+    raise RuntimeError("Inno Setup ran but installer output was not found.")
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="LocalShift Windows Packaging Pipeline")
     parser.add_argument("--clean-only", action="store_true", help="Clean build directories and exit")
     parser.add_argument("--skip-installer", action="store_true", help="Skip Inno Setup installer compilation")
     parser.add_argument("--verify-only", action="store_true", help="Run verification on existing dist folder")
-    args = parser.parse_args()
+    parser.add_argument("--output-dir", type=Path, help="New, unused PyInstaller distribution directory")
+    parser.add_argument("--work-dir", type=Path, help="New, unused PyInstaller work directory")
+    parser.add_argument("--installer-dir", type=Path, help="New, unused Inno Setup output directory")
+    args = parser.parse_args(argv)
 
     if args.clean_only:
+        if args.output_dir or args.work_dir or args.installer_dir:
+            parser.error("--clean-only cannot be combined with build directories")
         clean()
         return 0
 
     if args.verify_only:
-        success = verify_bundle()
+        if args.work_dir:
+            parser.error("--work-dir is not used with --verify-only")
+        if args.installer_dir:
+            parser.error("--installer-dir is not used with --verify-only")
+        app_dir = args.output_dir / "LocalShift" if args.output_dir else APP_DIR
+        success = verify_bundle(app_dir)
         return 0 if success else 1
 
-    clean()
-    run_pyinstaller()
-    if not verify_bundle():
+    if not args.output_dir or not args.work_dir:
+        parser.error("A non-destructive build requires both --output-dir and --work-dir")
+    if args.skip_installer and args.installer_dir:
+        parser.error("--installer-dir cannot be combined with --skip-installer")
+    if not args.skip_installer and not args.installer_dir:
+        parser.error("Provide a new --installer-dir or explicitly pass --skip-installer")
+    try:
+        output_dir, work_dir, installer_dir = validate_build_paths(
+            args.output_dir,
+            args.work_dir,
+            None if args.skip_installer else args.installer_dir,
+        )
+    except (FileExistsError, ValueError) as exc:
+        parser.error(str(exc))
+
+    run_pyinstaller(output_dir, work_dir)
+    app_dir = output_dir / "LocalShift"
+    if not verify_bundle(app_dir):
         return 1
 
-    if not args.skip_installer:
-        run_inno_setup()
-
     print("\n" + "=" * 60)
-    print("LocalShift build pipeline completed successfully.")
+    print(f"LocalShift portable bundle completed: {app_dir}")
+    if installer_dir is not None:
+        run_inno_setup(app_dir, installer_dir)
     print("=" * 60)
     return 0
 

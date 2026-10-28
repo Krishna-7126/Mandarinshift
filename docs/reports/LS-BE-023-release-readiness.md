@@ -8,6 +8,7 @@
 
 | Finding | Evidence and impact | Resolution |
 |---|---|---|
+| At screen edges, clamping could leave the global OLE target away from the activation pointer. | Offscreen reproduction at `(1, 1)` on an 800×800 screen positioned the 400×460 target at `(10, 10)`, mapping the pointer to `(-9, -9)` outside the target. At the opposite corner, the pointer mapped to `(409, 469)`, also outside. An external drag therefore could not reliably enter the window to deliver the file payload. | [radial_menu.py](../../src/localshift/radial_menu.py) now clamps the window while keeping the activation pointer inside its hit area. Tests cover each screen corner and synthetic negative-origin monitor coordinates. |
 | "Start with Windows" failed for source checkouts. | The registry command directly executed `src/localshift/gui.py`; its relative imports fail outside package context with `ImportError: attempted relative import with no known parent package`. | [shell_integration.py](../../src/localshift/shell_integration.py) now launches `python -m localshift.gui --minimized`. A mocked registry regression test verifies the command. |
 | Several workflow controls lacked explicit accessibility names. | The offscreen widget audit found unnamed tables, form fields, numeric editors, settings tabs, and controls, leaving assistive technology with ambiguous names. | [gui.py](../../src/localshift/gui.py) assigns names to the affected controls; [test_gui.py](../../tests/test_gui.py) asserts representative names. This is not a physical screen-reader test. |
 | PDF-tool counts in user-facing documentation were stale. | The runtime registry reports 34 tools: 32 ready and 2 configuration-required. | Updated the README and test plan to state the registered and available counts separately. |
@@ -19,14 +20,16 @@
 | Item | Result |
 |---|---|
 | Official command | `.\scripts\run_tests.ps1` |
-| Result | **725 passed, 3 skipped, 0 failed** in 182.06 seconds |
+| Result after radial edge correction | **730 passed, 3 skipped, 0 failed** in 177.03 seconds |
+| Focused command | `.\.venv\Scripts\python.exe -m pytest tests\test_radial_menu.py tests\test_shell_integration.py -q -o addopts=''` |
+| Focused result | **51 passed** in 1.94 seconds |
 | Python / pytest | Python 3.11.9 / pytest 9.1.1 |
 | Desktop / image / PDF / OCR packages | PySide6 6.12.0; Pillow 13.0.0; pypdfium2 5.14.0; RapidOCR 1.2.13; ONNX Runtime 1.31.0; python-docx 1.2.0 |
 | Project requirement | Python `>=3.10`; the official launcher uses the project `.venv`, adds `src` to `PYTHONPATH`, and sets Qt to offscreen. |
 | Skips | Three Windows symlink tests require Developer Mode or elevation. They are not passes. |
 | Gesture diagnostics | `.venv\Scripts\python.exe scripts\verify_windows_gesture.py --check` — automated route and destination checks passed. This does not exercise a physical OLE drag. |
 | Existing bundle verification | `.venv\Scripts\python.exe packaging\build.py --verify-only` — passed for the existing bundle's PDFium, ONNX Runtime DLL, and three OCR models. This is not a source rebuild. |
-| Static checks | `.\.venv\Scripts\python.exe -m compileall -q src tests` and `git diff --check` — passed. |
+| Static checks | `.\.venv\Scripts\python.exe -m compileall -q src tests` and `git diff --check` — passed after the radial edge correction. |
 | Conversion / PDF checks | The full suite includes route, source-immutability, output-collision, PDF color-fidelity, PDF tools, and packaging tests; all collected tests passed or were skipped as listed above. |
 
 The existing installer is 97,877,415 bytes with SHA-256 `13469bf14d85e1d4d33a616b8b477c7654a5286449eeb25063c74fecdca92974`. The portable ZIP is 153,360,020 bytes with SHA-256 `de04a9b9f5000a05324760a2355703a06f4f50a15a8070ced464d92a630412d2`. Those checksums were recomputed and match the manifest. Neither artifact was rebuilt from the current source. A packaging build was not attempted because PyInstaller is unavailable in the project venv and the normal build path cleans existing `build` and `dist` outputs.
@@ -35,6 +38,7 @@ The existing installer is 97,877,415 bytes with SHA-256 `13469bf14d85e1d4d33a616
 
 - Current offscreen captures were reviewed for dark/light themes at 1020×680. The converter, PDF catalog, settings, and radial wheel are represented in the screenshots under `docs/screenshots/m23-*`.
 - Offscreen layout probes at 760×560, 1020×680, and 1440×900 found the Recent panel hidden at minimum size, no queue horizontal overflow, and vertical (not horizontal) PDF-catalog scrolling. These results are Qt/offscreen checks, not physical display evidence.
+- The screen-edge activation-pointer regression was reproduced before the fix and rechecked after: the pointer now maps inside the popup at both opposite corners. The helper also has deterministic cases for all corners and a virtual screen with negative origin. This verifies Qt geometry only, not Windows OLE routing or physical DPI transitions.
 - The new accessible-name assertions passed in the full suite. No physical Narrator, NVDA, keyboard-only, or high-contrast assessment was performed.
 - The physical display scaling and mixed-monitor coordinate behavior remain unverified. An offscreen image or synthetic pointer test cannot establish those behaviors.
 
@@ -69,7 +73,7 @@ Record results in the structured verification JSON only after observing them. Us
 6. **Unsupported/virtual source:** Try a browser download/virtual item, remote item, or unsupported source. Confirm no selected-file substitution or conversion occurs and that the UI explains the fallback.
 7. **Cancellation:** During an active drag, test Escape, Shift release, and source-side cancellation. Confirm the wheel closes, no output is produced, and the next gesture starts cleanly.
 8. **Toggle/restart:** Disable the feature, restart LocalShift, and confirm monitoring stays OFF. Re-enable, restart, and verify only the saved explicit choice is honored.
-9. **Display scaling:** Repeat on each available monitor and while crossing monitor boundaries. Check wheel placement, sector hit-testing, text clipping, focus, and accidental activation.
+9. **Display scaling and edges:** Repeat on each available monitor and while crossing monitor boundaries. Trigger near all four screen corners; confirm the pointer remains inside the wheel target and sectors remain reachable. Check sector hit-testing, text clipping, focus, and accidental activation.
 10. **Failure and immutability:** With disposable copies, test unsupported format, oversized input, and an existing destination collision. Confirm a clear failure/fallback, no overwrite, and unchanged original hashes.
 11. **Accessibility:** With a screen reader and keyboard-only input, inspect focus order, visible focus, labels, radial-menu navigation, and cancellation. Record the reader/version.
 

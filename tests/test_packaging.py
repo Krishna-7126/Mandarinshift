@@ -70,7 +70,47 @@ def test_spec_configuration():
 
     # Verify model/lib collection
     assert "rapidocr_onnxruntime" in content
+    assert "rapidocr_onnxruntime.ch_ppocr_v2_cls.text_cls" in content
+    assert "rapidocr_onnxruntime.ch_ppocr_v2_cls.cls_postprocess" not in content
     assert "pypdfium2_raw" in content
+
+
+def test_packaging_build_refuses_existing_or_overlapping_paths(tmp_path: Path):
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("localshift_build", PACKAGING_DIR / "build.py")
+    assert spec is not None and spec.loader is not None
+    build = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(build)
+
+    output_dir = tmp_path / "dist"
+    work_dir = tmp_path / "work"
+    installer_dir = tmp_path / "installer"
+    assert build.validate_build_paths(output_dir, work_dir, installer_dir) == (
+        output_dir,
+        work_dir,
+        installer_dir,
+    )
+
+    output_dir.mkdir()
+    with pytest.raises(FileExistsError, match="Refusing to overwrite"):
+        build.validate_build_paths(output_dir, work_dir, installer_dir)
+
+    with pytest.raises(ValueError, match="must be separate"):
+        build.validate_build_paths(tmp_path / "nested", tmp_path / "nested" / "work")
+
+
+def test_packaging_installer_build_reports_missing_inno_setup(tmp_path: Path, monkeypatch):
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("localshift_build", PACKAGING_DIR / "build.py")
+    assert spec is not None and spec.loader is not None
+    build = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(build)
+    monkeypatch.setattr(build, "find_iscc", lambda: None)
+
+    with pytest.raises(FileNotFoundError, match="install Inno Setup 6 or pass --skip-installer"):
+        build.run_inno_setup(tmp_path / "source", tmp_path / "installer")
 
 
 def test_inno_setup_configuration():
@@ -79,6 +119,8 @@ def test_inno_setup_configuration():
 
     assert '#define MyAppName "LocalShift"' in content
     assert '#define MyAppVersion "0.14.0"' in content
+    assert "LocalShiftSourceDir" in content
+    assert "LocalShiftOutputDir" in content
     assert "OutputBaseFilename=LocalShift-Setup-{#MyAppVersion}" in content
     assert "UninstallDisplayIcon={app}\\{#MyAppExeName}" in content
     assert "ArchitecturesInstallIn64BitMode=x64compatible" in content
@@ -88,4 +130,3 @@ def test_find_app_icon_helper():
     icon_path = _find_app_icon()
     assert icon_path is not None
     assert icon_path.is_file()
-

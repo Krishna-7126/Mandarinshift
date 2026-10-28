@@ -6,7 +6,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] — Milestone 23: Release Readiness & Regression Stabilization
 
+## [Unreleased] — Milestone 24: Release Readiness & Windows Verification
+
 ### Fixed
+- Prevent unseen-validation tests from silently regenerating or overwriting existing PDF fixtures; tests now fail clearly if fixtures are missing.
+- Make packaging builds use new, non-overlapping output, work, and installer directories and refuse to overwrite existing paths.
+- Correct the stale RapidOCR classifier hidden-import path and allow Inno Setup source/output paths to be isolated from existing release artifacts.
+- Declare the verified PyInstaller version in the optional `[build]` dependency extra and document clean setup/build commands.
+- Replace ambiguous all-cases-at-once gesture reporting with one case-attributed interactive session at a time, versioned report migration, allowlisted JSONL diagnostics, in-memory-only source-path hashing, and non-overwriting temporary self-check assets.
+
+### Verification
+- Official Windows regression launcher after harness updates: **751 passed, 3 skipped, 0 failed**. The skips are symlink-permission cases.
+- A fresh Python 3.11.9 environment installed declared extras and built the current-source portable bundle and Inno Setup installer in temporary directories.
+- Gesture harness tests cover unconfirmed `NOT TESTED` status, case attribution, privacy filtering, safe relative output labels, source hashing, GUI `SystemExit(0)` collection, and temporary self-check assets.
+- Physical Explorer/Desktop/third-party drag behavior, mixed-DPI displays, assistive technology, and installer install/uninstall lifecycle remain unverified; release readiness remains blocked.
+- Exact results, artifact hashes, and the operator checklist are in `docs/reports/LS-BE-024-release-readiness.md`.
+
+## [Unreleased] — Milestone 23: Release Readiness & Regression Stabilization
+
+### Fixed
+- Keep the radial OLE target under its activation pointer when screen-edge clamping would otherwise move the window out from under the drag; covered positive and negative screen coordinates.
 - Launch source checkouts through `python -m localshift.gui` for the Windows "Start with Windows" entry; direct execution of the package file failed with an attempted-relative-import error.
 - Added explicit accessible names to workflow tables, form controls, settings tabs, and destination/theme controls.
 - Corrected the registered PDF tool count and clarified that global drag-source compatibility is not physically certified.
@@ -14,7 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Corrected the recorded installer size; its existing checksum was independently reverified.
 
 ### Verification
-- Full regression suite: **725 passed, 3 skipped, 0 failed** in the project Python 3.11 venv; the three symlink tests require Developer Mode or elevation.
+- Radial and global gesture tests: **51 passed** after the screen-edge correction.
+- Full regression suite: **730 passed, 3 skipped, 0 failed** in the project Python 3.11 venv; the three symlink tests require Developer Mode or elevation.
 - Exact commands, findings, artifact checks, manual checklist, and release gates are recorded in `docs/reports/LS-BE-023-release-readiness.md`.
 - Physical Explorer/Desktop/third-party drag behavior, mixed-DPI displays, assistive technology, and a current-source packaging build are not verified; release readiness remains blocked.
 

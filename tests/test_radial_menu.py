@@ -21,11 +21,16 @@ from PIL import Image
 
 os.environ["QT_QPA_PLATFORM"] = "offscreen"
 
-from PySide6.QtCore import QEvent, QPoint, QRect, Qt
+from PySide6.QtCore import QEvent, QPoint, QRect, QSize, Qt
 from PySide6.QtGui import QKeyEvent, QMouseEvent
 from PySide6.QtWidgets import QApplication, QLineEdit, QPlainTextEdit, QSpinBox, QTextEdit, QWidget
 
-from localshift.radial_menu import RadialConversionMenu, ShiftActivationFilter, get_supported_targets
+from localshift.radial_menu import (
+    RadialConversionMenu,
+    ShiftActivationFilter,
+    _clamped_menu_origin,
+    get_supported_targets,
+)
 
 
 @pytest.fixture(scope="session")
@@ -209,18 +214,59 @@ class TestRadialConversionMenu:
         geo = screen.availableGeometry() if screen else QRect(0, 0, 1920, 1080)
 
         # 1. Near bottom right edge
-        cursor_near_bottom_right = QPoint(geo.right() + 50, geo.bottom() + 50)
+        cursor_near_bottom_right = QPoint(geo.right() - 1, geo.bottom() - 1)
         menu.show_at_cursor(cursor_near_bottom_right)
         rect = menu.geometry()
         assert rect.right() <= geo.right()
         assert rect.bottom() <= geo.bottom()
 
         # 2. Near top left edge
-        cursor_near_top_left = QPoint(geo.left() - 100, geo.top() - 100)
+        cursor_near_top_left = QPoint(geo.left() + 1, geo.top() + 1)
         menu.show_at_cursor(cursor_near_top_left)
         rect = menu.geometry()
         assert rect.left() >= geo.left()
         assert rect.top() >= geo.top()
+
+    def test_show_at_cursor_keeps_activation_pointer_inside_menu_at_screen_edges(
+        self, qapp, sample_png: Path
+    ):
+        screen = qapp.primaryScreen()
+        assert screen is not None
+        geo = screen.availableGeometry()
+        positions = (
+            QPoint(geo.left() + 1, geo.top() + 1),
+            QPoint(geo.right() - 1, geo.top() + 1),
+            QPoint(geo.left() + 1, geo.bottom() - 1),
+            QPoint(geo.right() - 1, geo.bottom() - 1),
+        )
+
+        for position in positions:
+            menu = RadialConversionMenu([sample_png])
+            menu.show_at_cursor(position)
+            qapp.processEvents()
+
+            assert menu.rect().contains(menu.mapFromGlobal(position))
+            assert geo.contains(menu.geometry())
+            menu.close()
+
+    @pytest.mark.parametrize(
+        ("screen", "cursor"),
+        [
+            (QRect(-1600, -200, 1600, 900), QPoint(-1599, -199)),
+            (QRect(-1600, -200, 1600, 900), QPoint(-1, 699)),
+            (QRect(0, 0, 800, 800), QPoint(1, 1)),
+            (QRect(0, 0, 800, 800), QPoint(798, 798)),
+        ],
+    )
+    def test_menu_origin_keeps_pointer_inside_on_negative_and_edge_coordinates(
+        self, screen: QRect, cursor: QPoint
+    ):
+        size = QSize(400, 460)
+        origin = _clamped_menu_origin(cursor, screen, size)
+        menu_rect = QRect(origin, size)
+
+        assert menu_rect.contains(cursor)
+        assert screen.contains(menu_rect)
 
     def test_accept_drops_enabled(self, qapp, sample_png: Path):
         menu = RadialConversionMenu([sample_png])

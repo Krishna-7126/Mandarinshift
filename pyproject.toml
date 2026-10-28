@@ -23,6 +23,7 @@ dependencies = [
 desktop = ["PySide6>=6.7"]
 test    = ["pytest>=8.0"]
 dev     = ["pytest>=8.0"]
+build   = ["PyInstaller==6.22.3"]
 
 [project.scripts]
 localshift = "localshift.cli:main"

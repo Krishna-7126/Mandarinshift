@@ -201,6 +201,7 @@ LocalShift implements a native, supported OLE drop target integration:
 The earlier Milestone 16C selection-query approach was not reliable evidence of the current drag payload. The active implementation does not query Explorer selections and does not convert based on selected files.
 - **`BackgroundGestureController` (Non-Invasive Polling):**
   - Uses a 50ms timer to detect physical mouse/Shift state and opens a non-activating floating target after the gesture threshold.
+  - The floating target is clamped to the selected screen's available geometry without allowing the activation pointer to fall outside the target window; this is required for the window to receive a subsequent OLE drag event at screen edges.
   - Starts with no candidate paths. It accepts only a Qt OLE local-file payload actually dropped on a supported format sector.
   - Validates the full payload before dispatch; mixed remote/local, non-file, symlink, oversized, inaccessible, and unsupported items are rejected rather than partially processed.
   - Mouse release alone, stale sector hover, Escape, Shift release, monitoring-off, timeout, and unsupported drops do not dispatch conversion.

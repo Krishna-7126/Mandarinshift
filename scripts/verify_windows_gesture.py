@@ -12,21 +12,22 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
+import hashlib
 import json
 import logging
 import os
 import platform
+import re
 import sys
-from pathlib import Path
+import tempfile
+import uuid
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from PIL import Image
 
 # Ensure localshift package import
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from localshift.formats import output_formats_for
 from localshift.radial_menu import (
-    GestureState,
-    RadialConversionMenu,
     get_supported_targets,
     is_shift_pressed,
 )
@@ -46,6 +47,23 @@ MANUAL_CASES = (
     ("RELIABILITY", "LocalShift conversion", "Unsupported format, oversized input, collision, and source immutability"),
 )
 
+GESTURE_STATES = {
+    "IDLE",
+    "DRAG_CANDIDATE",
+    "MENU_VISIBLE",
+    "TARGET_SELECTED",
+    "CONVERTING",
+    "COMPLETED",
+    "CANCELLED",
+    "FAILED",
+}
+
+_STATE_RE = re.compile(r"Background gesture state: ([A-Z_]+) -> ([A-Z_]+)\.")
+_PREVIEW_RE = re.compile(
+    r"OLE drag accepted for preview: (\d+) local file\(s\), (\d+) target\(s\)\."
+)
+_DROP_ACCEPTED_RE = re.compile(r"Global OLE drop accepted: (\d+) file\(s\), target=([a-z0-9_-]+)\.")
+
 
 def _windows_name() -> str:
     if sys.platform != "win32":
@@ -63,8 +81,42 @@ def _windows_name() -> str:
 
 
 def new_manual_report() -> dict:
+    cases = []
+    for case_id, source, scenario in MANUAL_CASES:
+        cases.append({
+            "id": case_id,
+            "case_id": case_id,
+            "source_application": source,
+            "source_version": (
+                f"Windows build {platform.version()}"
+                if case_id in ("EXP-SINGLE", "EXP-MULTI", "DESKTOP-SINGLE", "DESKTOP-MULTI")
+                else None
+            ),
+            "scenario": scenario,
+            "status": "NOT TESTED",
+            "local_payload_received": "UNKNOWN",
+            "selected_file_count": None,
+            "payload_preview_file_counts": [],
+            "drop_payload_accepted": None,
+            "accepted_drop_file_counts": [],
+            "observed_target_formats": [],
+            "observed_conversion_result": "UNKNOWN",
+            "operator_conversion_result": "UNKNOWN",
+            "conversion_error_category": "UNKNOWN",
+            "output_paths": [],
+            "output_correct": "UNKNOWN",
+            "source_sha256_before": None,
+            "source_sha256_after": None,
+            "source_hashes_match_dragged_files": "UNKNOWN",
+            "source_unchanged": None,
+            "cancellation_behavior": "UNKNOWN",
+            "operator_confirmed": False,
+            "session_id": None,
+            "observed_events": [],
+            "evidence_notes": "",
+        })
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "created_utc": datetime.now(timezone.utc).isoformat(),
         "environment": {
             "windows_name": _windows_name(),
@@ -74,34 +126,280 @@ def new_manual_report() -> dict:
             "logical_cpu_count": os.cpu_count(),
             "python_version": platform.python_version(),
         },
-        "cases": [
-            {
-                "id": case_id,
-                "source_application": source,
-                "source_version": (
-                    f"Windows build {platform.version()}"
-                    if case_id in ("EXP-SINGLE", "EXP-MULTI", "DESKTOP-SINGLE", "DESKTOP-MULTI")
-                    else None
-                ),
-                "scenario": scenario,
-                "status": "NOT TESTED",
-                "local_payload_received": None,
-                "selected_file_count": None,
-                "output_correct": None,
-                "cancellation_behavior": None,
-                "evidence_notes": "",
-            }
-            for case_id, source, scenario in MANUAL_CASES
-        ],
+        "cases": cases,
         "summary": {"passed": 0, "failed": 0, "not_tested": len(MANUAL_CASES)},
     }
 
 
+def load_manual_report(report_path: Path) -> dict:
+    if not report_path.exists():
+        return new_manual_report()
+    try:
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError("Could not read the selected verification report.") from exc
+    if not isinstance(report, dict) or report.get("schema_version") not in (1, 2):
+        raise ValueError("Unsupported verification report schema.")
+    existing = report.get("cases")
+    if not isinstance(existing, list):
+        raise ValueError("Verification report has no valid case list.")
+    existing_by_id = {case.get("id"): case for case in existing if isinstance(case, dict)}
+    if len(existing_by_id) != len(existing):
+        raise ValueError("Verification report contains duplicate or malformed case IDs.")
+    defaults = new_manual_report()["cases"]
+    if not set(existing_by_id).issubset({case["id"] for case in defaults}):
+        raise ValueError("Verification report contains unknown case IDs.")
+    for default in defaults:
+        case = existing_by_id.get(default["id"])
+        if case is None:
+            existing.append(default)
+            continue
+        for key, value in default.items():
+            if key not in case or (case[key] is None and value is not None):
+                case[key] = value
+        case["case_id"] = default["id"]
+    report["cases"] = existing
+    report["schema_version"] = 2
+    report.setdefault("summary", {"passed": 0, "failed": 0, "not_tested": len(defaults)})
+    return report
+
+
+def validate_report_destination(report_path: Path) -> None:
+    if not report_path.exists():
+        return
+    try:
+        existing = json.loads(report_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError("Could not read the selected verification report.") from exc
+    if isinstance(existing, dict) and existing.get("schema_version") == 1:
+        raise ValueError("Choose a new v2 report path; the existing v1 evidence will not be overwritten.")
+
+
 def write_manual_report(report_path: Path, report: dict) -> None:
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    temporary_path = report_path.with_name(report_path.name + ".tmp")
-    temporary_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    temporary_path.replace(report_path)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{report_path.name}.",
+        suffix=".tmp",
+        dir=report_path.parent,
+    )
+    temporary_path = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as stream:
+            json.dump(report, stream, indent=2)
+            stream.write("\n")
+        os.replace(temporary_path, report_path)
+    finally:
+        temporary_path.unlink(missing_ok=True)
+
+
+def parse_safe_gesture_event(logger_name: str, message: str, levelno: int) -> dict | None:
+    """Keep only known non-sensitive gesture fields; never persist raw log messages."""
+    state_match = _STATE_RE.fullmatch(message)
+    if state_match and state_match.group(1) in GESTURE_STATES and state_match.group(2) in GESTURE_STATES:
+        return {
+            "event": "state_transition",
+            "from_state": state_match.group(1),
+            "to_state": state_match.group(2),
+        }
+
+    preview_match = _PREVIEW_RE.fullmatch(message)
+    if logger_name == "localshift.radial_menu" and preview_match:
+        return {
+            "event": "payload_preview",
+            "file_count": int(preview_match.group(1)),
+            "target_count": int(preview_match.group(2)),
+        }
+
+    drop_match = _DROP_ACCEPTED_RE.fullmatch(message)
+    if logger_name == "localshift.shell_integration" and drop_match:
+        return {
+            "event": "drop_accepted",
+            "file_count": int(drop_match.group(1)),
+            "target_format": drop_match.group(2),
+        }
+
+    safe_messages = {
+        "Background Shift+Drag gesture controller started.": "controller_started",
+        "Background Shift+Drag gesture controller stopped.": "controller_stopped",
+        "Global radial drop target opened; awaiting local file URLs.": "drop_target_opened",
+        "Global drag released; awaiting an accepted OLE file drop.": "drag_released",
+        "Global gesture cancelled: no supported OLE file drop received.": "gesture_cancelled",
+        "Ignoring stale or duplicate global OLE drop dispatch.": "duplicate_dispatch_ignored",
+        "OLE drag rejected: This source does not expose local file URLs.": "payload_rejected",
+        "OLE drag rejected: This source did not provide any files.": "payload_rejected",
+        "OLE drag rejected: Only local files can be converted.": "payload_rejected",
+        "OLE drag rejected: The drop contains an invalid or unsupported file path.": "payload_rejected",
+        "OLE drag rejected: A dropped file exceeds the 250 MiB input limit.": "payload_rejected",
+        "OLE drag rejected: A dropped file could not be accessed.": "payload_rejected",
+        "OLE drag rejected: No common conversion target is available for these files.": "payload_rejected",
+        "OLE drop rejected: This source does not expose local file URLs.": "payload_rejected",
+        "OLE drop rejected: This source did not provide any files.": "payload_rejected",
+        "OLE drop rejected: Only local files can be converted.": "payload_rejected",
+        "OLE drop rejected: The drop contains an invalid or unsupported file path.": "payload_rejected",
+        "OLE drop rejected: A dropped file exceeds the 250 MiB input limit.": "payload_rejected",
+        "OLE drop rejected: A dropped file could not be accessed.": "payload_rejected",
+        "OLE drop rejected: No common conversion target is available for these files.": "payload_rejected",
+        "OLE drop rejected: drop position did not hit a format sector.": "drop_rejected",
+    }
+    if message in safe_messages:
+        return {"event": safe_messages[message]}
+    if levelno >= logging.WARNING:
+        return {"event": "application_diagnostic", "severity": logging.getLevelName(levelno)}
+    return None
+
+
+def validate_jsonl_log(log_path: Path) -> None:
+    if not log_path.exists() or log_path.stat().st_size == 0:
+        return
+    try:
+        with log_path.open(encoding="utf-8") as stream:
+            for line in stream:
+                event = json.loads(line)
+                if not isinstance(event, dict) or "event" not in event or "case_id" not in event:
+                    raise ValueError
+    except (OSError, json.JSONDecodeError, ValueError) as exc:
+        raise ValueError("Existing log is not a LocalShift privacy-safe JSONL log; choose a new log path.") from exc
+
+
+class PrivacySafeGestureLogHandler(logging.Handler):
+    def __init__(self, log_path: Path, case_id: str):
+        super().__init__(logging.INFO)
+        validate_jsonl_log(log_path)
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        self._stream = log_path.open("a", encoding="utf-8", newline="\n")
+        self.case_id = case_id
+        self.events: list[dict] = []
+        self.write_failed = False
+
+    def record_event(self, event: dict) -> None:
+        event = {
+            "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+            "case_id": self.case_id,
+            **event,
+        }
+        self.events.append(event)
+        try:
+            self._stream.write(json.dumps(event, separators=(",", ":")) + "\n")
+            self._stream.flush()
+        except OSError:
+            self.write_failed = True
+
+    def emit(self, record: logging.LogRecord) -> None:
+        event = parse_safe_gesture_event(record.name, record.getMessage(), record.levelno)
+        if event is None:
+            return
+        self.record_event(event)
+
+    def close(self) -> None:
+        try:
+            self._stream.close()
+        except OSError:
+            self.write_failed = True
+        super().close()
+
+
+def summarize_gesture_events(events: list[dict]) -> dict:
+    previews = sorted({event["file_count"] for event in events if event["event"] == "payload_preview"})
+    accepted_drops = [event for event in events if event["event"] == "drop_accepted"]
+    terminal_states = [
+        event["to_state"]
+        for event in events
+        if event["event"] == "state_transition"
+        and event["to_state"] in {"COMPLETED", "FAILED", "CANCELLED"}
+    ]
+    return {
+        "payload_preview_file_counts": previews,
+        "drop_payload_accepted": True if accepted_drops else (
+            False if any(event["event"] == "payload_rejected" for event in events) else None
+        ),
+        "accepted_drop_file_counts": sorted({event["file_count"] for event in accepted_drops}),
+        "observed_target_formats": sorted({event["target_format"] for event in accepted_drops}),
+        "observed_conversion_result": terminal_states[-1] if terminal_states else "UNKNOWN",
+    }
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        while chunk := stream.read(1024 * 1024):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def hash_source_paths(paths: list[Path]) -> list[str] | None:
+    try:
+        return [sha256_file(path) for path in paths]
+    except OSError:
+        return None
+
+
+def collect_source_hash_inputs() -> tuple[list[Path], list[str]]:
+    print("Source paths are used only in memory to calculate SHA-256; paths are never written to report or log.")
+    paths: list[Path] = []
+    hashes: list[str] = []
+    while True:
+        raw_path = input("Private source file path for hashing (blank when finished or to skip): ").strip()
+        if not raw_path:
+            break
+        raw_path = raw_path.strip('"')
+        path = Path(raw_path).expanduser()
+        try:
+            if not path.is_file():
+                raise OSError
+            digest = sha256_file(path)
+        except OSError:
+            print("Could not hash that source file; path was not recorded. Try again or press Enter to skip.")
+            continue
+        paths.append(path)
+        hashes.append(digest)
+    return paths, hashes
+
+
+def safe_relative_output_path(raw_path: str) -> str:
+    normalized = raw_path.strip().replace("\\", "/")
+    windows_path = PureWindowsPath(normalized)
+    relative_path = PurePosixPath(normalized)
+    if (
+        not normalized
+        or normalized in {".", "./"}
+        or normalized.startswith("/")
+        or windows_path.is_absolute()
+        or windows_path.drive
+        or ".." in relative_path.parts
+        or len(relative_path.parts) < 3
+        or relative_path.parts[0].lower() != "outputs"
+        or any(
+            not re.fullmatch(r"case-\d+", part, re.IGNORECASE)
+            for part in relative_path.parts[1:-1]
+        )
+        or not re.fullmatch(r"(?:result|output|file)-\d+\.[a-z0-9]{1,10}", relative_path.parts[-1], re.IGNORECASE)
+        or any(ord(char) < 32 for char in normalized)
+    ):
+        raise ValueError("Use a synthetic relative label such as outputs/case-01/result-01.docx.")
+    return normalized
+
+
+def collect_output_path_labels() -> list[str]:
+    print("Use only synthetic labels under outputs/, such as outputs/case-01/result-01.docx.")
+    paths: list[str] = []
+    while True:
+        raw_path = input("Relative output path label (blank when finished/none): ").strip()
+        if not raw_path:
+            return paths
+        try:
+            paths.append(safe_relative_output_path(raw_path))
+        except ValueError:
+            print("Use a relative label such as outputs/case-01/result.docx; full paths are not accepted.")
+
+
+def _run_gui_session(launch_gui) -> int:
+    try:
+        launch_gui()
+    except SystemExit as exc:
+        if exc.code is None:
+            return 0
+        return exc.code if isinstance(exc.code, int) else 1
+    return 0
 
 
 def _prompt_choice(prompt: str, choices: dict[str, str]) -> str:
@@ -115,79 +413,83 @@ def _prompt_choice(prompt: str, choices: dict[str, str]) -> str:
         print(f"Enter one of: {labels}.")
 
 
-def collect_manual_results(report_path: Path, report: dict) -> None:
-    print("\nRecord only observations from the physical test you just performed.")
-    print("Leave status NOT TESTED if you skipped a case. Do not enter file names or paths.")
-    third_party = input("Third-party manager name (blank if not tested): ").strip()
-    if third_party:
-        case = next(case for case in report["cases"] if case["id"] == "THIRD-PARTY")
-        case["source_application"] = third_party[:120]
-        case["source_version"] = input("Third-party manager version: ").strip()[:80] or "Not recorded"
-    virtual_source = input("Unsupported/virtual source name (blank if not tested): ").strip()
-    if virtual_source:
-        case = next(case for case in report["cases"] if case["id"] == "VIRTUAL")
-        case["source_application"] = virtual_source[:120]
-        case["source_version"] = input("Unsupported/virtual source version: ").strip()[:80] or "Not recorded"
+def _prompt_file_count() -> int | None:
+    while True:
+        raw_count = input("Actual number of dragged files (blank if unknown): ").strip()
+        if not raw_count:
+            return None
+        if raw_count.isdigit():
+            return int(raw_count)
+        print("Enter a non-negative whole number or leave blank.")
 
-    for case in report["cases"]:
-        print(f"\n[{case['id']}] {case['source_application']} — {case['scenario']}")
+
+def collect_manual_results(
+    report_path: Path,
+    report: dict,
+    case: dict,
+) -> None:
+    case["local_payload_received"] = _prompt_choice(
+        "Did this case expose a genuine local file payload?",
+        {"u": "UNKNOWN", "a": "NOT APPLICABLE", "y": "YES", "n": "NO"},
+    )
+    case["selected_file_count"] = _prompt_file_count()
+
+    case["operator_conversion_result"] = _prompt_choice(
+        "Observed conversion result",
+        {
+            "u": "UNKNOWN",
+            "c": "COMPLETED",
+            "f": "FAILED",
+            "n": "NOT DISPATCHED",
+        },
+    )
+    case["output_correct"] = _prompt_choice(
+        "Was output correct and were other files untouched?",
+        {"u": "UNKNOWN", "y": "YES", "n": "NO", "a": "NOT APPLICABLE"},
+    )
+    case["conversion_error_category"] = _prompt_choice(
+        "Error category, if any (do not enter raw error text or paths)",
+        {
+            "?": "UNKNOWN",
+            "n": "NONE",
+            "i": "INPUT_NOT_FOUND",
+            "a": "ACCESS_DENIED",
+            "u": "UNSUPPORTED_FORMAT",
+            "c": "OUTPUT_COLLISION",
+            "x": "OTHER",
+        },
+    )
+    case["cancellation_behavior"] = _prompt_choice(
+        "Cancellation result for the scenario (or N/A)",
+        {"u": "UNKNOWN", "p": "PASS", "f": "FAIL", "a": "NOT APPLICABLE"},
+    )
+    case["output_paths"] = collect_output_path_labels()
+
+    source_match = _prompt_choice(
+        "Were the hashed source paths exactly the dragged source file(s)?",
+        {"u": "UNKNOWN", "a": "NOT APPLICABLE", "y": "YES", "n": "NO"},
+    )
+    case["source_hashes_match_dragged_files"] = source_match
+    before = case["source_sha256_before"]
+    after = case["source_sha256_after"]
+    case["source_unchanged"] = (
+        before == after
+        if source_match == "YES" and before and after is not None
+        else None
+    )
+    case["operator_confirmed"] = _prompt_choice(
+        "Do you confirm these fields are direct observations for this displayed case ID?",
+        {"n": "NO", "y": "YES"},
+    ) == "YES"
+    if case["operator_confirmed"]:
         case["status"] = _prompt_choice(
-            "Result",
+            "Case result",
             {"n": "NOT TESTED", "p": "PASS", "f": "FAIL"},
         )
-        if case["status"] == "NOT TESTED":
-            write_manual_report(report_path, report)
-            continue
-        if case["id"] in (
-            "EXP-SINGLE",
-            "EXP-MULTI",
-            "DESKTOP-SINGLE",
-            "DESKTOP-MULTI",
-            "THIRD-PARTY",
-        ):
-            case["local_payload_received"] = _prompt_choice(
-                "Genuine local filesystem payload received?",
-                {"u": "UNKNOWN", "y": "YES", "n": "NO"},
-            )
-            count = input("Number of files actually dragged (count only; blank if unknown): ").strip()
-            case["selected_file_count"] = int(count) if count.isdigit() else None
-            case["output_correct"] = _prompt_choice(
-                "Were selected outputs correct and were other files untouched?",
-                {"u": "UNKNOWN", "y": "YES", "n": "NO", "a": "NOT APPLICABLE"},
-            )
-        elif case["id"] == "VIRTUAL":
-            case["local_payload_received"] = _prompt_choice(
-                "Was a local filesystem payload exposed?",
-                {"u": "UNKNOWN", "y": "YES", "n": "NO"},
-            )
-            case["output_correct"] = _prompt_choice(
-                "Was conversion safely rejected without output?",
-                {"u": "UNKNOWN", "y": "YES", "n": "NO", "a": "NOT APPLICABLE"},
-            )
-        elif case["id"] == "CANCEL":
-            case["cancellation_behavior"] = _prompt_choice(
-                "Did each cancellation path avoid creating output and leave the app usable?",
-                {"u": "UNKNOWN", "y": "YES", "n": "NO"},
-            )
-        elif case["id"] == "TOGGLE":
-            case["cancellation_behavior"] = _prompt_choice(
-                "Did OFF stop monitoring and did the saved choice survive restart?",
-                {"u": "UNKNOWN", "y": "YES", "n": "NO"},
-            )
-        elif case["id"] == "RELIABILITY":
-            case["output_correct"] = _prompt_choice(
-                "Did format/size/collision checks fail safely without overwriting?",
-                {"u": "UNKNOWN", "y": "YES", "n": "NO"},
-            )
-            case["cancellation_behavior"] = _prompt_choice(
-                "Was the source unchanged after success, rejection, and failure?",
-                {"u": "UNKNOWN", "y": "YES", "n": "NO"},
-            )
-        notes = input("Brief non-sensitive evidence/notes (no file names or paths): ").strip()
-        case["evidence_notes"] = notes[:500]
-        write_manual_report(report_path, report)
+    else:
+        case["status"] = "NOT TESTED"
 
-    statuses = [case["status"] for case in report["cases"]]
+    statuses = [item["status"] for item in report["cases"]]
     report["summary"] = {
         "passed": statuses.count("PASS"),
         "failed": statuses.count("FAIL"),
@@ -203,10 +505,96 @@ def collect_manual_results(report_path: Path, report: dict) -> None:
     print(f"Structured report saved to {report_path}")
 
 
+def _prompt_source_label(prompt: str, default: str | None) -> str:
+    while True:
+        value = input(f"{prompt} [{default or 'not recorded'}]: ").strip() or (default or "")
+        if len(value) <= 120 and not any(ord(char) < 32 for char in value) and not re.search(
+            r"(?:[A-Za-z]:[\\/]|[\\/]{2})", value
+        ):
+            return value
+        print("Enter a short application label/version, not a path.")
+
+
+def _run_interactive_case(report_path: Path, log_path: Path, report: dict, case: dict) -> None:
+    print(f"\nCase {case['id']}: {case['source_application']} — {case['scenario']}")
+    print("Use only the displayed case for this app session; the report status stays NOT TESTED until confirmed.")
+    case["source_application"] = _prompt_source_label(
+        "Actual source application",
+        case["source_application"],
+    ) or "Not recorded"
+    case["source_version"] = _prompt_source_label(
+        "Actual source application / Windows version",
+        case["source_version"],
+    ) or "Not recorded"
+    source_paths, hashes_before = collect_source_hash_inputs()
+    case["source_sha256_before"] = hashes_before or None
+    case["session_id"] = str(uuid.uuid4())
+    case["operator_confirmed"] = False
+    case["status"] = "NOT TESTED"
+
+    handler = PrivacySafeGestureLogHandler(log_path, case["id"])
+    handler.record_event({"event": "session_started"})
+    loggers = [
+        logging.getLogger("localshift.shell_integration"),
+        logging.getLogger("localshift.radial_menu"),
+    ]
+    root_logger = logging.getLogger()
+    previous_logger_state = [(logger, logger.level, logger.propagate) for logger in loggers]
+    for logger in loggers:
+        logger.setLevel(logging.INFO)
+        logger.addHandler(handler)
+        logger.propagate = False
+    root_logger.addHandler(handler)
+
+    exit_code = None
+    try:
+        from localshift.gui import main as launch_gui
+
+        exit_code = _run_gui_session(launch_gui)
+    finally:
+        handler.record_event({"event": "session_ended", "exit_code": exit_code})
+        for logger, level, propagate in previous_logger_state:
+            logger.removeHandler(handler)
+            logger.setLevel(level)
+            logger.propagate = propagate
+        root_logger.removeHandler(handler)
+        handler.close()
+        case["gui_exit_code"] = exit_code
+        case["observed_events"] = handler.events
+        observations = summarize_gesture_events(handler.events)
+        case.update(observations)
+        case["source_sha256_after"] = hash_source_paths(source_paths) if source_paths else None
+        case["diagnostics_write_failed"] = handler.write_failed
+        report["summary"] = {
+            "passed": sum(item["status"] == "PASS" for item in report["cases"]),
+            "failed": sum(item["status"] == "FAIL" for item in report["cases"]),
+            "not_tested": sum(item["status"] == "NOT TESTED" for item in report["cases"]),
+        }
+        write_manual_report(report_path, report)
+
+    if exit_code:
+        print(f"LocalShift exited with code {exit_code}; this is recorded and is not treated as a pass.")
+    if handler.write_failed:
+        print("Warning: diagnostics could not be fully written; the physical case remains unverified.")
+    print(
+        "Captured diagnostics: "
+        f"{len(handler.events)} safe events, "
+        f"{len(case['payload_preview_file_counts'])} distinct preview file-count value(s), "
+        f"{len(case['accepted_drop_file_counts'])} accepted drop file-count value(s), "
+        f"observed result {case['observed_conversion_result']}."
+    )
+    collect_manual_results(report_path, report, case)
+
+
 def run_automated_checks() -> bool:
     print("=" * 70)
-    print("LOCALSHIFT MILESTONE 21 — GESTURE & DESTINATION AUTOMATED CHECKS")
+    print("LOCALSHIFT — GESTURE & DESTINATION AUTOMATED CHECKS")
     print("=" * 70)
+    with tempfile.TemporaryDirectory(prefix="localshift-gesture-check-") as temporary_directory:
+        return _run_automated_checks_in(Path(temporary_directory))
+
+
+def _run_automated_checks_in(temp_dir: Path) -> bool:
     all_passed = True
 
     # Check 1: Win32 Shift detection
@@ -214,9 +602,6 @@ def run_automated_checks() -> bool:
     print(f"[CHECK 1] Physical Win32 Shift key check: active={shift_state} (Normal without key held)")
 
     # Check 2: Formats & Intersection
-    temp_dir = Path("build/test_gesture_assets")
-    temp_dir.mkdir(parents=True, exist_ok=True)
-
     png_path = temp_dir / "test_a.png"
     Image.new("RGB", (64, 64), color="blue").save(png_path)
 
@@ -298,75 +683,62 @@ def main():
     parser = argparse.ArgumentParser(description="Verify Windows OLE Shift+Drag gesture and LocalShift desktop behavior")
     parser.add_argument("--check", action="store_true", help="Run automated component checks only and exit")
     parser.add_argument("--interactive", action="store_true", help="Launch LocalShift for physical Windows gesture checks")
-    parser.add_argument("--log-file", type=Path, help="Write privacy-conscious gesture diagnostics to this file")
+    parser.add_argument("--log-file", type=Path, help="Append privacy-safe JSONL gesture diagnostics")
+    parser.add_argument("--case-id", choices=[case[0] for case in MANUAL_CASES], help="Run one attributable physical case")
     parser.add_argument(
         "--report-file",
         type=Path,
-        help="Write the structured operator verification report (defaults to gesture-verification-report.json)",
+        help="Versioned structured operator report; prior case evidence is preserved",
     )
     args = parser.parse_args()
 
-    if args.log_file and not args.interactive:
-        parser.error("--log-file requires --interactive")
-    if args.report_file and not args.interactive:
-        parser.error("--report-file requires --interactive")
+    if args.interactive and (args.log_file is None or args.report_file is None or args.case_id is None):
+        parser.error("--interactive requires --case-id, --log-file, and --report-file")
+    if not args.interactive and any((args.log_file, args.report_file, args.case_id)):
+        parser.error("--case-id, --log-file, and --report-file require --interactive")
+    if args.interactive and args.check:
+        parser.error("Use --check or --interactive, not both")
     if args.interactive and sys.platform != "win32":
         parser.error("--interactive is supported only on Windows")
+    report_path = args.report_file.resolve() if args.interactive else None
+    log_path = args.log_file.resolve() if args.interactive else None
+    if args.interactive and report_path == log_path:
+        parser.error("The JSON report and JSONL diagnostics must use different files")
+    if report_path is not None:
+        try:
+            validate_report_destination(report_path)
+        except ValueError as exc:
+            parser.error(str(exc))
 
     passed = run_automated_checks()
     if args.check:
         sys.exit(0 if passed else 1)
+    if not passed:
+        print("Automated checks failed; do not begin physical verification until the failure is resolved.")
+        return 1
 
-    print("To run interactive visual validation on Windows desktop:")
-    print(
-        "  .\\.venv\\Scripts\\python.exe scripts\\verify_windows_gesture.py --interactive "
-        "--log-file .\\gesture-diagnostics.log "
-        "--report-file .\\docs\\reports\\LS-BE-021-physical-verification.json"
-    )
-    print("Numbered physical test cases (record each result independently; do not infer cross-app support):")
-    print("  [1] Explorer single file: Shift-drag one supported file, drop on a matching petal, verify output/source hash.")
-    print("  [2] Explorer multiple files: confirm exactly the dragged files convert to a common target.")
-    print("  [3] Desktop single file: repeat the single-file case independently.")
-    print("  [4] Desktop multiple files: confirm no unselected files are converted.")
-    print("  [5] Third-party manager: record app/version and whether local file URLs arrive.")
-    print("  [6] Virtual/remote source: verify clear fallback and no conversion.")
-    print("  [7] Mixed DPI: test monitor/sector alignment, focus and flicker on each available display.")
-    print("  [8] Cancellation: test Escape, Shift release and drop outside a sector; no output should exist.")
-    print("  [9] Toggle/restart: OFF must stop polling; verify explicit ON and persisted preference.")
-    print("  [10] Reliability: unsupported format, >250 MiB input, collision, conversion failure and source hashes.")
+    if not args.interactive:
+        print("Numbered physical test cases (run one case ID per GUI session; do not infer cross-app support):")
+        for number, (case_id, source, scenario) in enumerate(MANUAL_CASES, start=1):
+            print(f"  [{number}] {case_id}: {source} — {scenario}")
+        return
 
-    if args.interactive:
-        report_path = args.report_file or Path("gesture-verification-report.json")
-        report = new_manual_report()
-        write_manual_report(report_path, report)
-        print(f"Initial report written with every manual case marked NOT TESTED: {report_path}")
-        handler = None
-        loggers = [logging.getLogger(name) for name in (
-            "localshift.shell_integration",
-            "localshift.radial_menu",
-        )]
-        if args.log_file:
-            log_path = args.log_file.resolve()
-            log_path.parent.mkdir(parents=True, exist_ok=True)
-            handler = logging.FileHandler(log_path, encoding="utf-8")
-            handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
-            for logger in loggers:
-                logger.setLevel(logging.INFO)
-                logger.addHandler(handler)
-                logger.propagate = False
-            print(f"Gesture diagnostics: {log_path}")
+    if report_path is None or log_path is None or args.case_id is None:
+        parser.error("--interactive requires case ID, report path, and diagnostics path")
+    try:
+        report = load_manual_report(report_path)
+    except ValueError as exc:
+        parser.error(str(exc))
+    case = next(item for item in report["cases"] if item["id"] == args.case_id)
+    if case["status"] != "NOT TESTED" or case.get("session_id"):
+        parser.error("This case already has recorded evidence; choose a fresh report path to preserve it")
 
-        from localshift.gui import main as launch_gui
-
-        try:
-            launch_gui()
-        finally:
-            if handler:
-                for logger in loggers:
-                    logger.removeHandler(handler)
-                handler.close()
-        collect_manual_results(report_path, report)
+    print(f"Launching only case {case['id']}; all other cases remain at their recorded status.")
+    try:
+        _run_interactive_case(report_path, log_path, report, case)
+    except ValueError as exc:
+        parser.error(str(exc))
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

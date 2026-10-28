@@ -8,10 +8,7 @@ import pytest
 
 import docx
 from localshift import ConversionRequest, convert_request
-from tests.validation_generator import (
-    UNSEEN_GROUND_TRUTH,
-    generate_unseen_validation_fixtures,
-)
+from tests.validation_generator import UNSEEN_GROUND_TRUTH
 from tests.visual_renderer import DocxVisualRenderer
 
 VAL_FIXTURES_DIR = Path(__file__).parent / "fixtures" / "unseen_documents"
@@ -19,8 +16,19 @@ VAL_FIXTURES_DIR = Path(__file__).parent / "fixtures" / "unseen_documents"
 
 @pytest.fixture(scope="module", autouse=True)
 def ensure_unseen_fixtures():
-    """Ensure all 10 unseen validation fixtures exist before running tests."""
-    return generate_unseen_validation_fixtures(VAL_FIXTURES_DIR)
+    """Require the checked-in fixtures without rewriting operator data."""
+    missing = [
+        f"{name}.pdf"
+        for name in UNSEEN_GROUND_TRUTH
+        if not (VAL_FIXTURES_DIR / f"{name}.pdf").is_file()
+    ]
+    if missing:
+        pytest.fail(
+            "Missing unseen validation fixtures: "
+            + ", ".join(missing)
+            + ". Generate fixtures explicitly before running this suite.",
+            pytrace=False,
+        )
 
 
 class TestUnseenDocumentValidation:

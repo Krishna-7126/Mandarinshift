@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import logging
 import os
+import stat
 import tempfile
 import threading
 from pathlib import Path
@@ -166,23 +167,46 @@ def reserve_output_path(folder: Path, stem: str, extension: str) -> OutputReserv
 
 def _validate_source(source: Path, max_bytes: int) -> None:
     """Raise :class:`ConversionError` if *source* fails any safety check."""
-    if not source.exists():
-        raise InvalidInputError(f"Input file not found: {source}")
+    try:
+        source_stat = source.stat()
+    except FileNotFoundError as exc:
+        raise InvalidInputError(
+            f"Input file not found: {source}. It may have moved or been removed; restore it or select it again."
+        ) from exc
+    except PermissionError as exc:
+        raise InvalidInputError(
+            f"Cannot access input file: {source}. Check its permissions and try again."
+        ) from exc
+    except OSError as exc:
+        raise InvalidInputError(f"Cannot inspect input file: {source}: {exc}") from exc
+
     if source.is_symlink():
-        # Accept symlinks only if they resolve to a regular file.
         real = source.resolve()
         if not real.is_file():
             raise InvalidInputError(f"Symlink does not point to a regular file: {source}")
         log.debug("Source is a symlink; resolved to %s", real)
-    if not source.is_file():
+    if not stat.S_ISREG(source_stat.st_mode):
         raise InvalidInputError(f"Input path is not a regular file: {source}")
-    size = source.stat().st_size
+    size = source_stat.st_size
     if size > max_bytes:
         limit_mib = max_bytes / (1024 * 1024)
         raise InputTooLargeError(
             f"Input file is {size / (1024 * 1024):.1f} MiB, "
             f"which exceeds the {limit_mib:.0f} MiB limit."
         )
+    try:
+        with source.open("rb"):
+            pass
+    except FileNotFoundError as exc:
+        raise InvalidInputError(
+            f"Input file not found: {source}. It may have moved or been removed; restore it or select it again."
+        ) from exc
+    except PermissionError as exc:
+        raise InvalidInputError(
+            f"Cannot read input file: {source}. Check its permissions or close applications that may be locking it."
+        ) from exc
+    except OSError as exc:
+        raise InvalidInputError(f"Cannot read input file: {source}: {exc}") from exc
 
 
 def _validate_no_source_dest_collision(source: Path, output: Path) -> None:

@@ -137,6 +137,62 @@ class TestMainWindow:
         assert isinstance(win.workbench_tab, PdfWorkbenchTab)
         assert isinstance(win.pdf_suite_tab, PdfToolsSuiteTab)
 
+    def test_in_window_overlay_does_not_compete_for_ole_target(self, qapp, sample_png, monkeypatch):
+        import localshift.gui as gui
+        from PySide6.QtCore import QMimeData, QPointF, QUrl
+
+        win = MainWindow()
+        win.show()
+        qapp.processEvents()
+        mime = QMimeData()
+        mime.setUrls([QUrl.fromLocalFile(str(sample_png))])
+
+        class DragEvent:
+            def mimeData(self):
+                return mime
+
+            def modifiers(self):
+                return Qt.KeyboardModifier.ShiftModifier
+
+            def position(self):
+                return QPointF(20, 20)
+
+            def acceptProposedAction(self):
+                self.accepted = True
+
+            def ignore(self):
+                self.accepted = False
+
+            def accept(self):
+                self.accepted = True
+
+        assert win.acceptDrops()
+        assert not win.radial_overlay.acceptDrops()
+        original_paths = gui._local_file_paths
+        validation_calls = []
+
+        def track_validation(data):
+            validation_calls.append(data)
+            return original_paths(data)
+
+        monkeypatch.setattr(gui, "_local_file_paths", track_validation)
+        event = DragEvent()
+        win.dragMoveEvent(event)
+        assert event.accepted
+        assert not win.radial_overlay.isHidden()
+        for _ in range(20):
+            win.dragMoveEvent(event)
+        qapp.processEvents()
+        assert len(validation_calls) == 1
+
+        win.dragLeaveEvent(DragEvent())
+        assert win.radial_overlay.isHidden()
+
+        win.dragMoveEvent(event)
+        assert not win.radial_overlay.isHidden()
+        assert not win.radial_overlay.acceptDrops()
+        win._hide_radial_overlay()
+
     def test_suite_tab_routing(self, qapp):
         win = MainWindow()
         # Verify navigation to existing workflow tab on tool trigger
@@ -302,6 +358,44 @@ class TestFileConverterTab:
         tab = FileConverterTab()
         tab.add_paths([sample_png, sample_png])
         assert len(tab.paths) == 1
+        assert tab.table.rowCount() == 1
+
+    def test_queue_sources_are_canonical_paths(self, qapp, sample_png):
+        tab = FileConverterTab()
+        non_canonical = sample_png.parent / "." / sample_png.name
+
+        tab.add_paths([non_canonical])
+
+        assert tab.paths == [sample_png.resolve()]
+        assert tab.paths[0].is_absolute()
+
+    def test_queue_cannot_change_while_batch_is_running(self, qapp, sample_png, monkeypatch):
+        tab = FileConverterTab()
+        tab.add_paths([sample_png])
+
+        class Signal:
+            def connect(self, callback):
+                pass
+
+        class RunningWorker:
+            def __init__(self, jobs):
+                self.item_done = Signal()
+                self.progress = Signal()
+                self.finished = Signal()
+
+            def isRunning(self):
+                return True
+
+            def start(self):
+                pass
+
+        monkeypatch.setattr("localshift.gui.BatchConversionWorker", RunningWorker)
+        assert tab.start_conversion()
+        tab.remove_selected()
+        tab.clear_queue()
+        tab.add_paths([sample_png])
+
+        assert tab.paths == [sample_png.resolve()]
         assert tab.table.rowCount() == 1
 
     def test_options_defaults(self, qapp):
@@ -543,6 +637,53 @@ class TestWorkers:
         assert len(done_items) == 2
         assert all(status == "Cancelled" for _, status in done_items)
 
+    def test_batch_worker_uses_distinct_real_paths_and_preserves_sources(self, qapp, tmp_path):
+        import hashlib
+        from PIL import Image
+
+        first_dir, second_dir = tmp_path / "one", tmp_path / "two"
+        first_dir.mkdir()
+        second_dir.mkdir()
+        sources = [first_dir / "résumé.png", second_dir / "résumé.png"]
+        Image.new("RGB", (8, 8), "red").save(sources[0])
+        Image.new("RGB", (8, 8), "blue").save(sources[1])
+        original_hashes = [hashlib.sha256(path.read_bytes()).hexdigest() for path in sources]
+        done = []
+        worker = BatchConversionWorker([(i, path, "jpeg", None, {}) for i, path in enumerate(sources)])
+        worker.item_done.connect(lambda *result: done.append(result))
+
+        worker.run()
+
+        assert [status for _, status, _ in done] == ["Done", "Done"]
+        assert all(Path(detail).is_file() for _, _, detail in done)
+        assert len({Path(detail).parent for _, _, detail in done}) == 2
+        assert [hashlib.sha256(path.read_bytes()).hexdigest() for path in sources] == original_hashes
+
+    def test_batch_worker_snapshots_jobs_and_options(self, qapp, sample_png):
+        options = {"quality": 80}
+        jobs = [(4, sample_png, "jpeg", None, options)]
+        worker = BatchConversionWorker(jobs)
+        jobs.clear()
+        options["quality"] = 10
+
+        assert len(worker.jobs) == 1
+        assert worker.jobs[0][1] == sample_png
+        assert worker.jobs[0][4] == {"quality": 80}
+
+    def test_batch_worker_reports_source_removed_after_queueing(self, qapp, tmp_path):
+        source = tmp_path / "removed.png"
+        source.write_bytes(b"queued but gone")
+        source.unlink()
+        done = []
+        worker = BatchConversionWorker([(0, source, "jpeg", None, {})])
+        worker.item_done.connect(lambda *result: done.append(result))
+
+        worker.run()
+
+        assert len(done) == 1
+        assert done[0][1] == "Failed"
+        assert "Input file not found" in done[0][2]
+
 
 # ---------------------------------------------------------------------------
 # Test 8: End-to-End Workflow Execution Through GUI Layer
@@ -568,6 +709,104 @@ class TestWorkflowExecution:
 
         assert tab._radial_menu is None
         assert tab.findChildren(RadialConversionMenu) == []
+
+    def test_wheel_cancel_and_reopen_preserves_the_queued_source(self, qapp, sample_png):
+        tab = FileConverterTab()
+        tab.add_paths([sample_png])
+        original_paths = list(tab.paths)
+
+        tab.trigger_radial_menu()
+        first_menu = tab._radial_menu
+        assert first_menu is not None and first_menu.paths == original_paths
+        first_menu._cancel()
+        assert tab.paths == original_paths
+        assert tab._radial_menu is None
+
+        tab.trigger_radial_menu()
+        assert tab._radial_menu is not None
+        assert tab._radial_menu.paths == original_paths
+        tab._radial_menu._cancel()
+        assert tab.paths == original_paths
+
+    def test_missing_source_stays_in_wheel_and_fails_only_its_queue_row(
+        self, qapp, tmp_path, monkeypatch
+    ):
+        import localshift.gui as gui
+        from PIL import Image
+
+        source = tmp_path / "selected.png"
+        kept_source = tmp_path / "still-present.png"
+        Image.new("RGB", (8, 8), "red").save(source)
+        Image.new("RGB", (8, 8), "blue").save(kept_source)
+        tab = FileConverterTab()
+        tab.add_paths([kept_source])
+        tab.trigger_radial_menu(paths=[kept_source, source])
+        menu = tab._radial_menu
+        assert menu is not None
+        assert menu.paths == [kept_source.resolve(), source.resolve()]
+        source.unlink()
+        tab.trigger_radial_menu(paths=[kept_source, source])
+        assert tab._radial_menu is menu
+        assert menu.paths == [kept_source.resolve(), source.resolve()]
+
+        settings = type(
+            "Settings",
+            (),
+            {
+                "save_to_folder_enabled": False,
+                "save_to_folder_path": tmp_path,
+                "history": [],
+                "resolve_destination": lambda self, explicit, fallback: fallback,
+            },
+        )()
+        monkeypatch.setattr(gui, "get_settings", lambda: settings)
+        target = "jpeg" if "jpeg" in menu.available_formats else menu.available_formats[0]
+        menu.confirm_selection(menu.available_formats.index(target))
+        assert tab.worker is not None
+        assert tab.worker.wait(5000)
+        qapp.processEvents()
+
+        assert tab.paths == [kept_source.resolve(), source.resolve()]
+        assert tab.table.item(0, 3).text() == "Done"
+        assert tab.table.item(1, 3).text() == "Failed"
+        assert "Input file not found" in tab.table.item(1, 4).text()
+        assert "restore it or select it again" in tab.table.item(1, 4).text()
+
+    def test_duplicate_basenames_keep_identity_through_wheel_and_conversion(
+        self, qapp, tmp_path, monkeypatch
+    ):
+        import hashlib
+        import localshift.gui as gui
+        from PIL import Image
+
+        dirs = [tmp_path / "first", tmp_path / "second"]
+        for folder in dirs:
+            folder.mkdir()
+        sources = [folder / "same.png" for folder in dirs]
+        Image.new("RGB", (8, 8), "red").save(sources[0])
+        Image.new("RGB", (8, 8), "blue").save(sources[1])
+        hashes = [hashlib.sha256(path.read_bytes()).hexdigest() for path in sources]
+        tab = FileConverterTab()
+        tab.add_paths(sources)
+        expected_sources = [path.resolve() for path in sources]
+        settings = type("Settings", (), {"resolve_destination": lambda self, explicit, fallback: fallback})()
+        monkeypatch.setattr(gui, "get_settings", lambda: settings)
+
+        tab.trigger_radial_menu()
+        menu = tab._radial_menu
+        assert menu is not None
+        assert menu.paths == expected_sources
+        menu.confirm_selection(menu.available_formats.index("jpeg"))
+        assert tab.worker is not None
+        assert tab.worker.wait(5000)
+        qapp.processEvents()
+
+        assert tab.paths == expected_sources
+        assert [tab.table.item(i, 3).text() for i in range(2)] == ["Done", "Done"]
+        outputs = [Path(tab.table.item(i, 4).text()) for i in range(2)]
+        assert [path.parent for path in outputs] == dirs
+        assert len(set(outputs)) == 2
+        assert [hashlib.sha256(path.read_bytes()).hexdigest() for path in sources] == hashes
 
     def test_radial_conversion_does_not_replace_running_worker(self, qapp, sample_png, sample_pdf, dialogs):
         tab = FileConverterTab()

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import logging
 import os
+import stat
 import sys
 from pathlib import Path
 from typing import Any, Callable, Optional, Sequence
@@ -63,6 +64,7 @@ from .converter import (
     ConversionCancelledError,
     ConversionError,
     ConversionRequest,
+    MAX_INPUT_BYTES,
     convert_image,
     convert_images_to_pdf,
     convert_request,
@@ -77,7 +79,7 @@ from .documents.pdf_workbench import (
 )
 from .exceptions import InvalidInputError
 from .formats import FORMAT_LABELS, input_format, output_formats_for
-from .radial_menu import RadialConversionMenu, ShiftActivationFilter, is_shift_pressed
+from .radial_menu import RadialConversionMenu, ShiftActivationFilter, get_supported_targets, is_shift_pressed
 from .settings import get_settings, validate_destination_directory
 from .shell_integration import (
     BackgroundGestureController,
@@ -308,6 +310,44 @@ def _format_size(size_bytes: int) -> str:
         return f"{size_bytes / (1024 * 1024):.1f} MB"
 
 
+def _local_file_paths(mime_data: Any) -> tuple[list[Path], Optional[str]]:
+    """Validate a drag payload while retaining the paths supplied by the source."""
+    if not mime_data.hasUrls():
+        return [], "This source does not expose local file URLs."
+    urls = mime_data.urls()
+    if not urls:
+        return [], "This source did not provide any files."
+
+    paths: list[Path] = []
+    for url in urls:
+        if not url.isLocalFile():
+            return [], "Only local files can be converted."
+        raw_path = url.toLocalFile()
+        if not raw_path:
+            return [], "The drop contains an empty file path."
+        path = Path(raw_path)
+        try:
+            if not path.is_absolute():
+                return [], f"Invalid dropped path (not absolute): {path}"
+            if path.is_symlink():
+                return [], f"Unsupported symbolic-link drop: {path}"
+            info = path.stat()
+            if not stat.S_ISREG(info.st_mode):
+                return [], f"Invalid dropped source (not a regular file): {path}"
+            if info.st_size > MAX_INPUT_BYTES:
+                return [], "A dropped file exceeds the 250 MiB input limit."
+            paths.append(path)
+        except FileNotFoundError:
+            return [], f"Dropped source is missing: {path}. Restore it or select it from its current location."
+        except PermissionError:
+            return [], f"Cannot access dropped source: {path}. Check its permissions and try again."
+        except OSError:
+            return [], f"Cannot inspect dropped source: {path}"
+    if not get_supported_targets(paths):
+        return [], "Unsupported file format or no common output format for the dropped files."
+    return paths, None
+
+
 # ---------------------------------------------------------------------------
 # Background Worker Threads
 # ---------------------------------------------------------------------------
@@ -320,7 +360,10 @@ class BatchConversionWorker(QThread):
 
     def __init__(self, jobs: list[tuple[int, Path, str, Optional[Path], dict[str, Any]]]):
         super().__init__()
-        self.jobs = jobs
+        self.jobs = tuple(
+            (row, Path(source), target, Path(outdir) if outdir is not None else None, dict(options))
+            for row, source, target, outdir, options in jobs
+        )
         self._is_cancelled = False
 
     def cancel(self) -> None:
@@ -344,7 +387,7 @@ class BatchConversionWorker(QThread):
                     source=source,
                     target_format=target_fmt,
                     output_dir=outdir,
-                    options=options,
+                    options=dict(options),
                 )
                 res = convert_request(req, cancel_check=lambda: self._is_cancelled)
                 succeeded += 1
@@ -417,6 +460,7 @@ class FileConverterTab(QWidget):
         self.output_dir: Optional[Path] = None
         self.worker: Optional[BatchConversionWorker] = None
         self._last_converted_paths: list[Path] = []
+        self._batch_running = False
         self._radial_menu: Optional[RadialConversionMenu] = None
         self._init_ui()
 
@@ -504,6 +548,8 @@ class FileConverterTab(QWidget):
         self.table.setWordWrap(False)
         self.table.setAcceptDrops(True)
         self.table.dragEnterEvent = self.dragEnterEvent
+        self.table.dragMoveEvent = self.dragMoveEvent
+        self.table.dragLeaveEvent = self.dragLeaveEvent
         self.table.dropEvent = self.dropEvent
         self.table.setMinimumHeight(150)
         qc_layout.addWidget(self.table)
@@ -761,30 +807,26 @@ class FileConverterTab(QWidget):
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:
         if event.mimeData().hasUrls():
             event.acceptProposedAction()
-            if event.modifiers() & Qt.KeyboardModifier.ShiftModifier:
-                paths = [Path(u.toLocalFile()) for u in event.mimeData().urls() if u.toLocalFile()]
-                if paths:
-                    drop_pos = event.position().toPoint()
-                    global_pos = self.mapToGlobal(drop_pos)
-                    self.trigger_radial_menu(paths=paths, pos=global_pos)
         else:
             event.ignore()
 
     def dragMoveEvent(self, event: QDragMoveEvent) -> None:
         if event.mimeData().hasUrls():
             event.acceptProposedAction()
-            if event.modifiers() & Qt.KeyboardModifier.ShiftModifier:
-                if not (self._radial_menu and self._radial_menu.isVisible()):
-                    paths = [Path(u.toLocalFile()) for u in event.mimeData().urls() if u.toLocalFile()]
-                    if paths:
-                        drop_pos = event.position().toPoint()
-                        global_pos = self.mapToGlobal(drop_pos)
-                        self.trigger_radial_menu(paths=paths, pos=global_pos)
         else:
             event.ignore()
 
+    def dragLeaveEvent(self, event: QDragLeaveEvent) -> None:
+        event.accept()
+
     def dropEvent(self, event: QDropEvent) -> None:
-        paths = [Path(u.toLocalFile()) for u in event.mimeData().urls() if u.toLocalFile()]
+        paths, error = _local_file_paths(event.mimeData())
+        if error:
+            window = self.window()
+            if hasattr(window, "statusBar"):
+                window.statusBar().showMessage(error, 6000)
+            event.ignore()
+            return
         if paths:
             if event.modifiers() & Qt.KeyboardModifier.ShiftModifier:
                 drop_pos = event.position().toPoint()
@@ -792,7 +834,9 @@ class FileConverterTab(QWidget):
                 self.trigger_radial_menu(paths=paths, pos=global_pos)
             else:
                 self.add_paths(paths)
-        event.acceptProposedAction()
+            event.acceptProposedAction()
+        else:
+            event.ignore()
 
     def pick_files(self) -> None:
         paths, _ = QFileDialog.getOpenFileNames(
@@ -813,12 +857,39 @@ class FileConverterTab(QWidget):
             self.output_btn.setToolTip(str(self.output_dir))
 
     def add_paths(self, paths: Sequence[Path]) -> None:
+        if self._batch_running:
+            return
         added_count = 0
+        issues: list[str] = []
         for path in paths:
-            if not path.is_file() or path in self.paths:
+            path = Path(path)
+            initial_status = "Ready"
+            try:
+                path = path if path.is_absolute() else path.absolute()
+                source_stat = path.stat()
+                if not stat.S_ISREG(source_stat.st_mode):
+                    issues.append(f"Invalid source (not a regular file): {path}")
+                    continue
+            except FileNotFoundError:
+                if not path.is_absolute() or not output_formats_for(path):
+                    issues.append(f"Missing or unsupported source: {path}")
+                    continue
+                initial_status = "Missing"
+                issues.append(f"Source missing: {path}. Restore it or select it from its current location.")
+            except PermissionError:
+                if not path.is_absolute() or not output_formats_for(path):
+                    issues.append(f"Inaccessible or unsupported source: {path}")
+                    continue
+                initial_status = "Inaccessible"
+                issues.append(f"Source is inaccessible: {path}. Check access permissions and try again.")
+            except OSError:
+                issues.append(f"Invalid source path: {path}")
+                continue
+            if path in self.paths:
                 continue
             available_targets = output_formats_for(path)
             if not available_targets:
+                issues.append(f"Unsupported source format: {path}")
                 continue
 
             self.paths.append(path)
@@ -858,7 +929,7 @@ class FileConverterTab(QWidget):
             self.table.setCellWidget(row, 2, combo)
 
             # Col 3: Status
-            status_item = QTableWidgetItem("Ready")
+            status_item = QTableWidgetItem(initial_status)
             self.table.setItem(row, 3, status_item)
 
             # Col 4: Details
@@ -869,9 +940,15 @@ class FileConverterTab(QWidget):
         if added_count > 0:
             self.bar.setValue(0)
             self.result_banner.setVisible(False)
+        if issues:
+            window = self.window()
+            if hasattr(window, "statusBar"):
+                window.statusBar().showMessage("; ".join(issues), 10000)
         self._refresh_view_state()
 
     def remove_selected(self) -> None:
+        if self._batch_running:
+            return
         selected_rows = sorted(set(idx.row() for idx in self.table.selectedIndexes()), reverse=True)
         for r in selected_rows:
             if 0 <= r < len(self.paths):
@@ -880,6 +957,8 @@ class FileConverterTab(QWidget):
         self._refresh_view_state()
 
     def clear_queue(self) -> None:
+        if self._batch_running:
+            return
         self.paths.clear()
         self.table.setRowCount(0)
         self.bar.setValue(0)
@@ -1003,6 +1082,10 @@ class FileConverterTab(QWidget):
 
         self.convert_btn.setEnabled(False)
         self.add_btn.setEnabled(False)
+        self.remove_btn.setEnabled(False)
+        self.clear_btn.setEnabled(False)
+        self.table.setEnabled(False)
+        self._batch_running = True
         self.cancel_btn.setEnabled(True)
         self.bar.setValue(0)
 
@@ -1043,6 +1126,10 @@ class FileConverterTab(QWidget):
     def _on_finished(self, succeeded: int, failed: int, errors: list[str]) -> None:
         self.convert_btn.setEnabled(True)
         self.add_btn.setEnabled(True)
+        self.remove_btn.setEnabled(True)
+        self.clear_btn.setEnabled(True)
+        self.table.setEnabled(True)
+        self._batch_running = False
         self.cancel_btn.setEnabled(False)
 
         total = succeeded + failed
@@ -2727,19 +2814,6 @@ class MainWindow(QMainWindow):
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:
         if event.mimeData().hasUrls():
             event.acceptProposedAction()
-            if (
-                (is_shift_pressed() or (event.modifiers() & Qt.KeyboardModifier.ShiftModifier))
-                and not RadialConversionMenu.active_menu_in(self, exclude=self.radial_overlay)
-            ):
-                paths, error = self.radial_overlay._local_file_payload(event.mimeData())
-                if not error:
-                    self.radial_overlay.set_paths(paths)
-                    self.radial_overlay.setGeometry(self.rect())
-                    self.radial_overlay.show()
-                    self.radial_overlay.raise_()
-                    self.radial_overlay.track_drag_pos(event.position().toPoint())
-                else:
-                    self.statusBar().showMessage(error, 6000)
         else:
             event.ignore()
 
@@ -2751,9 +2825,9 @@ class MainWindow(QMainWindow):
                 if not self.radial_overlay.isVisible():
                     if RadialConversionMenu.active_menu_in(self, exclude=self.radial_overlay):
                         return
-                    paths, error = self.radial_overlay._local_file_payload(event.mimeData())
+                    paths, error = _local_file_paths(event.mimeData())
                     if not error:
-                        self.radial_overlay.set_paths(paths)
+                        self.radial_overlay.set_paths(paths, generate_thumbnail=False)
                         self.radial_overlay.setGeometry(self.rect())
                         self.radial_overlay.show()
                         self.radial_overlay.raise_()
@@ -2762,28 +2836,26 @@ class MainWindow(QMainWindow):
                 if self.radial_overlay.isVisible():
                     self.radial_overlay.track_drag_pos(event.position().toPoint())
             else:
-                if self.radial_overlay.isVisible():
-                    self.radial_overlay.hide()
+                self._hide_radial_overlay()
         else:
             event.ignore()
 
     def dragLeaveEvent(self, event: QDragLeaveEvent) -> None:
-        if hasattr(self, "radial_overlay") and self.radial_overlay.isVisible():
-            self.radial_overlay.hide()
+        self._hide_radial_overlay()
         event.accept()
 
     def dropEvent(self, event: QDropEvent) -> None:
         if hasattr(self, "radial_overlay") and self.radial_overlay.isVisible():
-            target_paths, error = self.radial_overlay._local_file_payload(event.mimeData())
+            target_paths, error = _local_file_paths(event.mimeData())
             if error:
-                self.radial_overlay.hide()
+                self._hide_radial_overlay()
                 self.statusBar().showMessage(error, 6000)
                 event.ignore()
                 return
-            self.radial_overlay.set_paths(target_paths)
+            self.radial_overlay.set_paths(target_paths, generate_thumbnail=False)
             pos = event.position().toPoint()
-            petal_idx = self.radial_overlay.petal_at_pos(pos)
-            self.radial_overlay.hide()
+            petal_idx = self.radial_overlay.petal_at_pos(pos, hover_tolerance=False)
+            self._hide_radial_overlay()
             if 0 <= petal_idx < len(self.radial_overlay.available_formats):
                 chosen_fmt = self.radial_overlay.available_formats[petal_idx]
                 self._on_radial_format_selected(chosen_fmt, target_paths)
@@ -2797,6 +2869,14 @@ class MainWindow(QMainWindow):
         current_widget = self.tabs.currentWidget()
         if hasattr(current_widget, "dropEvent"):
             current_widget.dropEvent(event)
+
+    def _hide_radial_overlay(self) -> None:
+        """Close the in-window drag overlay and clear its transient drag state."""
+        if not hasattr(self, "radial_overlay"):
+            return
+        self.radial_overlay._ole_drag_active = False
+        self.radial_overlay._hover_index = -1
+        self.radial_overlay.hide()
 
     def closeEvent(self, event: Any) -> None:
         """Minimize to system tray if background monitoring is active, otherwise exit cleanly."""

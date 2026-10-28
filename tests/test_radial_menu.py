@@ -23,12 +23,14 @@ os.environ["QT_QPA_PLATFORM"] = "offscreen"
 
 from PySide6.QtCore import QEvent, QPoint, QRect, QSize, Qt
 from PySide6.QtGui import QKeyEvent, QMouseEvent
+from PySide6.QtGui import QAccessible
 from PySide6.QtWidgets import QApplication, QLineEdit, QPlainTextEdit, QSpinBox, QTextEdit, QWidget
 
 from localshift.radial_menu import (
     RadialConversionMenu,
     ShiftActivationFilter,
     _clamped_menu_origin,
+    _fitted_menu_size,
     get_supported_targets,
 )
 
@@ -116,6 +118,120 @@ class TestTargetFormats:
 # ---------------------------------------------------------------------------
 
 class TestRadialConversionMenu:
+    def test_format_controls_are_accessible_and_keyboard_focusable(self, qapp, sample_png: Path):
+        menu = RadialConversionMenu([sample_png])
+        button = menu._format_buttons[0]
+        interface = QAccessible.queryAccessibleInterface(button)
+        assert button.focusPolicy() == Qt.FocusPolicy.StrongFocus
+        assert interface.role() == QAccessible.Role.RadioButton
+        assert interface.text(QAccessible.Text.Name).startswith("Convert to ")
+        assert interface.state().checked
+        menu.show()
+        button.setFocus()
+        qapp.processEvents()
+        assert button.hasFocus()
+        menu.close()
+
+    def test_format_control_keyboard_navigation_activation_and_escape(self, qapp, sample_png: Path):
+        from PySide6.QtTest import QTest
+
+        menu = RadialConversionMenu([sample_png])
+        menu.show()
+        first = menu._format_buttons[0]
+        first.setFocus()
+        qapp.processEvents()
+        QTest.keyClick(first, Qt.Key.Key_Right)
+        assert menu.hover_index == 1
+        assert menu._format_buttons[1].hasFocus()
+        selected = []
+        menu.format_selected.connect(lambda fmt, paths: selected.append(fmt))
+        QTest.keyClick(menu._format_buttons[1], Qt.Key.Key_Return)
+        assert selected == [menu.available_formats[1]]
+
+        cancelled_menu = RadialConversionMenu([sample_png])
+        cancelled = []
+        cancelled_menu.cancelled.connect(lambda: cancelled.append(True))
+        cancelled_menu.show()
+        cancelled_menu._format_buttons[0].setFocus()
+        QTest.keyClick(cancelled_menu._format_buttons[0], Qt.Key.Key_Escape)
+        assert cancelled == [True]
+
+    def test_global_overlay_and_ole_target_remain_nonfocusable(self, qapp, sample_png: Path):
+        overlay = RadialConversionMenu([sample_png], is_overlay=True)
+        ole_target = RadialConversionMenu([], awaiting_drop=True)
+        assert overlay.focusPolicy() == Qt.FocusPolicy.NoFocus
+        assert ole_target.focusPolicy() == Qt.FocusPolicy.NoFocus
+        assert RadialConversionMenu([sample_png]).focusPolicy() == Qt.FocusPolicy.StrongFocus
+
+    def test_drag_enter_does_not_generate_thumbnail(self, qapp, sample_png: Path, monkeypatch):
+        from PySide6.QtCore import QMimeData, QUrl
+
+        menu = RadialConversionMenu([], awaiting_drop=True)
+        mime = QMimeData()
+        mime.setUrls([QUrl.fromLocalFile(str(sample_png))])
+        monkeypatch.setattr(menu, "_generate_thumbnail", lambda: pytest.fail("drag-enter decoded an image"))
+
+        class DragEvent:
+            def mimeData(self):
+                return mime
+
+            def acceptProposedAction(self):
+                self.accepted = True
+
+            def ignore(self):
+                self.accepted = False
+
+        event = DragEvent()
+        menu.dragEnterEvent(event)
+        assert event.accepted
+        assert menu.paths == [sample_png]
+
+    def test_drag_path_update_skips_thumbnail_generation(self, qapp, sample_png: Path, monkeypatch):
+        menu = RadialConversionMenu([])
+        monkeypatch.setattr(menu, "_generate_thumbnail", lambda: pytest.fail("thumbnail decoded during drag"))
+        menu.set_paths([sample_png], generate_thumbnail=False)
+        assert menu.paths == [sample_png]
+
+    def test_malformed_image_thumbnail_fails_gracefully(self, qapp, tmp_path: Path):
+        malformed = tmp_path / "broken.png"
+        malformed.write_bytes(b"not an image")
+        menu = RadialConversionMenu([malformed])
+        assert menu._thumbnail_pixmap is None
+
+    def test_oversized_dimensions_are_rejected_before_decode(self, qapp, sample_png: Path, monkeypatch):
+        import localshift.radial_menu as radial_menu
+
+        class HugeReader:
+            def __init__(self, path):
+                pass
+
+            def size(self):
+                return QSize(20_000, 20_000)
+
+            def read(self):
+                pytest.fail("oversized source was decoded")
+
+        monkeypatch.setattr(radial_menu, "QImageReader", HugeReader)
+        menu = RadialConversionMenu([sample_png])
+        assert menu._thumbnail_pixmap is None
+
+    def test_small_work_area_fits_menu_and_clamps_inside(self):
+        work = QRect(-120, 30, 160, 120)
+        size = _fitted_menu_size(work, QSize(400, 460))
+        origin = _clamped_menu_origin(QPoint(-119, 31), work, size)
+        assert size.width() <= work.width() and size.height() <= work.height()
+        assert work.contains(QRect(origin, size))
+
+    def test_click_tolerance_does_not_select_invisible_hover_band(self, qapp, sample_png: Path):
+        from PySide6.QtCore import QPointF
+
+        menu = RadialConversionMenu([sample_png])
+        menu.set_hover_index(0)
+        center = menu._petal_center(0)
+        invisible_band = QPointF(center.x() + menu._r_petal + 6, center.y())
+        assert menu.petal_at_pos(invisible_band) == 0  # hover hysteresis remains available
+        assert menu.petal_at_pos(invisible_band, hover_tolerance=False) == -1
+
     def test_init_single_file(self, qapp, sample_png: Path):
         menu = RadialConversionMenu([sample_png])
         assert menu.paths == [sample_png]
@@ -367,6 +483,7 @@ class TestRadialConversionMenu:
 
         assert selected == []
         assert not event.isAccepted()
+        assert not menu.ole_drag_active
 
     def test_drag_move_clears_hover_when_cursor_leaves_all_sectors(self, qapp, sample_png: Path):
         from PySide6.QtCore import QMimeData, QPointF, QUrl
@@ -558,6 +675,16 @@ class TestRadialConversionMenu:
 
         assert not menu._ole_drag_active
         assert events == ["left"]
+
+    def test_wheel_keeps_missing_selected_sources_for_item_level_failure(self, qapp, sample_png: Path):
+        missing = sample_png.parent / "removed-after-selection.png"
+        menu = RadialConversionMenu([sample_png, missing])
+        assert menu.paths == [sample_png, missing]
+        assert menu.available_formats
+
+        menu.set_paths([sample_png, missing])
+
+        assert menu.paths == [sample_png, missing]
 
     def test_global_payload_rejects_virtual_mixed_and_oversized_files(
         self, qapp, sample_png: Path, monkeypatch

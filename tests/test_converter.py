@@ -311,6 +311,26 @@ class TestInputValidation:
         with pytest.raises(ConversionError, match="not found"):
             convert_image(tmp_path / "nonexistent.png", "jpeg", tmp_path)
 
+    def test_missing_source_message_explains_recovery(self, tmp_path):
+        with pytest.raises(ConversionError, match="restore it or select it again"):
+            convert_image(tmp_path / "removed-after-queue.png", "jpeg", tmp_path)
+
+    def test_inaccessible_source_is_distinguished(self, tmp_path, rgb_png, monkeypatch):
+        original_open = Path.open
+
+        def denied_open(path, *args, **kwargs):
+            if path == rgb_png:
+                raise PermissionError("access denied")
+            return original_open(path, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "open", denied_open)
+        with pytest.raises(ConversionError, match="Cannot read input file"):
+            convert_image(rgb_png, "jpeg", tmp_path)
+
+    def test_directory_source_is_distinguished_as_invalid(self, tmp_path):
+        with pytest.raises(ConversionError, match="not a regular file"):
+            convert_image(tmp_path, "jpeg", tmp_path / "out")
+
     def test_same_format_rejected(self, tmp_path, rgb_png):
         with pytest.raises(ConversionError):
             convert_image(rgb_png, "png", tmp_path)

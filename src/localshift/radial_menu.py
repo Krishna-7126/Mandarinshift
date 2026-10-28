@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import logging
 import math
+import stat
 from pathlib import Path
 from typing import Any, Callable, Optional, Sequence
 
@@ -41,8 +42,11 @@ from PySide6.QtGui import (
     QPainterPath,
     QPen,
     QPixmap,
+    QImageReader,
+    QImageIOHandler,
+    QRegion,
 )
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QButtonGroup, QRadioButton, QWidget
 
 from .formats import FORMAT_LABELS, input_format, output_formats_for
 from .planner import MAX_INPUT_BYTES
@@ -121,15 +125,23 @@ def _clamped_menu_origin(cursor_pos: QPoint, screen_rect: QRect, size: QSize) ->
     )
 
 
+def _fitted_menu_size(screen_rect: QRect, size: QSize) -> QSize:
+    """Fit the menu proportionally into a smaller available work area."""
+    width = min(size.width(), screen_rect.width())
+    height = min(size.height(), screen_rect.height())
+    scale = min(width / size.width(), height / size.height()) if size.width() and size.height() else 1
+    return QSize(max(1, round(size.width() * scale)), max(1, round(size.height() * scale)))
+
+
 def get_supported_targets(paths: Sequence[Path]) -> list[str]:
-    """Derive genuinely supported target formats for given paths from registry."""
-    valid_paths = [p for p in paths if p.is_file()]
-    if not valid_paths:
+    """Derive target routes from captured source paths; execution validates existence."""
+    source_paths = [Path(p) for p in paths]
+    if not source_paths:
         return []
-    if len(valid_paths) == 1:
-        return output_formats_for(valid_paths[0])
+    if len(source_paths) == 1:
+        return output_formats_for(source_paths[0])
     common_targets: Optional[set[str]] = None
-    for p in valid_paths:
+    for p in source_paths:
         targets = set(output_formats_for(p))
         if common_targets is None:
             common_targets = targets
@@ -191,7 +203,7 @@ class RadialConversionMenu(QWidget):
         awaiting_drop: bool = False,
     ):
         super().__init__(parent)
-        self.paths: list[Path] = [p for p in paths if p.is_file()]
+        self.paths: list[Path] = [Path(p) for p in paths]
         self.output_dir = output_dir
         self.is_overlay = is_overlay
         self.awaiting_drop = awaiting_drop
@@ -207,8 +219,9 @@ class RadialConversionMenu(QWidget):
         self._cy = self.height() / 2.0
         self._r_inner = 58.0
         self._r_outer = 138.0
-        self._r_orbit = 104.0
+        self._r_orbit = 90.0
         self._r_petal = 40.0
+        self._layout_scale = 1.0
 
         # State
         self._available_formats: list[str] = self._determine_formats()
@@ -219,20 +232,26 @@ class RadialConversionMenu(QWidget):
         self.set_theme(getattr(theme_owner, "current_theme", get_settings().theme))
 
         if not is_overlay:
-            # Window properties for standalone floating mode (does not steal focus or drop drag capture)
+            # OLE's global target stays non-activating; the in-app chooser is focusable.
             self.setWindowFlags(
                 Qt.WindowType.FramelessWindowHint
                 | Qt.WindowType.WindowStaysOnTopHint
                 | Qt.WindowType.Tool
-                | Qt.WindowType.WindowDoesNotAcceptFocus
             )
             self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
-            self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating, True)
+            if awaiting_drop:
+                self.setWindowFlag(Qt.WindowType.WindowDoesNotAcceptFocus, True)
+                self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating, True)
             self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
 
         self.setMouseTracking(True)
-        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus if is_overlay else Qt.FocusPolicy.NoFocus)
-        self.setAcceptDrops(True)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus if (not is_overlay and not awaiting_drop) else Qt.FocusPolicy.NoFocus)
+        # The main window owns in-app OLE routing; the full-window overlay is visual only.
+        self.setAcceptDrops(not is_overlay)
+        self._format_buttons: list[QRadioButton] = []
+        self._button_group = QButtonGroup(self)
+        self._button_group.setExclusive(True)
+        self._sync_format_buttons()
 
     def set_theme(self, theme: str) -> None:
         light = theme == "light"
@@ -292,7 +311,12 @@ class RadialConversionMenu(QWidget):
 
     @property
     def size_str(self) -> str:
-        total = sum(p.stat().st_size for p in self.paths if p.is_file())
+        total = 0
+        for path in self.paths:
+            try:
+                total += path.stat().st_size
+            except OSError:
+                continue
         return _format_size(total)
 
     @property
@@ -308,7 +332,7 @@ class RadialConversionMenu(QWidget):
         return get_supported_targets(self.paths)
 
     def _generate_thumbnail(self) -> Optional[QPixmap]:
-        """Generate a small thumbnail pixmap for the center hub."""
+        """Decode only a bounded thumbnail; never load an unbounded source pixmap."""
         if not self.paths:
             return None
 
@@ -318,13 +342,18 @@ class RadialConversionMenu(QWidget):
         # For common image formats, load direct pixmap
         if suffix in (".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff"):
             try:
-                pix = QPixmap(str(primary))
-                if not pix.isNull():
-                    return pix.scaled(
-                        44, 44,
-                        Qt.AspectRatioMode.KeepAspectRatio,
-                        Qt.TransformationMode.SmoothTransformation,
-                    )
+                reader = QImageReader(str(primary))
+                size = reader.size()
+                if not size.isValid() or size.width() <= 0 or size.height() <= 0:
+                    return None
+                if size.width() > 16384 or size.height() > 16384 or size.width() * size.height() > 16_000_000:
+                    return None
+                if not reader.supportsOption(QImageIOHandler.ImageOption.ScaledSize):
+                    return None
+                reader.setScaledSize(size.scaled(QSize(44, 44), Qt.AspectRatioMode.KeepAspectRatio))
+                image = reader.read()
+                if not image.isNull() and image.width() <= 44 and image.height() <= 44:
+                    return QPixmap.fromImage(image)
             except Exception:
                 pass
 
@@ -342,12 +371,17 @@ class RadialConversionMenu(QWidget):
 
         geom = screen.availableGeometry() if screen else QRect(0, 0, 1920, 1080)
 
-        self.move(_clamped_menu_origin(cursor_pos, geom, self.size()))
+        fitted = _fitted_menu_size(geom, QSize(400, 460))
+        self._layout_scale = min(fitted.width() / 400, fitted.height() / 460)
+        self.resize(fitted)
+        self.move(_clamped_menu_origin(cursor_pos, geom, fitted))
         self.show()
         self.raise_()
-        if self.is_overlay:
+        if not self.is_overlay and not self.awaiting_drop:
             self.activateWindow()
-            self.setFocus()
+            self.setFocus(Qt.FocusReason.PopupFocusReason)
+            if self._format_buttons:
+                self._format_buttons[max(0, self._hover_index)].setFocus(Qt.FocusReason.PopupFocusReason)
 
     def set_hover_index(self, index: int) -> None:
         """Update the currently hovered/selected format index and repaint."""
@@ -361,7 +395,57 @@ class RadialConversionMenu(QWidget):
 
         if new_idx != self._hover_index:
             self._hover_index = new_idx
+            self._sync_format_buttons()
             self.update()
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        if isinstance(watched, QRadioButton):
+            index = self._format_buttons.index(watched) if watched in self._format_buttons else -1
+            if event.type() == QEvent.Type.FocusIn and index >= 0:
+                self.set_hover_index(index)
+            elif event.type() == QEvent.Type.MouseMove:
+                pos = watched.mapTo(self, event.position().toPoint())
+                self.set_hover_index(self.petal_at_pos(pos))
+            elif event.type() == QEvent.Type.KeyPress and event.key() in (
+                Qt.Key.Key_Escape, Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Space,
+                Qt.Key.Key_Tab, Qt.Key.Key_Backtab, Qt.Key.Key_Left, Qt.Key.Key_Right,
+                Qt.Key.Key_Up, Qt.Key.Key_Down,
+            ):
+                self.keyPressEvent(event)
+                return True
+        return super().eventFilter(watched, event)
+
+    def _sync_format_buttons(self) -> None:
+        if not hasattr(self, "_format_buttons"):
+            return
+        while len(self._format_buttons) > len(self._available_formats):
+            button = self._format_buttons.pop()
+            self._button_group.removeButton(button)
+            button.deleteLater()
+        while len(self._format_buttons) < len(self._available_formats):
+            index = len(self._format_buttons)
+            button = QRadioButton(self)
+            button.setAccessibleName(f"Convert to {FORMAT_LABELS.get(self._available_formats[index].lower(), self._available_formats[index])}")
+            button.setAccessibleDescription(f"Convert {self.primary_name} to {self._available_formats[index].upper()}")
+            button.setText("")
+            button.setStyleSheet("QRadioButton { background: transparent; border: 0; spacing: 0; } QRadioButton::indicator { width: 0px; height: 0px; }")
+            button.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+            button.installEventFilter(self)
+            button.clicked.connect(lambda checked=False, i=index: self.confirm_selection(i))
+            self._button_group.addButton(button, index)
+            self._format_buttons.append(button)
+        for index, button in enumerate(self._format_buttons):
+            fmt = self._available_formats[index]
+            button.setAccessibleName(f"Convert to {FORMAT_LABELS.get(fmt.lower(), fmt)}")
+            button.setAccessibleDescription(f"Convert {self.primary_name} to {fmt.upper()}")
+            center = self._petal_center(index)
+            diameter = round((self._r_petal + 4) * 2 * self._layout_scale)
+            x = round(center.x() * self._layout_scale - diameter / 2)
+            y = round(center.y() * self._layout_scale - diameter / 2)
+            button.setGeometry(x, y, diameter, diameter)
+            button.setMask(QRegion(0, 0, diameter, diameter, QRegion.RegionType.Ellipse))
+            button.setChecked(index == self._hover_index)
+            button.setVisible(not self.is_overlay and not self.awaiting_drop)
 
     def _petal_center(self, index: int) -> QPointF:
         """Return the center used to draw and hit-test one petal."""
@@ -405,7 +489,7 @@ class RadialConversionMenu(QWidget):
         if 0 <= index < len(self._available_formats):
             chosen_format = self._available_formats[index]
             self._selection_confirmed = True
-            self.format_selected.emit(chosen_format, self.paths)
+            self.format_selected.emit(chosen_format, list(self.paths))
             self.close()
 
     def _cancel(self) -> None:
@@ -433,9 +517,13 @@ class RadialConversionMenu(QWidget):
             event.accept()
         elif key in (Qt.Key.Key_Tab, Qt.Key.Key_Right, Qt.Key.Key_Down):
             self.navigate_next()
+            if self._format_buttons and not self.is_overlay:
+                self._format_buttons[self._hover_index].setFocus(Qt.FocusReason.TabFocusReason)
             event.accept()
         elif key in (Qt.Key.Key_Backtab, Qt.Key.Key_Left, Qt.Key.Key_Up):
             self.navigate_prev()
+            if self._format_buttons and not self.is_overlay:
+                self._format_buttons[self._hover_index].setFocus(Qt.FocusReason.BacktabFocusReason)
             event.accept()
         elif Qt.Key.Key_1 <= key <= Qt.Key.Key_9:
             num = key - Qt.Key.Key_1
@@ -445,7 +533,7 @@ class RadialConversionMenu(QWidget):
         else:
             super().keyPressEvent(event)
 
-    def petal_at_pos(self, pos: Any) -> int:
+    def petal_at_pos(self, pos: Any, *, hover_tolerance: bool = True) -> int:
         """Return the index of the petal that contains *pos*, or -1 if outside.
 
         Uses the visible petal discs as hit targets. The current petal gets a
@@ -456,10 +544,12 @@ class RadialConversionMenu(QWidget):
             return -1
 
         pt = QPointF(pos.x(), pos.y()) if hasattr(pos, "x") else pos
+        if self._layout_scale != 1.0:
+            pt = QPointF(pt.x() / self._layout_scale, pt.y() / self._layout_scale)
         if 0 <= self._hover_index < count:
             center = self._petal_center(self._hover_index)
             dx, dy = pt.x() - center.x(), pt.y() - center.y()
-            radius = self._r_petal + 4.0 + 8.0
+            radius = self._r_petal + (4.0 + 8.0 if hover_tolerance else 4.0)
             if dx * dx + dy * dy <= radius * radius:
                 return self._hover_index
 
@@ -476,12 +566,16 @@ class RadialConversionMenu(QWidget):
                 nearest_distance = distance
         return nearest_index
 
-    def set_paths(self, paths: Sequence[Path]) -> None:
+    def set_paths(self, paths: Sequence[Path], *, generate_thumbnail: bool = True) -> None:
         """Update active files dynamically (e.g. when dragged into menu directly)."""
-        self.paths = [p for p in paths if p.is_file()]
+        self.paths = [Path(p) for p in paths]
         self._available_formats = self._determine_formats()
         self._hover_index = 0 if self._available_formats and not self.awaiting_drop else -1
-        self._thumbnail_pixmap = self._generate_thumbnail()
+        self._sync_format_buttons()
+        if generate_thumbnail:
+            self._thumbnail_pixmap = self._generate_thumbnail()
+        else:
+            self._thumbnail_pixmap = None
         self.update()
 
     def _local_file_payload(self, mime_data: Any) -> tuple[list[Path], Optional[str]]:
@@ -498,16 +592,25 @@ class RadialConversionMenu(QWidget):
                 return [], "Only local files can be converted."
             path = Path(url.toLocalFile())
             try:
-                if not path.is_absolute() or path.is_symlink() or not path.is_file():
-                    return [], "The drop contains an invalid or unsupported file path."
-                if path.stat().st_size > MAX_INPUT_BYTES:
+                if not path.is_absolute():
+                    return [], f"Invalid dropped path (not absolute): {path}"
+                if path.is_symlink():
+                    return [], f"Unsupported symbolic-link drop: {path}"
+                info = path.stat()
+                if not stat.S_ISREG(info.st_mode):
+                    return [], f"Invalid dropped source (not a regular file): {path}"
+                if info.st_size > MAX_INPUT_BYTES:
                     return [], "A dropped file exceeds the 250 MiB input limit."
+            except FileNotFoundError:
+                return [], f"Dropped source is missing: {path}. Restore it or select it from its current location."
+            except PermissionError:
+                return [], f"Cannot access dropped source: {path}. Check its permissions and try again."
             except OSError:
-                return [], "A dropped file could not be accessed."
+                return [], f"Cannot inspect dropped source: {path}"
             paths.append(path)
 
         if not get_supported_targets(paths):
-            return [], "No common conversion target is available for these files."
+            return [], "No common conversion target is available: unsupported format or source combination."
         return paths, None
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
@@ -532,7 +635,7 @@ class RadialConversionMenu(QWidget):
         self._drop_message = None
         self._ole_drag_active = True
         if paths != self.paths:
-            self.set_paths(paths)
+            self.set_paths(paths, generate_thumbnail=False)
         log.info("OLE drag accepted for preview: %d local file(s), %d target(s).", len(paths), len(self._available_formats))
         event.acceptProposedAction()
 
@@ -556,9 +659,9 @@ class RadialConversionMenu(QWidget):
             event.ignore()
             return
         if target_paths != self.paths:
-            self.set_paths(target_paths)
+            self.set_paths(target_paths, generate_thumbnail=False)
 
-        hit = self.petal_at_pos(event.position())
+        hit = self.petal_at_pos(event.position(), hover_tolerance=False)
         if 0 <= hit < len(self._available_formats):
             self.confirm_selection(hit)
             event.acceptProposedAction()
@@ -577,7 +680,7 @@ class RadialConversionMenu(QWidget):
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton and not self.awaiting_drop:
-            hit = self.petal_at_pos(event.position())
+            hit = self.petal_at_pos(event.position(), hover_tolerance=False)
             self.set_hover_index(hit)
             if hit >= 0:
                 self.confirm_selection(hit)
@@ -596,13 +699,14 @@ class RadialConversionMenu(QWidget):
 
     def resizeEvent(self, event: Any) -> None:
         super().resizeEvent(event)
-        self._cx = self.width() / 2.0
-        self._cy = self.height() / 2.0
+        self._cx = self.width() / (2.0 * self._layout_scale)
+        self._cy = self.height() / (2.0 * self._layout_scale)
+        self._sync_format_buttons()
 
     def setGeometry(self, *args: Any) -> None:
         super().setGeometry(*args)
-        self._cx = self.width() / 2.0
-        self._cy = self.height() / 2.0
+        self._cx = self.width() / (2.0 * self._layout_scale)
+        self._cy = self.height() / (2.0 * self._layout_scale)
 
     # -----------------------------------------------------------------------
     # Rendering: Vector radial segments, hub, badges, and headers
@@ -618,6 +722,8 @@ class RadialConversionMenu(QWidget):
         # 0. In overlay mode, dim the application behind the wheel.
         if self.is_overlay:
             painter.fillRect(self.rect(), self._c_overlay)
+        if self._layout_scale != 1.0:
+            painter.scale(self._layout_scale, self._layout_scale)
 
         # 1. Floating Top Filename Pill
         self._paint_top_pill(painter)
@@ -687,10 +793,11 @@ class RadialConversionMenu(QWidget):
         painter.drawText(pill_rect, Qt.AlignmentFlag.AlignCenter, elided)
 
     def _pill_rect(self, width: float, height: float, center_y: float) -> QRectF:
-        width = min(width, max(1.0, self.width() - 16.0))
-        height = min(height, max(1.0, self.height() - 16.0))
-        left = (self.width() - width) / 2.0
-        top = min(max(center_y - height / 2.0, 8.0), self.height() - height - 8.0)
+        logical_width, logical_height = 400.0, 460.0
+        width = min(width, max(1.0, logical_width - 16.0))
+        height = min(height, max(1.0, logical_height - 16.0))
+        left = (logical_width - width) / 2.0
+        top = min(max(center_y - height / 2.0, 8.0), logical_height - height - 8.0)
         return QRectF(left, top, width, height)
 
     def _top_pill_rect(self) -> QRectF:

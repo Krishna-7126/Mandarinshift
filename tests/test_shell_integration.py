@@ -115,12 +115,13 @@ def test_global_gesture_waits_for_actual_ole_drop(qapp):
     controller.stop_monitoring()
 
 
-def test_global_ole_drop_dispatches_its_exact_payload(qapp, tmp_path):
+@pytest.mark.parametrize("file_count", [1, 2])
+def test_global_ole_drop_dispatches_its_exact_payload(qapp, tmp_path, file_count):
     from PIL import Image
     from PySide6.QtCore import QMimeData, QPointF, QUrl
     from PySide6.QtGui import QDropEvent
 
-    paths = [tmp_path / "one.png", tmp_path / "two.png"]
+    paths = [tmp_path / "one.png", tmp_path / "two.png"][:file_count]
     for path in paths:
         Image.new("RGB", (12, 12), "blue").save(path)
 
@@ -142,6 +143,9 @@ def test_global_ole_drop_dispatches_its_exact_payload(qapp, tmp_path):
     assert results[0][1] == paths
     assert controller.state == "CONVERTING"
     assert not controller._drop_timeout.isActive()
+    assert controller._active_menu is None
+    assert not menu.isVisible()
+    assert not menu.ole_drag_active
     controller.stop_monitoring()
 
 
@@ -182,6 +186,40 @@ def test_global_timeout_cleans_up_and_allows_next_gesture(qapp):
     assert controller._active_menu is None
     assert controller.state == GestureState.IDLE
 
+    controller._trigger_background_radial(QPoint(100, 100))
+    assert controller.state == GestureState.MENU_VISIBLE
+    controller.stop_monitoring()
+
+
+def test_rejected_ole_drop_cleans_up_and_allows_next_gesture(qapp, tmp_path):
+    from PIL import Image
+    from PySide6.QtCore import QMimeData, QPointF, QUrl
+    from PySide6.QtGui import QDropEvent
+    from localshift.radial_menu import GestureState
+
+    source = tmp_path / "source.png"
+    Image.new("RGB", (8, 8), "green").save(source)
+    controller = BackgroundGestureController(main_window=None)
+    controller._trigger_background_radial(QPoint(100, 100))
+    menu = controller._active_menu
+    assert menu is not None
+    mime = QMimeData()
+    mime.setUrls([QUrl.fromLocalFile(str(source))])
+    event = QDropEvent(
+        QPointF(menu._cx, menu._cy),
+        Qt.DropAction.CopyAction,
+        mime,
+        Qt.MouseButton.NoButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+
+    menu.dropEvent(event)
+    controller._cancel_unaccepted_drop()
+
+    assert not event.isAccepted()
+    assert controller._active_menu is None
+    assert not menu.isVisible()
+    assert controller.state == GestureState.IDLE
     controller._trigger_background_radial(QPoint(100, 100))
     assert controller.state == GestureState.MENU_VISIBLE
     controller.stop_monitoring()
@@ -249,6 +287,7 @@ def test_shift_release_cancels_global_gesture(qapp):
 
     controller = BackgroundGestureController(main_window=None)
     controller._trigger_background_radial(QPoint(100, 100))
+    menu = controller._active_menu
     controller._lbutton_was_down = True
     mock_user32 = MagicMock()
     mock_user32.GetAsyncKeyState.side_effect = lambda vk: 0x8000 if vk == 0x01 else 0
@@ -260,6 +299,8 @@ def test_shift_release_cancels_global_gesture(qapp):
 
     assert controller._active_menu is None
     assert controller.state == GestureState.IDLE
+    assert menu is not None and not menu.isVisible()
+    assert not controller._drop_timeout.isActive()
     controller.stop_monitoring()
 
 

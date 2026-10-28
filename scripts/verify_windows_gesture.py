@@ -27,6 +27,7 @@ from PIL import Image
 # Ensure localshift package import
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
+from localshift import __version__ as LOCALSHIFT_VERSION
 from localshift.radial_menu import (
     get_supported_targets,
     is_shift_pressed,
@@ -35,16 +36,22 @@ from localshift.settings import get_settings, validate_destination_directory
 
 
 MANUAL_CASES = (
-    ("EXP-SINGLE", "Windows File Explorer", "Single supported file"),
-    ("EXP-MULTI", "Windows File Explorer", "Multiple supported files"),
-    ("DESKTOP-SINGLE", "Windows Desktop", "Single supported file"),
-    ("DESKTOP-MULTI", "Windows Desktop", "Multiple supported files"),
-    ("THIRD-PARTY", "Third-party file manager", "Single and multiple supported files"),
-    ("VIRTUAL", "Unsupported or virtual source", "Browser, remote, archive, or virtual item"),
-    ("MIXED-DPI", "Windows desktop", "Repeat on each available DPI scale / monitor"),
-    ("CANCEL", "Windows desktop", "Escape, Shift release, and cancellation"),
-    ("TOGGLE", "LocalShift settings", "Monitoring OFF/ON and restart persistence"),
-    ("RELIABILITY", "LocalShift conversion", "Unsupported format, oversized input, collision, and source immutability"),
+    ("EXP-SINGLE", "Windows File Explorer", "Main window: one supported file", "Drop one local file on the main window without Shift."),
+    ("EXP-MULTI", "Windows File Explorer", "Main window: multiple supported files", "Drop multiple local files on the main window without Shift."),
+    ("RADIAL-SINGLE", "Windows File Explorer", "Radial wheel: one supported file", "Hold Shift and drop one local file on a wheel format sector."),
+    ("RADIAL-MULTI", "Windows File Explorer", "Radial wheel: multiple supported files", "Hold Shift and drop multiple local files on a common format sector."),
+    ("DESKTOP-SINGLE", "Windows Desktop", "Single supported file", "Repeat the single-file check from the Windows Desktop."),
+    ("DESKTOP-MULTI", "Windows Desktop", "Multiple supported files", "Repeat the multi-file check from the Windows Desktop."),
+    ("THIRD-PARTY", "Third-party file manager", "Single and multiple supported files", "Record manager and version; test both counts."),
+    ("VIRTUAL", "Unsupported or virtual source", "Browser, remote, archive, or virtual item", "Attempt a drop and verify safe rejection without output."),
+    ("MIXED-DPI", "Windows desktop", "Repeat on each available DPI scale / monitor", "Move across monitors and compare wheel alignment."),
+    ("CANCEL", "Windows desktop", "Escape cancellation", "Start a drag, open the wheel, then cancel with Escape."),
+    ("CANCEL-OUTSIDE", "Windows desktop", "Release outside the target", "Move outside the valid target and release without conversion."),
+    ("REPEAT-WHEEL", "Windows File Explorer", "Repeated drag sessions and wheel reopen", "Repeat several drags; cancel once and reopen the wheel."),
+    ("BUSY-CONVERSION", "Windows File Explorer", "Drag while another conversion is running", "Start a separate conversion, then perform a wheel drag."),
+    ("MISSING-SOURCE", "Windows File Explorer", "Source deleted after selection", "Queue a file, remove it before conversion, then select a format."),
+    ("TOGGLE", "LocalShift settings", "Monitoring OFF/ON and restart persistence", "Toggle monitoring, restart, and verify the saved state."),
+    ("RELIABILITY", "LocalShift conversion", "Unsupported format, oversized input, collision, and source immutability", "Use disposable files and verify errors and source hashes."),
 )
 
 GESTURE_STATES = {
@@ -82,7 +89,7 @@ def _windows_name() -> str:
 
 def new_manual_report() -> dict:
     cases = []
-    for case_id, source, scenario in MANUAL_CASES:
+    for case_id, source, scenario, procedure in MANUAL_CASES:
         cases.append({
             "id": case_id,
             "case_id": case_id,
@@ -93,7 +100,15 @@ def new_manual_report() -> dict:
                 else None
             ),
             "scenario": scenario,
+            "procedure": procedure,
+            "run_environment": {
+                "windows_name": _windows_name(),
+                "windows_version": platform.version(),
+                "localshift_version": LOCALSHIFT_VERSION,
+            },
             "status": "NOT TESTED",
+            "actual_source_application": None,
+            "actual_source_application_version": None,
             "local_payload_received": "UNKNOWN",
             "selected_file_count": None,
             "payload_preview_file_counts": [],
@@ -101,6 +116,8 @@ def new_manual_report() -> dict:
             "accepted_drop_file_counts": [],
             "observed_target_formats": [],
             "observed_conversion_result": "UNKNOWN",
+            "conversion_dispatch_count": None,
+            "conversion_dispatched_exactly_once": "UNKNOWN",
             "operator_conversion_result": "UNKNOWN",
             "conversion_error_category": "UNKNOWN",
             "output_paths": [],
@@ -110,8 +127,16 @@ def new_manual_report() -> dict:
             "source_hashes_match_dragged_files": "UNKNOWN",
             "source_unchanged": None,
             "cancellation_behavior": "UNKNOWN",
+            "drag_image_persisted_after_release": "UNKNOWN",
+            "drag_image_persisted_after_cancellation": "UNKNOWN",
+            "ui_responsive": "UNKNOWN",
+            "observed_error_or_limitation": "",
+            "operator_recorded_utc": None,
+            "case_performed": "UNKNOWN",
             "operator_confirmed": False,
             "session_id": None,
+            "session_started_at_utc": None,
+            "session_ended_at_utc": None,
             "observed_events": [],
             "evidence_notes": "",
         })
@@ -125,6 +150,7 @@ def new_manual_report() -> dict:
             "processor": platform.processor(),
             "logical_cpu_count": os.cpu_count(),
             "python_version": platform.python_version(),
+            "localshift_version": LOCALSHIFT_VERSION,
         },
         "cases": cases,
         "summary": {"passed": 0, "failed": 0, "not_tested": len(MANUAL_CASES)},
@@ -423,6 +449,25 @@ def _prompt_file_count() -> int | None:
         print("Enter a non-negative whole number or leave blank.")
 
 
+def _prompt_optional_count(prompt: str) -> int | None:
+    while True:
+        raw_count = input(f"{prompt} (blank if unknown): ").strip()
+        if not raw_count:
+            return None
+        if raw_count.isdigit():
+            return int(raw_count)
+        print("Enter a non-negative whole number or leave blank.")
+
+
+def _prompt_notes() -> str:
+    path_pattern = re.compile(r"(?:[A-Za-z]:[\\/]|\\\\[^\\\s]+\\[^\\\s]+)")
+    while True:
+        notes = input("Observed error or limitation (brief; omit file paths/names, max 500 chars): ").strip()
+        if len(notes) <= 500 and not path_pattern.search(notes) and not any(ord(char) < 32 for char in notes):
+            return notes
+        print("Use at most 500 printable characters and omit paths or filenames.")
+
+
 def collect_manual_results(
     report_path: Path,
     report: dict,
@@ -433,6 +478,14 @@ def collect_manual_results(
         {"u": "UNKNOWN", "a": "NOT APPLICABLE", "y": "YES", "n": "NO"},
     )
     case["selected_file_count"] = _prompt_file_count()
+    case["conversion_dispatch_count"] = _prompt_optional_count(
+        "How many conversions actually dispatched for this case?"
+    )
+    case["conversion_dispatched_exactly_once"] = (
+        case["conversion_dispatch_count"] == 1
+        if case["conversion_dispatch_count"] is not None
+        else "UNKNOWN"
+    )
 
     case["operator_conversion_result"] = _prompt_choice(
         "Observed conversion result",
@@ -463,6 +516,19 @@ def collect_manual_results(
         "Cancellation result for the scenario (or N/A)",
         {"u": "UNKNOWN", "p": "PASS", "f": "FAIL", "a": "NOT APPLICABLE"},
     )
+    case["drag_image_persisted_after_release"] = _prompt_choice(
+        "Was the drag image still visible after release/drop completed?",
+        {"u": "UNKNOWN", "y": "YES", "n": "NO", "a": "NOT APPLICABLE"},
+    )
+    case["drag_image_persisted_after_cancellation"] = _prompt_choice(
+        "Was the drag image still visible after cancellation?",
+        {"u": "UNKNOWN", "y": "YES", "n": "NO", "a": "NOT APPLICABLE"},
+    )
+    case["ui_responsive"] = _prompt_choice(
+        "Did LocalShift remain responsive during and after the interaction?",
+        {"u": "UNKNOWN", "y": "RESPONSIVE", "n": "UNRESPONSIVE", "a": "NOT APPLICABLE"},
+    )
+    case["observed_error_or_limitation"] = _prompt_notes()
     case["output_paths"] = collect_output_path_labels()
 
     source_match = _prompt_choice(
@@ -477,10 +543,15 @@ def collect_manual_results(
         if source_match == "YES" and before and after is not None
         else None
     )
-    case["operator_confirmed"] = _prompt_choice(
+    case["case_performed"] = _prompt_choice(
+        "Did you physically perform the displayed case steps on Windows?",
+        {"n": "NO", "y": "YES"},
+    )
+    case["operator_confirmed"] = case["case_performed"] == "YES" and _prompt_choice(
         "Do you confirm these fields are direct observations for this displayed case ID?",
         {"n": "NO", "y": "YES"},
     ) == "YES"
+    case["operator_recorded_utc"] = datetime.now(timezone.utc).isoformat()
     if case["operator_confirmed"]:
         case["status"] = _prompt_choice(
             "Case result",
@@ -505,9 +576,11 @@ def collect_manual_results(
     print(f"Structured report saved to {report_path}")
 
 
-def _prompt_source_label(prompt: str, default: str | None) -> str:
+def _prompt_source_label(prompt: str, default: str | None) -> str | None:
     while True:
-        value = input(f"{prompt} [{default or 'not recorded'}]: ").strip() or (default or "")
+        value = input(f"{prompt} [{default or 'blank if unknown'}]: ").strip()
+        if not value:
+            return default
         if len(value) <= 120 and not any(ord(char) < 32 for char in value) and not re.search(
             r"(?:[A-Za-z]:[\\/]|[\\/]{2})", value
         ):
@@ -516,21 +589,25 @@ def _prompt_source_label(prompt: str, default: str | None) -> str:
 
 
 def _run_interactive_case(report_path: Path, log_path: Path, report: dict, case: dict) -> None:
-    print(f"\nCase {case['id']}: {case['source_application']} — {case['scenario']}")
+    print(f"\nCase {case['id']}: {case['scenario']}")
+    print(f"Procedure: {case.get('procedure', 'Follow the operator checklist.')}")
     print("Use only the displayed case for this app session; the report status stays NOT TESTED until confirmed.")
-    case["source_application"] = _prompt_source_label(
-        "Actual source application",
-        case["source_application"],
-    ) or "Not recorded"
-    case["source_version"] = _prompt_source_label(
-        "Actual source application / Windows version",
-        case["source_version"],
-    ) or "Not recorded"
+    case["run_environment"] = {
+        "windows_name": _windows_name(),
+        "windows_version": platform.version(),
+        "localshift_version": LOCALSHIFT_VERSION,
+    }
+    case["actual_source_application"] = _prompt_source_label("Actual source application", None)
+    case["actual_source_application_version"] = _prompt_source_label(
+        "Actual source application version", None
+    )
     source_paths, hashes_before = collect_source_hash_inputs()
     case["source_sha256_before"] = hashes_before or None
     case["session_id"] = str(uuid.uuid4())
+    case["session_started_at_utc"] = datetime.now(timezone.utc).isoformat()
     case["operator_confirmed"] = False
     case["status"] = "NOT TESTED"
+    write_manual_report(report_path, report)
 
     handler = PrivacySafeGestureLogHandler(log_path, case["id"])
     handler.record_event({"event": "session_started"})
@@ -552,6 +629,7 @@ def _run_interactive_case(report_path: Path, log_path: Path, report: dict, case:
 
         exit_code = _run_gui_session(launch_gui)
     finally:
+        case["session_ended_at_utc"] = datetime.now(timezone.utc).isoformat()
         handler.record_event({"event": "session_ended", "exit_code": exit_code})
         for logger, level, propagate in previous_logger_state:
             logger.removeHandler(handler)
@@ -719,8 +797,8 @@ def main():
 
     if not args.interactive:
         print("Numbered physical test cases (run one case ID per GUI session; do not infer cross-app support):")
-        for number, (case_id, source, scenario) in enumerate(MANUAL_CASES, start=1):
-            print(f"  [{number}] {case_id}: {source} — {scenario}")
+        for number, (case_id, source, scenario, procedure) in enumerate(MANUAL_CASES, start=1):
+            print(f"  [{number}] {case_id}: {scenario} — {procedure}")
         return
 
     if report_path is None or log_path is None or args.case_id is None:

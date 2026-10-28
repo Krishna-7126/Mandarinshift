@@ -142,28 +142,34 @@ Run the automated harness check first; it uses temporary assets and does not ver
 .\.venv\Scripts\python.exe scripts\verify_windows_gesture.py --check
 ```
 
-Run one interactive case per application session. Use the new v2 paths below; do not overwrite the supplied Milestone 24 JSON or text log. Repeat the command with each case ID from the table:
+Run one interactive case per LocalShift session. Use a fresh report/log pair below; the existing `LS-BE-024-physical-verification.json` and `gesture-verification-report.json` remain unchanged. Repeat the command with each requested case ID:
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\verify_windows_gesture.py --interactive --case-id EXP-SINGLE --log-file .\docs\reports\LS-BE-024-gesture-v2.jsonl --report-file .\docs\reports\LS-BE-024-physical-v2.json
+.\.venv\Scripts\python.exe scripts\verify_windows_gesture.py --interactive --case-id EXP-SINGLE --log-file .\docs\reports\LS-BE-024-drag-operator-20261029.jsonl --report-file .\docs\reports\LS-BE-024-drag-operator-20261029.json
 ```
 
-The report starts each case as `NOT TESTED`. It records a result only after the operator confirms the displayed case. A case that already has session evidence cannot be run again into the same report; choose a fresh report path to preserve the earlier attempt. Diagnostics are JSONL with case ID, event/state, file counts, target format, severity category and timestamps only; raw log messages, source paths and document contents are never written. Source file paths are requested only for in-memory SHA-256 checks. Output labels must be synthetic relative labels such as `outputs/case-01/result-01.docx`. Free-text evidence notes are intentionally omitted.
+The report starts every case as `NOT TESTED`; it never infers a pass. Session metadata is written before the GUI launches, so an interrupted/frozen run remains recorded as unverified. PASS/FAIL is offered only after you confirm that you physically performed the displayed case and its observations. Each case records its Windows build and LocalShift version plus actual source application/version, dragged file count, genuine payload receipt, observed dispatch count, post-release/cancellation drag-image persistence, UI responsiveness, output correctness, source hashes, error category, and brief path-free error/limitation notes. JSONL event timestamps and operator-recorded timestamps are included where available. The script does not capture a screenshot or independently observe Explorer's drag image; that observation comes from you. A case with session evidence cannot be rerun into the same report; use a fresh report/log pair to preserve earlier evidence. Raw logs, source paths, and document contents are never written. Source paths requested for SHA-256 checks stay in memory. Output labels must be synthetic relative labels such as `outputs/case-01/result-01.docx`.
 
 | Case ID | Source / condition | Procedure | Record |
 |---|---|---|
-| `EXP-SINGLE` | Windows File Explorer, one file | Hold Shift, drag one supported file, drop on a matching sector | Windows build, local payload, file count, output correctness, source hashes |
-| `EXP-MULTI` | Windows File Explorer, multiple files | Drag multiple supported files and drop on a common target | Actual payload count, target, every output, source hashes |
+| `EXP-SINGLE` | Explorer → main window, one file | Drop one supported file without Shift | Genuine payload, dispatch count, drag image, responsiveness, output/hash |
+| `EXP-MULTI` | Explorer → main window, multiple files | Drop multiple supported files without Shift | Exact payload/output count, dispatch count, drag image, responsiveness, hashes |
+| `RADIAL-SINGLE` | Explorer → radial wheel, one file | Hold Shift and drop on a matching sector | Payload, dispatch count, drag image, responsiveness, output/hash |
+| `RADIAL-MULTI` | Explorer → radial wheel, multiple files | Hold Shift and drop on a common sector | Exact payload/output count, dispatch count, drag image, responsiveness, hashes |
 | `DESKTOP-SINGLE` | Windows Desktop, one file | Repeat the single-file check independently | Desktop payload and output evidence |
 | `DESKTOP-MULTI` | Windows Desktop, multiple files | Repeat the multi-file check independently | Exact payload/output correspondence |
 | `THIRD-PARTY` | One named third-party file manager | Record manager/version and perform a supported drag | Source/version and payload/output evidence; do not generalize |
 | `VIRTUAL` | Browser, remote, archive, or virtual item | Attempt a drag and verify safe rejection | Whether local payload arrived; no conversion/output on rejection |
 | `MIXED-DPI` | Available monitors / scale factors | Cross monitor and sector boundaries | Alignment, focus, flicker and display scaling |
-| `CANCEL` | Escape, Shift release, mouse release | Test each cancellation path | Cancellation, no output, and continued app usability |
+| `CANCEL` | Escape | Open the wheel during a drag, then cancel with Escape | No conversion; record image cleanup and responsiveness |
+| `CANCEL-OUTSIDE` | Release outside target | Release away from a valid target | No conversion; record image cleanup and responsiveness |
+| `REPEAT-WHEEL` | Repeated Explorer sessions | Repeat drags, cancel once, then reopen the wheel | No stale payload, duplicate dispatch, or stuck image |
+| `BUSY-CONVERSION` | Another conversion running | Start a separate conversion, then try a radial drag | Responsiveness, dispatch/error behavior, no source substitution |
+| `MISSING-SOURCE` | Source removed after selection | Queue a file, remove it, then choose a format | Item-level failure; no substitution or recovery claim |
 | `TOGGLE` | Settings OFF/ON and restart | Verify OFF, explicitly enable, restart, then disable | Monitoring state and saved preference |
 | `RELIABILITY` | Unsupported, oversized, collision, failed conversion | Exercise each failure using disposable test files | Safe error category, collision behavior, outputs and source hashes |
 
-Automated tests exercise Qt payloads and state transitions only; they do not count as physical Windows results. Do not mark an application as supported from an unattributed log or a simulated test. Mixed-DPI, assistive-technology and external-source results remain `NOT TESTED` until the operator records direct observations.
+Automated tests exercise Qt payloads and state transitions only; they do not count as physical Windows results. Keep Explorer drag-image persistence separate from a LocalShift UI freeze. Do not mark an application as supported from an unattributed log or a simulated test. Mixed-DPI, assistive-technology and external-source results remain `NOT TESTED` until the operator records direct observations.
 
 ## 8. DOCX → PDF Rendering Verification & Fixture Ground Truth (`tests/docx_fixture_generator.py`)
 

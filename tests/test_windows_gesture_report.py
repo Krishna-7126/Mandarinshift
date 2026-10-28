@@ -36,6 +36,14 @@ def test_manual_cases_are_unverified_until_operator_records_results():
         "failed": 0,
         "not_tested": len(MANUAL_CASES),
     }
+    ids = {case["id"] for case in report["cases"]}
+    assert {
+        "EXP-SINGLE", "EXP-MULTI", "RADIAL-SINGLE", "RADIAL-MULTI",
+        "CANCEL", "CANCEL-OUTSIDE", "REPEAT-WHEEL", "BUSY-CONVERSION", "MISSING-SOURCE",
+    } <= ids
+    assert report["environment"]["localshift_version"]
+    assert all(case["run_environment"]["windows_version"] for case in report["cases"])
+    assert all(case["conversion_dispatched_exactly_once"] == "UNKNOWN" for case in report["cases"])
 
 
 def test_manual_report_writes_structured_json_atomically(tmp_path):
@@ -62,7 +70,43 @@ def test_unconfirmed_case_remains_not_tested(tmp_path, monkeypatch):
 
     saved = json.loads(report_path.read_text(encoding="utf-8"))
     assert saved["cases"][0]["operator_confirmed"] is False
+    assert saved["cases"][0]["case_performed"] == "NO"
     assert saved["cases"][0]["status"] == "NOT TESTED"
+
+
+def test_operator_observations_are_saved_only_from_explicit_answers(tmp_path, monkeypatch):
+    report_path = tmp_path / "report.json"
+    report = new_manual_report()
+    case = report["cases"][0]
+    case["source_sha256_before"] = ["abc"]
+    case["source_sha256_after"] = ["abc"]
+    answers = iter([
+        "y", "2", "1", "c", "y", "n", "a", "n", "a", "y",
+        "No freeze or ghost observed.", "outputs/case-01/result-01.pdf", "",
+        "y", "y", "y", "p",
+    ])
+    monkeypatch.setattr("builtins.input", lambda _prompt: next(answers))
+
+    verification.collect_manual_results(report_path, report, case)
+
+    saved = json.loads(report_path.read_text(encoding="utf-8"))["cases"][0]
+    assert saved["local_payload_received"] == "YES"
+    assert saved["selected_file_count"] == 2
+    assert saved["conversion_dispatch_count"] == 1
+    assert saved["conversion_dispatched_exactly_once"] is True
+    assert saved["drag_image_persisted_after_release"] == "NO"
+    assert saved["ui_responsive"] == "RESPONSIVE"
+    assert saved["source_unchanged"] is True
+    assert saved["case_performed"] == "YES"
+    assert saved["status"] == "PASS"
+    assert saved["operator_recorded_utc"]
+
+
+def test_operator_notes_reject_paths_and_accept_short_observation(monkeypatch):
+    answers = iter([r"Error at C:\private\source.png", "OLE image remained after cancel"])
+    monkeypatch.setattr("builtins.input", lambda _prompt: next(answers))
+
+    assert verification._prompt_notes() == "OLE image remained after cancel"
 
 
 def test_legacy_report_migrates_without_losing_operator_status(tmp_path):
